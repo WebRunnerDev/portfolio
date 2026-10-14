@@ -1,0 +1,17 @@
+# Private documents (CV sources, personal data)
+docs/private/
+
+# Dependencies & build
+node_modules/
+dist/
+.wrangler/
+
+# Env & secrets
+.env
+.env.*
+!.env.example
+.dev.vars
+
+# OS / editor
+.DS_Store
+Thumbs.db
