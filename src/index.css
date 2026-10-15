@@ -169,11 +169,21 @@
   }
   html {
     @apply font-sans;
+    /* Anchors and focused elements stay clear of the sticky header. */
+    scroll-padding-top: var(--zsd-x-zsd-layout-header-height);
   }
 }
 
-/* ADR-0005: View Transitions (theme crossfade, later page changes) are
- * instant under reduced motion. */
+/* ADR-0005: page changes crossfade the content; the header and footer have
+ * their own view-transition-name, so they stay put. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--zsd-x-zsd-motion-duration-slow);
+  animation-timing-function: var(--zsd-x-zsd-motion-easing-standard);
+}
+
+/* ADR-0005: View Transitions (theme crossfade, page changes) are instant
+ * under reduced motion. */
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*),
   ::view-transition-old(*),
