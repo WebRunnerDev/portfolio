@@ -1,0 +1,56 @@
+name: Lighthouse
+
+# Runs Lighthouse CI (mobile) against the Workers Builds Preview of the PR.
+# Warning only: budgets don't fail the job and the job is not required.
+# Stage 4 makes it blocking (docs/plan.md).
+
+on:
+  pull_request:
+
+concurrency:
+  group: lighthouse-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  checks: read
+  pull-requests: read
+
+env:
+  WORKER_NAME: webrunner
+  WORKERS_SUBDOMAIN: zhasulan-abdigaliev
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    # Fork PRs get no Preview.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    continue-on-error: true
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - id: preview
+        run: node .github/scripts/preview-url.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HEAD_REF: ${{ github.head_ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+      - if: steps.preview.outputs.url
+        run: >-
+          npx --yes @lhci/cli@0.15.1 autorun
+          --collect.url=${{ steps.preview.outputs.url }}/en
+          --collect.url=${{ steps.preview.outputs.url }}/en/cv
+      - if: steps.preview.outputs.url
+        run: node .github/scripts/lighthouse-summary.mjs
+        env:
+          PREVIEW_URL: ${{ steps.preview.outputs.url }}
+      - if: steps.preview.outputs.url
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse
+          path: .lighthouseci/
+          retention-days: 14

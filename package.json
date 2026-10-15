@@ -17,7 +17,8 @@
     "preview": "vite preview",
     "deploy": "npm run build && wrangler deploy",
     "cf-typegen": "wrangler types",
-    "icons": "node scripts/generate-icons.mjs"
+    "icons": "node scripts/generate-icons.mjs",
+    "db:migrate": "node scripts/d1-migrate.mjs"
   },
   "dependencies": {
     "@fontsource-variable/fira-code": "^5.3.0",
@@ -38,6 +39,8 @@
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.64.0",
+    "@commitlint/cli": "^21.2.3",
+    "@commitlint/config-conventional": "^21.2.3",
     "@eslint/js": "^10",
     "@feature-sliced/steiger-plugin": "^0.8.0",
     "@playwright/test": "^1.64.1",
