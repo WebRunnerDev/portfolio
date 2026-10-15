@@ -13,3 +13,4 @@ test-results/
 
 # Generated from DESIGN.md by zero-slop-design export
 src/styles/tokens.css
+worker-configuration.d.ts
