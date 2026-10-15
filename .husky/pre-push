@@ -1,0 +1,4 @@
+# Steiger checks the whole of src/, so it runs here rather than in lint-staged.
+npx steiger ./src
+npm run typecheck
+npm test
