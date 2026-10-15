@@ -22,5 +22,5 @@ One-time setup (owner):
 
 1. `webrunner.dev` must be a zone in the same Cloudflare account; the `custom_domain` route creates the DNS record and certificate on deploy.
 2. Create an API token from the "Edit Cloudflare Workers" template, scoped to this account and the `webrunner.dev` zone. If the first CI deploy can't attach the custom domain, add Zone → DNS → Edit, or run the first deploy locally (`npx wrangler login`, `npm run deploy`).
-3. In GitHub, add repository secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` (Settings → Secrets and variables → Actions). The deploy job uses the `production` environment, which GitHub creates on first run; add protection rules there if wanted.
+3. In GitHub, add secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` (Settings → Secrets and variables → Actions). The deploy job runs in the `Cloudflare` environment; put the secrets there (or at repository level) and add protection rules if wanted.
 4. After the deploy, check `https://webrunner.dev/en/cv` and `https://webrunner.dev/api/health`.

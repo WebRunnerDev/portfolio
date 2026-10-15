@@ -43,7 +43,7 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment:
-      name: production
+      name: Cloudflare
       url: https://webrunner.dev
     concurrency:
       group: deploy-production
