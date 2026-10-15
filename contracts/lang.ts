@@ -8,6 +8,15 @@ export const DEFAULT_LANG: Lang = "en"
 // Remembers a manual choice from the Lang switcher.
 export const LANG_COOKIE = "lang"
 
+// Writing direction of a Lang (CONTEXT.md › Direction).
+export type Direction = "ltr" | "rtl"
+
+const RTL_LANGS: readonly Lang[] = ["ar"]
+
+export function langDirection(lang: Lang): Direction {
+  return RTL_LANGS.includes(lang) ? "rtl" : "ltr"
+}
+
 export function isLang(value: unknown): value is Lang {
   return LANGS.includes(value as Lang)
 }
