@@ -12,14 +12,25 @@ Code shared with the frontend (Lang list, API schemas and types) lives in `contr
 - `npm run dev` — Vite + the Worker in workerd (`@cloudflare/vite-plugin`), one process.
 - `npm run preview` — the production build, served the same way.
 - `npm run deploy` — build, then `wrangler deploy` (uses the config generated in `dist/`). Normally Workers Builds runs it.
+- `npm run db:migrate` — apply D1 migrations to the remote database (see Deploy).
 - `npm run cf-typegen` — regenerate `worker-configuration.d.ts` after changing `wrangler.jsonc`. CI fails if it is stale.
 
 ## Deploy
 
-Workers Builds (Cloudflare Git integration) builds and deploys every push to `main`; other branches get preview versions. GitHub Actions (`.github/workflows/ci.yml`) only runs checks: lint, typecheck, unit and e2e tests on every PR and push to `main`. Branch protection on `main` requires the `check` job, so only green code reaches production.
+Workers Builds (Cloudflare Git integration) builds and deploys every push to `main`; other branches get a Preview (`wrangler preview`) at `https://<branch>-webrunner.zhasulan-abdigaliev.workers.dev` (`preview_urls` in `wrangler.jsonc`), and the Cloudflare bot links it in a PR comment. Preview URLs send `X-Robots-Tag: noindex`.
+
+GitHub Actions never deploys:
+
+- `.github/workflows/ci.yml`, on every PR and push to `main`: `check` (lint, typecheck, `wrangler types --check`, Prettier, Vitest, Playwright), `gitleaks` (secrets in the pushed commits) and, on PRs, `commitlint` (Conventional Commits; config in `commitlint.config.js`). The `main` ruleset requires `check` and `gitleaks`, so only green code reaches production.
+- `.github/workflows/lighthouse.yml`, on PRs: waits for the `Workers Builds: webrunner` check, then runs Lighthouse CI (mobile, `lighthouserc.json`) on `/en` and `/en/cv` of the Preview. Warning only: budgets (categories ≥ 90, LCP < 2.5 s, initial JS ≤ 150 KB) show up as ⚠️ in the job summary, reports are in the `lighthouse` artifact.
+
+D1 migrations: `npm run db:migrate` applies `migrations/*.sql` to the remote `DB` database and skips when there are none, so the production deploy command already runs it. Previews never migrate; in stage 2 bind them to a separate D1 in the `previews` block.
+
+Cloudflare Web Analytics: the beacon is added to `index.html` at build time when `CF_WEB_ANALYTICS_TOKEN` is set (`vite.config.ts`). Only Workers Builds sets it, so dev, CI and e2e builds have no beacon; Preview traffic is reported too, filter by host in the dashboard.
 
 One-time setup (owner):
 
 1. `webrunner.dev` must be a zone in the same Cloudflare account; the `custom_domain` route creates the DNS record and certificate on deploy.
-2. Dashboard → Workers & Pages → Create → Import a repository → `WebRunnerDev/portfolio`. Worker name `webrunner` (must match `name` in `wrangler.jsonc`), production branch `main`, build command `npm run build`, deploy command `npx wrangler deploy`, build variable `NODE_VERSION=24`.
-3. After the deploy, check `https://webrunner.dev/en/cv` and `https://webrunner.dev/api/health`.
+2. Dashboard → Workers & Pages → Create → Import a repository → `WebRunnerDev/portfolio`. Worker name `webrunner` (must match `name` in `wrangler.jsonc`), production branch `main`, build command `npm run build`, deploy command `npm run db:migrate && npx wrangler deploy`, non-production branch deploy command `npx wrangler preview`, build variable `NODE_VERSION=24`.
+3. Dashboard → Web Analytics → Add a site → `webrunner.dev`, manual JS snippet setup. Put the token from the snippet into the Worker's build variable `CF_WEB_ANALYTICS_TOKEN`.
+4. After the deploy, check `https://webrunner.dev/en/cv` and `https://webrunner.dev/api/health`.
