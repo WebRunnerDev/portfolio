@@ -15,4 +15,7 @@
   "routes": [{ "pattern": "webrunner.dev", "custom_domain": true }],
   "workers_dev": false,
   "observability": { "enabled": true },
+  // Workers Builds runs `wrangler preview` for non-main branches, which needs
+  // this block. Empty: previews inherit everything above.
+  "previews": {},
 }
