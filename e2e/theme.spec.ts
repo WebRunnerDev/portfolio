@@ -36,8 +36,8 @@ test("switcher works from the keyboard and persists", async ({ page }) => {
   await expect(group).toBeVisible()
   await group.getByRole("radio", { name: "System" }).focus()
 
-  // Roving focus: arrows move focus, Space checks.
-  await page.keyboard.press("ArrowLeft")
+  // Roving focus: arrows move focus, Space checks. Radix moves focus a tick
+  // after the key, so wait for it before the next one.
   await page.keyboard.press("ArrowLeft")
   const dark = group.getByRole("radio", { name: "Dark" })
   await expect(dark).toBeFocused()
