@@ -4,6 +4,7 @@ import * as v from "valibot"
 // (worker/README.md › API).
 export const API_ERROR_CODES = [
   "invalid_request",
+  "unauthorized",
   "not_found",
   "method_not_allowed",
   "internal_error",

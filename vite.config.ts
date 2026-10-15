@@ -75,6 +75,10 @@ export default defineConfig({
             miniflare: {
               bindings: {
                 TEST_MIGRATIONS: await readD1Migrations("./migrations"),
+                // A test Access application; worker/api/access.test.ts serves
+                // its keys.
+                ACCESS_TEAM_DOMAIN: "test.cloudflareaccess.com",
+                ACCESS_AUD: "test-aud",
               },
             },
           })),
