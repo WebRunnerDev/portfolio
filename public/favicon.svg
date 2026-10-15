@@ -1,0 +1,13 @@
+<svg width="32" height="32" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+<style>
+  path { fill: #0F172A; }
+  @media (prefers-color-scheme: dark) { path { fill: #E0E0E0; } }
+</style>
+<path d="M5.5 5L7 6.5L5.5 8L4 6.5L5.5 5Z"/>
+<path d="M4.5 2L6 3.5L4.5 5L3 3.5L4.5 2Z"/>
+<path d="M2.5 0L4 1.5L2.5 3L1 1.5L2.5 0Z"/>
+<path d="M1.5 3L3 4.5L1.5 6L0 4.5L1.5 3Z"/>
+<path d="M7.5 1L9 2.5L7.5 4L6 2.5L7.5 1Z"/>
+<path d="M3.5 7L5 8.5L3.5 10L2 8.5L3.5 7Z"/>
+<path d="M8.5 6L10 7.5L8.5 9L7 7.5L8.5 6Z"/>
+</svg>
