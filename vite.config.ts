@@ -1,5 +1,6 @@
 /// <reference types="vitest/config" />
 import { resolve } from "node:path"
+import { cloudflare } from "@cloudflare/vite-plugin"
 import tailwindcss from "@tailwindcss/vite"
 import { tanstackRouter } from "@tanstack/router-plugin/vite"
 import react from "@vitejs/plugin-react"
@@ -16,6 +17,8 @@ export default defineConfig({
     }),
     react(),
     tailwindcss(),
+    // Runs worker/ in workerd for `dev` and `preview`; unit tests don't need it.
+    !process.env.VITEST && cloudflare(),
   ],
   resolve: {
     alias: {

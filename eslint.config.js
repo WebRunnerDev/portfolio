@@ -39,6 +39,7 @@ export default defineConfig([
     "playwright-report",
     "test-results",
     "src/app/routeTree.gen.ts",
+    "worker-configuration.d.ts",
   ]),
   {
     files: ["**/*.{ts,tsx}"],
