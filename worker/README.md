@@ -5,7 +5,37 @@ Cloudflare Worker (ADR-0001): serves the SPA through Workers Static Assets and o
 Code shared with the frontend (Lang list, API schemas and types) lives in `contracts/`, imported as `@contracts/*` (mapped in `tsconfig.worker.json`); never import from `src/`.
 
 - Static assets are served without invoking the Worker; unknown paths fall back to `index.html` (`not_found_handling: "single-page-application"`), so deep links like `/en/cv` work.
-- Only `/api/*` runs the Worker first. `GET /api/health` → `{"status":"ok"}`; any other `/api/*` → JSON 404.
+- Only `/api/*` runs the Worker first; it goes to the API below. `GET /api/health` → `{"status":"ok"}`.
+
+## API
+
+`/api/*` is routed with [Hono](https://hono.dev): typed routes, and middleware for errors now and for the Access check later (ADR-0004). Request and response schemas are [Valibot](https://valibot.dev) in `contracts/api/` (smaller bundle than Zod, tree-shaken per function); the frontend and the Worker both import them and get the types with `v.InferOutput`.
+
+- `worker/index.ts` hands `/api/*` to `api` (`worker/api/index.ts`), everything else to `ASSETS`.
+- `worker/api/app.ts` — `createApp()`: a Hono app with the error handling below.
+- `worker/api/routes/<name>.ts` — one module per endpoint.
+
+**Errors** are always `{ "error": "<code>" }` with the matching status; the codes are `API_ERROR_CODES` in `contracts/api/errors.ts`.
+
+| Status | Code | When |
+| --- | --- | --- |
+| 400 | `invalid_request` | The input doesn't match the schema, or the JSON is malformed |
+| 404 | `not_found` | No route for the path |
+| 405 | `method_not_allowed` | The path exists, the method doesn't (`Allow` header lists the methods) |
+| 500 | `internal_error` | Unhandled exception; it goes to Workers Logs, the client gets no details |
+
+**New endpoint:**
+
+1. Schemas in `contracts/api/<name>.ts`.
+2. `worker/api/routes/<name>.ts`: a `new Hono<ApiEnv>()` with the handlers, input through `sValidator(target, Schema, rejectInvalid)` (`@hono/standard-validator`), output typed with `satisfies <Response type>`, ending with `.all(path, methodNotAllowed("GET, HEAD"))`.
+3. Mount it in `worker/api/index.ts`: `.route("/<name>", <name>)`.
+4. Tests next to it (`worker/**/*.test.ts`).
+
+## Tests
+
+`npm test` runs two Vitest projects (`vite.config.ts`): `unit` in Node and `worker`, which runs `worker/**/*.test.ts` in workerd through `@cloudflare/vitest-plugin` with the bindings from `wrangler.jsonc`. D1 is local and every test file starts with the schema from `migrations/` (`worker/test/apply-migrations.ts`). Call the Worker with `exports.default.fetch()` from `cloudflare:workers`, bindings are `env` from the same module. `npx vitest --project worker` runs only these.
+
+`fsModuleCache` is off for the `worker` project: with Vitest 5 on Windows the cached modules come as OS paths that workerd can't read.
 
 ## Commands
 

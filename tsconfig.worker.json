@@ -5,7 +5,7 @@
     "lib": ["ES2023"],
     "module": "esnext",
     "moduleResolution": "bundler",
-    "types": [],
+    "types": ["@cloudflare/vitest-plugin/types"],
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
