@@ -25,3 +25,11 @@ Frontend `src/` follows FSD 2.1 ([ADR-0009](../adr/0009-feature-sliced-design.md
 - **Portals** (menu, popover, tooltip, dialog) render under `<body>` and inherit `<html dir>`. Don't put `dir` on page wrappers and expect portals to follow.
 - **Never mirrored:** logo, hero, player, code blocks. Put `dir="ltr"` on their wrapper element (an `<svg>` can't take `dir`).
 - **Direction icons** (arrows, chevrons pointing along the reading direction) get `rtl:rotate-180`.
+
+## Theme
+
+`ThemeProvider` (`src/app/providers/`) puts `light` or `dark` on `<html>`; the inline script in `index.html` does it first, before paint. Both read the `theme` key in `localStorage` — change it in `src/shared/lib/theme/theme-storage.ts` and `index.html` together.
+
+- **Colors** only through tokens (`zsd-*`, shadcn semantic classes). They switch with the `.dark` class; no hex in components.
+- **Storage** through `readTheme` / `writeTheme`: they survive blocked `localStorage`.
+- **Switcher:** `ThemeSwitcher` from `@/features/theme-switcher`.
