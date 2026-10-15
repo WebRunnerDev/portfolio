@@ -39,6 +39,8 @@
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.64.0",
+    "@commitlint/cli": "^21.2.3",
+    "@commitlint/config-conventional": "^21.2.3",
     "@eslint/js": "^10",
     "@feature-sliced/steiger-plugin": "^0.8.0",
     "@playwright/test": "^1.64.1",

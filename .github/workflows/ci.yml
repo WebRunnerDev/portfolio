@@ -1,5 +1,9 @@
 name: CI
 
+# Deploys are not here: Workers Builds (Cloudflare Git integration) deploys
+# `main` to production and every other branch to a Preview. See worker/README.md.
+# Git hooks can be skipped with --no-verify, so these jobs are the real gate.
+
 on:
   pull_request:
   push:
@@ -16,7 +20,7 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: actions/setup-node@v5
         with:
           node-version: 24
@@ -36,3 +40,36 @@ jobs:
           name: playwright-report
           path: test-results/
           retention-days: 7
+
+  gitleaks:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Comments on the PR lines that leak a secret.
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      # Scans the commits of the PR, or of the push to main.
+      - uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  commitlint:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # Every commit of the PR; merge commits are ignored.
+      - run: >-
+          npx commitlint --verbose
+          --from ${{ github.event.pull_request.base.sha }}
+          --to ${{ github.event.pull_request.head.sha }}
