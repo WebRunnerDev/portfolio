@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { pickLang, withLang } from "./lang"
+import { LANGS, langDirection, pickLang, withLang } from "./lang"
 
 describe("pickLang", () => {
   it("prefers the cookie over Accept-Language", () => {
@@ -58,5 +58,12 @@ describe("withLang", () => {
   it("prepends a Lang to a path without one", () => {
     expect(withLang("/design", "en")).toBe("/en/design")
     expect(withLang("/", "en")).toBe("/en")
+  })
+})
+
+describe("langDirection", () => {
+  it("is rtl for ar only", () => {
+    expect(LANGS.filter((l) => langDirection(l) === "rtl")).toEqual(["ar"])
+    expect(langDirection("en")).toBe("ltr")
   })
 })

@@ -1,6 +1,8 @@
 // Source of truth for UI keys: every other Lang must define exactly these.
 export const en = {
   "home.tagline": "Portfolio is on its way.",
+  "header.menu": "Menu",
+  "header.design": "Design system",
   "langSwitcher.label": "Language",
 }
 

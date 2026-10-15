@@ -2,8 +2,9 @@ import { useEffect, useState, type ComponentProps, type ReactNode } from "react"
 import { getRouteApi } from "@tanstack/react-router"
 import { CircleAlert, CircleCheck, ExternalLink, Loader2 } from "lucide-react"
 
-import { LANGS } from "@contracts/lang"
+import { LANGS, langDirection } from "@contracts/lang"
 import { LangSwitcher } from "@/features/lang-switcher"
+import { useDirection } from "@/shared/lib/direction"
 import { cn } from "@/shared/lib/utils"
 import { useTheme } from "@/shared/lib/theme"
 import { Button } from "@/shared/ui/kit"
@@ -100,7 +101,7 @@ const MOTION_FAST =
 
 export function DesignPage() {
   const { lang } = route.useParams()
-  const dir = lang === "ar" ? "rtl" : "ltr"
+  const { dir } = useDirection()
 
   return (
     <div lang={lang} dir={dir} className="min-h-svh">
@@ -392,7 +393,7 @@ function TypographySection() {
             <li
               key={l}
               lang={l}
-              dir={l === "ar" ? "rtl" : "ltr"}
+              dir={langDirection(l)}
               className="border border-border bg-card p-zsd-lg"
             >
               <span className="font-zsd-label-mono text-zsd-label-mono text-zsd-on-surface-muted uppercase">
