@@ -4,9 +4,9 @@ import { CircleAlert, CircleCheck, ExternalLink, Loader2 } from "lucide-react"
 
 import { LANGS, langDirection } from "@contracts/lang"
 import { LangSwitcher } from "@/features/lang-switcher"
+import { ThemeSwitcher } from "@/features/theme-switcher"
 import { useDirection } from "@/shared/lib/direction"
 import { cn } from "@/shared/lib/utils"
-import { useTheme } from "@/shared/lib/theme"
 import { Button } from "@/shared/ui/kit"
 import { Logo, LOGO_TILES } from "@/shared/ui/logo"
 
@@ -141,8 +141,6 @@ export function DesignPage() {
 }
 
 function Header() {
-  const { theme, setTheme } = useTheme()
-
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-card">
       <div className="mx-auto flex h-(--zsd-x-zsd-layout-header-height) max-w-(--zsd-x-zsd-layout-content-max) items-center gap-zsd-lg px-zsd-lg md:px-zsd-xxl">
@@ -152,30 +150,7 @@ function Header() {
         </span>
         <BreakpointBadge />
         <LangSwitcher className="ms-auto overflow-x-auto" />
-        <div
-          role="group"
-          aria-label="Mode"
-          className="flex border border-zsd-outline"
-        >
-          {(["light", "dark", "system"] as const).map((t) => (
-            <button
-              key={t}
-              type="button"
-              aria-pressed={theme === t}
-              onClick={() => setTheme(t)}
-              className={cn(
-                "h-9 px-zsd-sm text-zsd-body-sm capitalize",
-                FOCUS_RING,
-                MOTION_FAST,
-                theme === t
-                  ? "bg-zsd-on-surface text-zsd-surface"
-                  : "text-zsd-on-surface-muted hover:text-zsd-on-surface"
-              )}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
+        <ThemeSwitcher className="shrink-0" />
       </div>
     </header>
   )

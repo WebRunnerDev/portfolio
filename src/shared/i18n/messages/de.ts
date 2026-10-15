@@ -5,4 +5,8 @@ export const de: Messages = {
   "header.menu": "Menü",
   "header.design": "Designsystem",
   "langSwitcher.label": "Sprache",
+  "themeSwitcher.label": "Farbschema",
+  "themeSwitcher.light": "Hell",
+  "themeSwitcher.dark": "Dunkel",
+  "themeSwitcher.system": "System",
 }

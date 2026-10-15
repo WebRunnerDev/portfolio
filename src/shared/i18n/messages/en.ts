@@ -4,6 +4,10 @@ export const en = {
   "header.menu": "Menu",
   "header.design": "Design system",
   "langSwitcher.label": "Language",
+  "themeSwitcher.label": "Theme",
+  "themeSwitcher.light": "Light",
+  "themeSwitcher.dark": "Dark",
+  "themeSwitcher.system": "System",
 }
 
 export type MessageKey = keyof typeof en
