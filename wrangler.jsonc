@@ -14,6 +14,10 @@
   },
   "routes": [{ "pattern": "webrunner.dev", "custom_domain": true }],
   "workers_dev": false,
+  // Previews still get <branch>-webrunner.<subdomain>.workers.dev URLs (with
+  // `X-Robots-Tag: noindex`); Lighthouse CI runs against them. Applied by the
+  // production `wrangler deploy`.
+  "preview_urls": true,
   "observability": { "enabled": true },
   // Workers Builds runs `wrangler preview` for non-main branches, which needs
   // this block. Empty: previews inherit everything above.
