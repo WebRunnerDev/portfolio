@@ -91,6 +91,59 @@
   --sidebar-ring: var(--zsd-x-zsd-accessibility-focus-color);
 }
 
+/* DESIGN.md › Shapes: cut the top end corner at 45°. Mirrors under dir="rtl".
+ * Never put these on the element that carries the focus outline — clip-path hides it. */
+@utility chamfer-sm {
+  --chamfer: var(--zsd-x-zsd-border-chamfer-sm);
+  clip-path: polygon(
+    0 0,
+    calc(100% - var(--chamfer)) 0,
+    100% var(--chamfer),
+    100% 100%,
+    0 100%
+  );
+  &:where([dir="rtl"], [dir="rtl"] *) {
+    clip-path: polygon(
+      var(--chamfer) 0,
+      100% 0,
+      100% 100%,
+      0 100%,
+      0 var(--chamfer)
+    );
+  }
+}
+
+@utility chamfer-md {
+  --chamfer: var(--zsd-x-zsd-border-chamfer-md);
+  clip-path: polygon(
+    0 0,
+    calc(100% - var(--chamfer)) 0,
+    100% var(--chamfer),
+    100% 100%,
+    0 100%
+  );
+  &:where([dir="rtl"], [dir="rtl"] *) {
+    clip-path: polygon(
+      var(--chamfer) 0,
+      100% 0,
+      100% 100%,
+      0 100%,
+      0 var(--chamfer)
+    );
+  }
+}
+
+/* DESIGN.md › Elevation & Depth: accent shadow, dark mode only.
+ * drop-shadow follows a clipped (chamfered) child, unlike box-shadow. */
+@utility elevation-accent {
+  .dark & {
+    filter: drop-shadow(
+      var(--zsd-x-zsd-elevation-shadow-accent)
+        color-mix(in srgb, var(--zsd-colors-primary-text) 40%, transparent)
+    );
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
