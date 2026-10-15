@@ -6,10 +6,11 @@ Code shared with the frontend (Lang list, API schemas and types) lives in `contr
 
 - Static assets are served without invoking the Worker; unknown paths fall back to `index.html` (`not_found_handling: "single-page-application"`), so deep links like `/en/cv` work.
 - Only `/api/*` runs the Worker first; it goes to the API below. `GET /api/health` → `{"status":"ok"}`.
+- `/api/admin/*` needs a Cloudflare Access sign-in (Admin access below). `GET /api/admin/me` → `{"email":"…"}` of the signed-in owner.
 
 ## API
 
-`/api/*` is routed with [Hono](https://hono.dev): typed routes, and middleware for errors now and for the Access check later (ADR-0004). Request and response schemas are [Valibot](https://valibot.dev) in `contracts/api/` (smaller bundle than Zod, tree-shaken per function); the frontend and the Worker both import them and get the types with `v.InferOutput`.
+`/api/*` is routed with [Hono](https://hono.dev): typed routes, and middleware for errors and for the Access check (ADR-0004). Request and response schemas are [Valibot](https://valibot.dev) in `contracts/api/` (smaller bundle than Zod, tree-shaken per function); the frontend and the Worker both import them and get the types with `v.InferOutput`.
 
 - `worker/index.ts` hands `/api/*` to `api` (`worker/api/index.ts`), everything else to `ASSETS`.
 - `worker/api/app.ts` — `createApp()`: a Hono app with the error handling below.
@@ -20,6 +21,7 @@ Code shared with the frontend (Lang list, API schemas and types) lives in `contr
 | Status | Code | When |
 | --- | --- | --- |
 | 400 | `invalid_request` | The input doesn't match the schema, or the JSON is malformed |
+| 401 | `unauthorized` | `/api/admin/*` without a valid Access JWT (Admin access below) |
 | 404 | `not_found` | No route for the path |
 | 405 | `method_not_allowed` | The path exists, the method doesn't (`Allow` header lists the methods) |
 | 500 | `internal_error` | Unhandled exception; it goes to Workers Logs, the client gets no details |
@@ -28,7 +30,7 @@ Code shared with the frontend (Lang list, API schemas and types) lives in `contr
 
 1. Schemas in `contracts/api/<name>.ts`.
 2. `worker/api/routes/<name>.ts`: a `new Hono<ApiEnv>()` with the handlers, input through `sValidator(target, Schema, rejectInvalid)` (`@hono/standard-validator`), output typed with `satisfies <Response type>`, ending with `.all(path, methodNotAllowed("GET, HEAD"))`.
-3. Mount it in `worker/api/index.ts`: `.route("/<name>", <name>)`.
+3. Mount it in `worker/api/index.ts`: `.route("/<name>", <name>)`. An admin endpoint is a `new Hono<AdminEnv>()` mounted on `admin` there instead, behind the Access check; the email is `c.var.email`.
 4. Tests next to it (`worker/**/*.test.ts`).
 
 ## Tests
@@ -37,6 +39,26 @@ Code shared with the frontend (Lang list, API schemas and types) lives in `contr
 
 `fsModuleCache` is off for the `worker` project: with Vitest 5 on Windows the cached modules come as OS paths that workerd can't read.
 
+## Admin access
+
+ADR-0004: Cloudflare Access guards `/admin*` (the SPA route, before any asset is served) and `/api/admin/*`. On top of that, `requireAccess` (`worker/api/access.ts`) checks every `/api/admin/*` request, unknown paths included:
+
+- The `Cf-Access-Jwt-Assertion` header must hold a JWT signed by a key of the Access team (`https://<ACCESS_TEAM_DOMAIN>/cdn-cgi/access/certs`, cached in memory and refetched on key rotation), with `aud` = `ACCESS_AUD`, `iss` = `https://<ACCESS_TEAM_DOMAIN>` and not expired. Otherwise 401 `unauthorized`.
+- `ACCESS_TEAM_DOMAIN` and `ACCESS_AUD` are `vars` in `wrangler.jsonc`. While either is empty, `/api/admin/*` answers 500 and logs why.
+- Tests (`worker/api/access.test.ts`) sign tokens with their own key and serve it in place of the team's key set.
+
+**Local dev:** there is no Access in front of `npm run dev`, so copy `.dev.vars.example` to `.dev.vars` and set `ACCESS_DEV_EMAIL`. Requests then pass as that email, but only when the host is `localhost`, `127.0.0.1` or `[::1]`: the same variable set in production or a Preview opens nothing, and the tests check both. `.dev.vars` is gitignored, and `cf-typegen` reads `.dev.vars.example` instead of it, so a local `.dev.vars` doesn't change `worker-configuration.d.ts`.
+
+**Previews** have no Access in front of them, so `/api/admin/*` answers 401 there: the admin works only on `webrunner.dev` and locally. To try it on a Preview later, turn on Access for Preview URLs (Worker → Settings → Domains & Routes) and give Previews that application's AUD through a `vars` block in `previews`.
+
+One-time setup (owner, Zero Trust dashboard):
+
+1. Settings → Authentication → Login methods → add **GitHub** (a GitHub OAuth app with callback `https://<team>.cloudflareaccess.com/cdn-cgi/access/callback`). The team domain is in Settings → Custom pages.
+2. Access → Applications → Add an application → Self-hosted. Destinations: `webrunner.dev` with path `admin*` and `webrunner.dev` with path `api/admin/*`. Login methods: only GitHub, with instant auth.
+3. Policy: Allow, Include → Emails → the owner's email. Nobody else.
+4. Copy the application's **Application Audience (AUD) Tag** into `ACCESS_AUD` and `<team>.cloudflareaccess.com` into `ACCESS_TEAM_DOMAIN` in `wrangler.jsonc`, run `npm run cf-typegen`, commit and merge.
+5. Check in a private window: `https://webrunner.dev/admin` leads to the Access login; after it, `https://webrunner.dev/api/admin/me` shows the owner's email.
+
 ## Commands
 
 - `npm run dev` — Vite + the Worker in workerd (`@cloudflare/vite-plugin`), one process.
@@ -44,7 +66,7 @@ Code shared with the frontend (Lang list, API schemas and types) lives in `contr
 - `npm run deploy` — build, then `wrangler deploy` (uses the config generated in `dist/`). Normally Workers Builds runs it.
 - `npm run db:migrate` — apply D1 migrations to the production database (see D1).
 - `npm run db:migrate:preview` — the same for the Preview database.
-- `npm run cf-typegen` — regenerate `worker-configuration.d.ts` after changing `wrangler.jsonc`. CI fails if it is stale.
+- `npm run cf-typegen` — regenerate `worker-configuration.d.ts` after changing `wrangler.jsonc` (reads `.dev.vars.example`, not your `.dev.vars`). CI fails if it is stale.
 
 ## Deploy
 
