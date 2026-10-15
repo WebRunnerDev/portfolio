@@ -7,7 +7,6 @@ export const SECTIONS = [
   { to: "/$lang/projects", label: "nav.projects" },
   { to: "/$lang/gallery", label: "nav.gallery" },
   { to: "/$lang/blog", label: "nav.blog" },
-  { to: "/$lang/contacts", label: "nav.contacts" },
 ] as const satisfies readonly { to: string; label: MessageKey }[]
 
 export type Section = (typeof SECTIONS)[number]

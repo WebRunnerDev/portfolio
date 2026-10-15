@@ -13,7 +13,6 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as LangRouteRouteImport } from './routes/$lang/route'
 import { Route as LangIndexRouteImport } from './routes/$lang/index'
 import { Route as LangBlogRouteImport } from './routes/$lang/blog'
-import { Route as LangContactsRouteImport } from './routes/$lang/contacts'
 import { Route as LangCvRouteImport } from './routes/$lang/cv'
 import { Route as LangDesignRouteImport } from './routes/$lang/design'
 import { Route as LangGalleryRouteImport } from './routes/$lang/gallery'
@@ -37,11 +36,6 @@ const LangIndexRoute = LangIndexRouteImport.update({
 const LangBlogRoute = LangBlogRouteImport.update({
   id: '/blog',
   path: '/blog',
-  getParentRoute: () => LangRouteRoute,
-} as any)
-const LangContactsRoute = LangContactsRouteImport.update({
-  id: '/contacts',
-  path: '/contacts',
   getParentRoute: () => LangRouteRoute,
 } as any)
 const LangCvRoute = LangCvRouteImport.update({
@@ -69,7 +63,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$lang': typeof LangRouteRouteWithChildren
   '/$lang/blog': typeof LangBlogRoute
-  '/$lang/contacts': typeof LangContactsRoute
   '/$lang/cv': typeof LangCvRoute
   '/$lang/design': typeof LangDesignRoute
   '/$lang/gallery': typeof LangGalleryRoute
@@ -79,7 +72,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$lang/blog': typeof LangBlogRoute
-  '/$lang/contacts': typeof LangContactsRoute
   '/$lang/cv': typeof LangCvRoute
   '/$lang/design': typeof LangDesignRoute
   '/$lang/gallery': typeof LangGalleryRoute
@@ -91,7 +83,6 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/$lang': typeof LangRouteRouteWithChildren
   '/$lang/blog': typeof LangBlogRoute
-  '/$lang/contacts': typeof LangContactsRoute
   '/$lang/cv': typeof LangCvRoute
   '/$lang/design': typeof LangDesignRoute
   '/$lang/gallery': typeof LangGalleryRoute
@@ -104,7 +95,6 @@ export interface FileRouteTypes {
     | '/'
     | '/$lang'
     | '/$lang/blog'
-    | '/$lang/contacts'
     | '/$lang/cv'
     | '/$lang/design'
     | '/$lang/gallery'
@@ -114,7 +104,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/$lang/blog'
-    | '/$lang/contacts'
     | '/$lang/cv'
     | '/$lang/design'
     | '/$lang/gallery'
@@ -125,7 +114,6 @@ export interface FileRouteTypes {
     | '/'
     | '/$lang'
     | '/$lang/blog'
-    | '/$lang/contacts'
     | '/$lang/cv'
     | '/$lang/design'
     | '/$lang/gallery'
@@ -168,13 +156,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LangBlogRouteImport
       parentRoute: typeof LangRouteRoute
     }
-    '/$lang/contacts': {
-      id: '/$lang/contacts'
-      path: '/contacts'
-      fullPath: '/$lang/contacts'
-      preLoaderRoute: typeof LangContactsRouteImport
-      parentRoute: typeof LangRouteRoute
-    }
     '/$lang/cv': {
       id: '/$lang/cv'
       path: '/cv'
@@ -208,7 +189,6 @@ declare module '@tanstack/react-router' {
 
 interface LangRouteRouteChildren {
   LangBlogRoute: typeof LangBlogRoute
-  LangContactsRoute: typeof LangContactsRoute
   LangCvRoute: typeof LangCvRoute
   LangDesignRoute: typeof LangDesignRoute
   LangGalleryRoute: typeof LangGalleryRoute
@@ -218,7 +198,6 @@ interface LangRouteRouteChildren {
 
 const LangRouteRouteChildren: LangRouteRouteChildren = {
   LangBlogRoute: LangBlogRoute,
-  LangContactsRoute: LangContactsRoute,
   LangCvRoute: LangCvRoute,
   LangDesignRoute: LangDesignRoute,
   LangGalleryRoute: LangGalleryRoute,

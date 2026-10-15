@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test"
 
 // Issue #8: header, full-screen menu, footer, stub pages, 404.
 const LANGS = ["en", "ru", "kk", "es", "de", "ar"]
-const PAGES = ["", "/cv", "/projects", "/gallery", "/blog", "/contacts"]
+const PAGES = ["", "/cv", "/projects", "/gallery", "/blog"]
 
 const horizontalOverflow = (page: Page) =>
   page
@@ -107,7 +107,7 @@ test.describe("at 360px", () => {
   })
 
   test("the menu holds the Lang and mode controls", async ({ page }) => {
-    await page.goto("/kk/contacts")
+    await page.goto("/kk/blog")
     const banner = page.getByRole("banner")
     await expect(banner.getByRole("radiogroup")).toBeHidden()
     await banner.getByRole("button", { name: "Мәзір" }).click()
@@ -117,7 +117,7 @@ test.describe("at 360px", () => {
       menu.getByRole("radiogroup", { name: "Тақырып" })
     ).toBeVisible()
     await menu.getByRole("link", { name: "Deutsch" }).click()
-    await expect(page).toHaveURL(/\/de\/contacts$/)
+    await expect(page).toHaveURL(/\/de\/blog$/)
     const overflow = await horizontalOverflow(page)
     expect(overflow).toBeLessThanOrEqual(0)
   })
