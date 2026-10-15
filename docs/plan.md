@@ -16,13 +16,14 @@ webrunner.dev ── Worker ─┬─ static assets (SPA)
 
 ## Сквозные требования
 
-- **Языки:** `en` (fallback), `ru`, `kk`, `es`, `de`. URL с префиксом языка; `/` → редирект по `Accept-Language`; выбор — в cookie; hreflang.
+- **Языки:** `en` (fallback), `ru`, `kk`, `es`, `de`, `ar` (MSA). URL с префиксом языка; `/` → редирект по `Accept-Language`; выбор — в cookie; hreflang.
+- **RTL ([ADR-0007](adr/0007-rtl-from-day-one.md)):** с первого дня. `<html dir>` + Radix `DirectionProvider` из одного состояния Lang; только логические Tailwind-классы (линтер `enforce-logical-properties`); `x`/свайпы в Motion инвертируются через хук направления. Не зеркалятся: лого, hero, плеер, блоки кода. Цифры в `ar` — западные (`ar-u-nu-latn`).
 - **Темы:** системная по умолчанию + переключатель; без мигания (тема ставится инлайн-скриптом до рендера).
 - **Анимации:** Motion + View Transitions; всё уважает `prefers-reduced-motion`.
 - **Перф-бюджет:** Lighthouse mobile ≥ 90 (все категории), initial JS ≤ 150 KB gzip без hero-эффекта, LCP < 2.5 с на 4G.
 - **Доступность:** клавиатура везде, видимый фокус, контраст AA.
-- **Шрифты:** обязательна казахская кириллица и латиница с диакритикой.
-- **Личные данные:** исходники CV в `docs/private/` (gitignored); телефон публично не показывать (⏳ Q30).
+- **Шрифты:** обязательна казахская кириллица и латиница с диакритикой; для `ar` — отдельный арабский шрифт (кандидат Readex Pro), грузится только на `/ar/` через `unicode-range`.
+- **Личные данные:** исходники CV в `docs/private/` (gitignored); телефон нигде публично не показывается — ни на сайте, ни в PDF.
 
 ## Модель данных (D1, черновик)
 
@@ -36,8 +37,8 @@ webrunner.dev ── Worker ─┬─ static assets (SPA)
 | `education` + `_translation` | вуз, степень, даты, GPA, диплом |
 | `certification` | название, издатель, дата, ссылка на credential |
 | `language_skill` + `_translation` | язык, уровень |
-| `technology` | имя, группа (Front-End / Back-End & Cloud / QA & Testing / Tools & Design), иконка (⏳ Q32) |
-| `project` + `_translation` | slug, статус, обложка, ссылки GitHub/демо, `featured`, `in_cv`, описание, `cv_bullets`, `case_study` (Markdown, опц.) (⏳ Q31) |
+| `technology` | имя, группа (Front-End / Back-End & Cloud / QA & Testing / Tools & Design), иконка |
+| `project` + `_translation` | slug, статус, обложка, ссылки GitHub/демо, `featured`, `in_cv`, описание, `cv_bullets`, `case_study` (Markdown, опц.) |
 | `project_technology`, `experience_technology` | связи со справочником |
 | `post` + `post_translation` | slug, статус (draft/published), даты, обложка; заголовок, excerpt, body (Markdown), время чтения |
 | `tag`, `post_tag` | теги постов |
@@ -50,17 +51,18 @@ webrunner.dev ── Worker ─┬─ static assets (SPA)
 
 ### Этап 1 — Каркас и дизайн-основа
 **Задачи**
-1. Дизайн-бриф и `DESIGN.md`: `define-design` → `define-color-system` (палитра «графит + ржавчина» с исправлениями из Q27) → `define-typography` (шрифты с казахской кириллицей) → `define-interaction-states`, `define-responsive-layout`. Экспорт токенов в Tailwind (`export-design-tokens`).
+1. Дизайн-бриф и `DESIGN.md`: `define-design` → `define-color-system` (палитра «графит + ржавчина» с исправлениями из Q27) → `define-typography` (шрифты с казахской кириллицей) → `define-interaction-states`, `define-responsive-layout`. Экспорт токенов в Tailwind (`export-design-tokens`). Арабский шрифт подбирается здесь же.
 2. Лого: `fill` → `currentColor`; favicon / apple-touch-icon / OG-заглушка из лого.
-3. Проект: Vite + React + TS, TanStack Router (file-based), Tailwind, shadcn/ui, ESLint/Prettier.
+3. Проект: Vite + React + TS, TanStack Router (file-based), Tailwind, shadcn/ui в RTL-режиме (`shadcn create --template vite --rtl`, стиль `*-nova`), ESLint/Prettier + `eslint-plugin-better-tailwindcss` (`enforce-logical-properties`). Проверить, генерирует ли shadcn устаревшие в Tailwind 4.2 `start-*`/`end-*`.
 4. Worker со static assets (`wrangler.jsonc`), SPA-fallback, привязка к `webrunner.dev`.
-5. i18n: словари UI на 5 языков, `/$lang/...`-маршруты, редирект с `/`, cookie, hreflang, переключатель.
-6. Темы: инлайн-скрипт без мигания, переключатель.
-7. Лейаут: компактный хедер, полноэкранное меню (пока без «ромбовой» анимации), футер; страницы-заглушки: главная, CV, проекты, галерея, блог, контакты.
-8. Контакты (статичные данные пока).
-9. CI: GitHub Actions — lint, typecheck, Vitest, Playwright smoke; preview на PR, прод на `main`. CF Web Analytics.
+5. i18n: словари UI на 6 языков (`ar` — пока заглушка из EN), `/$lang/...`-маршруты, редирект с `/`, cookie, hreflang, переключатель.
+6. RTL: `dir` на `<html>` + `DirectionProvider` по Lang, хук `useDirection` для Motion, `dir` на portalled-контенте; smoke-тест: каркас на `/ar/` зеркален, лого и код — нет.
+7. Темы: инлайн-скрипт без мигания, переключатель.
+8. Лейаут: компактный хедер, полноэкранное меню (пока без «ромбовой» анимации), футер; страницы-заглушки: главная, CV, проекты, галерея, блог, контакты.
+9. Контакты (статичные данные пока).
+10. CI: GitHub Actions — lint, typecheck, Vitest, Playwright smoke; preview на PR, прод на `main`. CF Web Analytics.
 
-**Готово, когда:** webrunner.dev открывает каркас на 5 языках в обеих темах; навигация и переходы работают; CI зелёный и деплоит preview/прод.
+**Готово, когда:** webrunner.dev открывает каркас на 6 языках в обеих темах, `/ar/` корректно зеркален; навигация и переходы работают; CI зелёный и деплоит preview/прод.
 
 ### Этап 2 — Бэкенд и каркас админки
 **Задачи**
@@ -75,20 +77,20 @@ webrunner.dev ── Worker ─┬─ static assets (SPA)
 
 ### Этап 3 — CV и проекты
 **Задачи**
-1. Seed-скрипт из `docs/private/` (EN/RU) в D1 (⏳ Q34).
+1. Seed-скрипт из `docs/private/` в D1: предпочтительно LaTeX-исходник из Overleaf (`.tex`), иначе EN/RU PDF. Имя: RU/KK — «Жасулан Абдигалиев», EN/ES/DE — Zhasulan Abdigaliyev.
 2. Админка: профиль, разделы CV (порядок, `show_web`/`show_pdf`), опыт, образование, сертификаты, языки, справочник технологий, проекты.
 3. Веб-CV: дизайнерская версия.
 4. Печатная версия `/{lang}/cv/print`: A4, одна страница, print-CSS.
 5. Генерация PDF через Browser Rendering по кнопке → R2 → `/{lang}/cv.pdf`; кнопка «Скачать PDF» на веб-CV.
 6. Проекты: сетка карточек, бейдж статуса, страница `/projects/:slug` при наличии case study (Markdown).
 
-**Готово, когда:** CV на 5 языках (KK/ES/DE — хотя бы черновики) в вебе и PDF совпадают по содержанию; PDF выделяемый, со ссылками, на одной странице.
+**Готово, когда:** CV на 5 языках (KK/ES/DE — хотя бы черновики; AR — на этапе 6) в вебе и PDF совпадают по содержанию; PDF выделяемый, со ссылками, на одной странице.
 
 ### Этап 4 — Галерея
 **Задачи**
 1. Админка: альбомы, мультизагрузка фото, сортировка, подписи по языкам.
 2. Публичная часть: список альбомов, masonry, lazy-loading, адаптивные `srcset` через Images.
-3. Лайтбокс: полноэкранный, свайпы, клавиатура, предзагрузка соседних.
+3. Лайтбокс: полноэкранный, свайпы (инвертируются в RTL), клавиатура, предзагрузка соседних.
 
 **Готово, когда:** альбом из 50+ фото грузится быстро на мобиле (LCP в бюджете), лайтбокс доступен с клавиатуры.
 
@@ -111,13 +113,15 @@ webrunner.dev ── Worker ─┬─ static assets (SPA)
 4. Музыкальный плеер: треки из D1/R2, панель, запоминание громкости/трека, CSS-визуализатор; админка треков (с полем лицензии).
 5. Микроанимации кнопок/карточек/баннеров; View Transitions между страницами.
 6. Кнопка «Черновик перевода» в админке (Workers AI / Claude API).
-7. Аудит: Lighthouse CI (блокирующий), доступность, проверка на слабом устройстве.
+7. Арабский: черновой перевод UI, Profile и CV → разовая вычитка носителем (фриланс, ~1 ч), написание имени на арабском — от носителя; RTL-аудит всех страниц, CV PDF на `ar`, ручная проверка Calendar/Pagination/Sidebar и hero в RTL.
+8. Аудит: Lighthouse CI (блокирующий), доступность, проверка на слабом устройстве.
 
-**Готово, когда:** перф-бюджет соблюдён на всех страницах; при reduced-motion анимации отключены; плеер переживает переходы между страницами.
+**Готово, когда:** перф-бюджет соблюдён на всех страницах; `/ar/` полностью переведён (кроме постов — EN-fallback) и вычитан; при reduced-motion анимации отключены; плеер переживает переходы между страницами.
 
 ## Открытые вопросы
 
-- ⏳ Q30–Q34 (раунд 5 grilling-сессии): телефон, единая сущность проекта, справочник технологий, имя на 5 языках, seed.
+- Написание имени на арабском и вычитка `ar` (носитель, этап 6).
+- LaTeX-исходник CV из Overleaf для seed (желательно, этап 3).
 - Выбор конкретного hero-эффекта (заменяемый, решается на этапе 6).
 - Лицензии на музыку (пока Pixabay Music).
 - Какие пет-проекты показывать (сейчас: PlotOps, AITU AMS).
