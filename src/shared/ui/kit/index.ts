@@ -1,0 +1,3 @@
+// Public API of the shadcn kit. After `npx shadcn add <x>`, export it here —
+// kit.test.ts fails until you do.
+export { Button, buttonVariants } from "./button"

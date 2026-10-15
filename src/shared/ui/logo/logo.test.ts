@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import logoSvg from "../../public/logo.svg?raw"
-import faviconSvg from "../../public/favicon.svg?raw"
+import logoSvg from "../../../../public/logo.svg?raw"
+import faviconSvg from "../../../../public/favicon.svg?raw"
 import { LOGO_TILES } from "./logo"
 
 const pathData = (svg: string) =>

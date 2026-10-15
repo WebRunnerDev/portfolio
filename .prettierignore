@@ -6,7 +6,7 @@ package-lock.json
 pnpm-lock.yaml
 yarn.lock
 dist/
-src/routeTree.gen.ts
+src/app/routeTree.gen.ts
 playwright-report/
 test-results/
 *.md

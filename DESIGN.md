@@ -41,7 +41,7 @@ x-zsd:
   implementation:
     token-source: DESIGN.md
     component-sources:
-      - src/components/ui
+      - src/shared/ui/kit
     style-sources:
       - src/index.css
       - src/styles/tokens.css
@@ -277,7 +277,7 @@ The ar Lang uses a mirrored layout.
 ### Implementation
 
 Read the paths in `x-zsd.implementation` before UI changes.
-Change the tokens of the shadcn components in `src/components/ui`, not their markup.
+Change the tokens of the shadcn components in `src/shared/ui/kit`, not their markup.
 Record unresolved choices in `x-zsd.unresolved`.
 
 ## Colors

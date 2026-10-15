@@ -8,6 +8,15 @@
 @import "@fontsource-variable/readex-pro";
 @import "./styles/tokens.css";
 
+/* Media queries can't read var(), so the generated var() breakpoints break
+ * `.container` and `zsd-*:` variants. Same values as DESIGN.md breakpoints. */
+@theme {
+  --breakpoint-zsd-sm: 640px;
+  --breakpoint-zsd-md: 768px;
+  --breakpoint-zsd-lg: 1024px;
+  --breakpoint-zsd-xl: 1280px;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

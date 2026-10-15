@@ -8,16 +8,22 @@ import { defineConfig } from "vite"
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
-    tanstackRouter({ target: "react", autoCodeSplitting: true }),
+    tanstackRouter({
+      target: "react",
+      autoCodeSplitting: true,
+      routesDirectory: "./src/app/routes",
+      generatedRouteTree: "./src/app/routeTree.gen.ts",
+    }),
     react(),
     tailwindcss(),
   ],
   resolve: {
     alias: {
       "@": resolve(import.meta.dirname, "./src"),
+      "@contracts": resolve(import.meta.dirname, "./contracts"),
     },
   },
   test: {
-    include: ["src/**/*.test.{ts,tsx}"],
+    include: ["{src,contracts}/**/*.test.{ts,tsx}"],
   },
 })
