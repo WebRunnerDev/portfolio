@@ -10,3 +10,6 @@ src/routeTree.gen.ts
 playwright-report/
 test-results/
 *.md
+
+# Generated from DESIGN.md by zero-slop-design export
+src/styles/tokens.css
