@@ -1,0 +1,3 @@
+# Used by the pre-commit hook and by gitleaks-action in CI.
+[extend]
+useDefault = true

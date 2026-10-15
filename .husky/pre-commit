@@ -1,0 +1,10 @@
+npx lint-staged
+
+# Secrets in the staged changes. CI runs gitleaks-action anyway (hooks can be
+# skipped with --no-verify), so a missing binary only warns.
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks git --pre-commit --staged --redact --verbose
+else
+  echo "warning: gitleaks is not installed, staged changes were not scanned for secrets." >&2
+  echo "  Windows: winget install gitleaks    macOS: brew install gitleaks" >&2
+fi
