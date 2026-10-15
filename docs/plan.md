@@ -18,6 +18,7 @@ webrunner.dev ── Worker ─┬─ static assets (SPA)
 
 - **Языки:** `en` (fallback), `ru`, `kk`, `es`, `de`, `ar` (MSA). URL с префиксом языка; `/` → редирект по `Accept-Language`; выбор — в cookie; hreflang.
 - **RTL ([ADR-0007](adr/0007-rtl-from-day-one.md)):** с первого дня. `<html dir>` + Radix `DirectionProvider` из одного состояния Lang; только логические Tailwind-классы (линтер `enforce-logical-properties`); `x`/свайпы в Motion инвертируются через хук направления. Не зеркалятся: лого, hero, плеер, блоки кода. Цифры в `ar` — западные (`ar-u-nu-latn`).
+- **Архитектура фронтенда ([ADR-0009](adr/0009-feature-sliced-design.md)):** Feature-Sliced Design 2.1, pages first; маршруты TanStack — тонкие файлы в `src/app/routes/`; shadcn — в `src/shared/ui/kit/`; границы проверяет Steiger. Общий код фронта и Worker — в корневой `contracts/`.
 - **Темы:** системная по умолчанию + переключатель; без мигания (тема ставится инлайн-скриптом до рендера).
 - **Анимации:** Motion + View Transitions; всё уважает `prefers-reduced-motion`.
 - **Перф-бюджет:** Lighthouse mobile ≥ 90 (все категории), initial JS ≤ 150 KB gzip без hero-эффекта, LCP < 2.5 с на 4G.
@@ -54,6 +55,7 @@ webrunner.dev ── Worker ─┬─ static assets (SPA)
 1. Дизайн-бриф и `DESIGN.md`: `define-design` → `define-color-system` (палитра «графит + ржавчина» с исправлениями из Q27) → `define-typography` (шрифты с казахской кириллицей) → `define-interaction-states`, `define-responsive-layout`. Экспорт токенов в Tailwind (`export-design-tokens`). Арабский шрифт подбирается здесь же.
 2. Лого: `fill` → `currentColor`; favicon / apple-touch-icon / OG-заглушка из лого.
 3. Проект: Vite + React + TS, TanStack Router (file-based), Tailwind, shadcn/ui в RTL-режиме (`shadcn create --template vite --rtl`, стиль `*-nova`), ESLint/Prettier + `eslint-plugin-better-tailwindcss` (`enforce-logical-properties`). Проверить, генерирует ли shadcn устаревшие в Tailwind 4.2 `start-*`/`end-*`.
+3.1. Миграция каркаса на FSD (#16): слои `app`/`pages`/`widgets`/`features`/`entities`/`shared`, маршруты в `src/app/routes/`, алиасы shadcn → `shared/ui/kit`, Steiger в `lint`, папка `contracts/`.
 4. Worker со static assets (`wrangler.jsonc`), SPA-fallback, привязка к `webrunner.dev`.
 5. i18n: словари UI на 6 языков (`ar` — пока заглушка из EN), `/$lang/...`-маршруты, редирект с `/`, cookie, hreflang, переключатель.
 6. RTL: `dir` на `<html>` + `DirectionProvider` по Lang, хук `useDirection` для Motion, `dir` на portalled-контенте; smoke-тест: каркас на `/ar/` зеркален, лого и код — нет.
