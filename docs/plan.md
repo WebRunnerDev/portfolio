@@ -4,7 +4,7 @@
 
 ## Архитектура в одном абзаце
 
-Одно React-SPA (Vite + TanStack Router + Tailwind + shadcn/ui) раздаётся одним Cloudflare Worker через **Workers Static Assets**. Тот же Worker обслуживает `/api/*` (Hono или нативный роутинг), читает/пишет **D1** (весь контент) и **R2** (медиа, музыка, PDF), а для HTML-запросов инжектит `<title>`/OG/hreflang через HTMLRewriter. Админка — lazy-маршрут `/admin` того же SPA, закрытый **Cloudflare Access**. PDF резюме генерирует **Browser Rendering**. Картинки ресайзятся через **Cloudflare Images**.
+Одно React-SPA (Vite + TanStack Router + Tailwind + shadcn/ui) раздаётся одним Cloudflare Worker через **Workers Static Assets**. Тот же Worker обслуживает `/api/*` (Hono, схемы Valibot в `contracts/`), читает/пишет **D1** (весь контент) и **R2** (медиа, музыка, PDF), а для HTML-запросов инжектит `<title>`/OG/hreflang через HTMLRewriter. Админка — lazy-маршрут `/admin` того же SPA, закрытый **Cloudflare Access**. PDF резюме генерирует **Browser Rendering**. Картинки ресайзятся через **Cloudflare Images**.
 
 ```
 webrunner.dev ── Worker ─┬─ static assets (SPA)
