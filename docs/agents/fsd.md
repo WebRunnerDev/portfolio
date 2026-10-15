@@ -15,3 +15,13 @@ Frontend `src/` follows FSD 2.1 ([ADR-0009](../adr/0009-feature-sliced-design.md
 ## Shared with the Worker
 
 `contracts/` (repo root, alias `@contracts/*`) holds what both the frontend and `worker/` use: the Lang list, API schemas and types. The Worker imports from `contracts/`, never from `src/`.
+
+## RTL
+
+`ar` is RTL ([ADR-0007](../adr/0007-rtl-from-day-one.md)). `DirectionProvider` in the `/$lang` route sets `<html dir>` and Radix's direction from `langDirection(lang)` in `contracts/lang.ts`.
+
+- **Layout** mirrors by itself with logical classes (`ms-`, `ps-`, `inset-s-`). Don't read `dir` for layout.
+- **JS motion:** `const { dir, flipX } = useDirection()` from `@/shared/lib/direction`. Pass Motion `x`, swipe deltas and drag bounds through `flipX`.
+- **Portals** (menu, popover, tooltip, dialog) render under `<body>` and inherit `<html dir>`. Don't put `dir` on page wrappers and expect portals to follow.
+- **Never mirrored:** logo, hero, player, code blocks. Put `dir="ltr"` on their wrapper element (an `<svg>` can't take `dir`).
+- **Direction icons** (arrows, chevrons pointing along the reading direction) get `rtl:rotate-180`.
