@@ -1,6 +1,12 @@
 import * as React from "react"
 
-import { ThemeContext, type Theme } from "@/shared/lib/theme"
+import {
+  readTheme,
+  ThemeContext,
+  THEME_STORAGE_KEY,
+  writeTheme,
+  type Theme,
+} from "@/shared/lib/theme"
 
 type ResolvedTheme = "dark" | "light"
 
@@ -12,15 +18,7 @@ type ThemeProviderProps = {
 }
 
 const COLOR_SCHEME_QUERY = "(prefers-color-scheme: dark)"
-const THEME_VALUES: Theme[] = ["dark", "light", "system"]
-
-function isTheme(value: string | null): value is Theme {
-  if (value === null) {
-    return false
-  }
-
-  return THEME_VALUES.includes(value as Theme)
-}
+const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)"
 
 function getSystemTheme(): ResolvedTheme {
   if (window.matchMedia(COLOR_SCHEME_QUERY).matches) {
@@ -49,6 +47,16 @@ function disableTransitionsTemporarily() {
   }
 }
 
+// Crossfade between themes with a View Transition (ADR-0005); swap instantly
+// under reduced motion or where the API is missing.
+function canAnimateThemeChange() {
+  return (
+    typeof document.startViewTransition === "function" &&
+    document.visibilityState === "visible" &&
+    !window.matchMedia(REDUCED_MOTION_QUERY).matches
+  )
+}
+
 function isEditableTarget(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) {
     return false
@@ -71,22 +79,17 @@ function isEditableTarget(target: EventTarget | null) {
 export function ThemeProvider({
   children,
   defaultTheme = "system",
-  storageKey = "theme",
+  storageKey = THEME_STORAGE_KEY,
   disableTransitionOnChange = true,
   ...props
 }: ThemeProviderProps) {
-  const [theme, setThemeState] = React.useState<Theme>(() => {
-    const storedTheme = localStorage.getItem(storageKey)
-    if (isTheme(storedTheme)) {
-      return storedTheme
-    }
-
-    return defaultTheme
-  })
+  const [theme, setThemeState] = React.useState<Theme>(
+    () => readTheme(storageKey) ?? defaultTheme
+  )
 
   const setTheme = React.useCallback(
     (nextTheme: Theme) => {
-      localStorage.setItem(storageKey, nextTheme)
+      writeTheme(nextTheme, storageKey)
       setThemeState(nextTheme)
     },
     [storageKey]
@@ -97,16 +100,31 @@ export function ThemeProvider({
       const root = document.documentElement
       const resolvedTheme =
         nextTheme === "system" ? getSystemTheme() : nextTheme
-      const restoreTransitions = disableTransitionOnChange
-        ? disableTransitionsTemporarily()
-        : null
 
-      root.classList.remove("light", "dark")
-      root.classList.add(resolvedTheme)
-
-      if (restoreTransitions) {
-        restoreTransitions()
+      // The inline script in index.html already set it before the first paint.
+      if (root.classList.contains(resolvedTheme)) {
+        return
       }
+
+      const swap = () => {
+        const restoreTransitions = disableTransitionOnChange
+          ? disableTransitionsTemporarily()
+          : null
+
+        root.classList.remove("light", "dark")
+        root.classList.add(resolvedTheme)
+
+        if (restoreTransitions) {
+          restoreTransitions()
+        }
+      }
+
+      if (canAnimateThemeChange()) {
+        document.startViewTransition(swap)
+        return
+      }
+
+      swap()
     },
     [disableTransitionOnChange]
   )
@@ -158,7 +176,7 @@ export function ThemeProvider({
                 ? "light"
                 : "dark"
 
-        localStorage.setItem(storageKey, nextTheme)
+        writeTheme(nextTheme, storageKey)
         return nextTheme
       })
     }
@@ -172,20 +190,15 @@ export function ThemeProvider({
 
   React.useEffect(() => {
     const handleStorageChange = (event: StorageEvent) => {
-      if (event.storageArea !== localStorage) {
-        return
-      }
-
       if (event.key !== storageKey) {
         return
       }
 
-      if (isTheme(event.newValue)) {
-        setThemeState(event.newValue)
+      if (event.storageArea !== localStorage) {
         return
       }
 
-      setThemeState(defaultTheme)
+      setThemeState(readTheme(storageKey) ?? defaultTheme)
     }
 
     window.addEventListener("storage", handleStorageChange)
