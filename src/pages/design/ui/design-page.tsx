@@ -1,19 +1,16 @@
 import { useEffect, useState, type ComponentProps, type ReactNode } from "react"
-import { Link, createFileRoute } from "@tanstack/react-router"
+import { Link, getRouteApi } from "@tanstack/react-router"
 import { CircleAlert, CircleCheck, ExternalLink, Loader2 } from "lucide-react"
 
-import { useTheme } from "@/components/theme-provider"
-import { Logo, LOGO_TILES } from "@/components/logo"
-import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
+import { LANGS } from "@contracts/lang"
+import { cn } from "@/shared/lib/utils"
+import { useTheme } from "@/shared/lib/theme"
+import { Button } from "@/shared/ui/kit"
+import { Logo, LOGO_TILES } from "@/shared/ui/logo"
 
 // Design showcase: renders DESIGN.md tokens with real fonts in both modes.
 // Not linked from navigation and marked noindex. /ar/design shows RTL.
-export const Route = createFileRoute("/$lang/design")({
-  component: DesignPage,
-})
-
-const LANGS = ["en", "ru", "kk", "es", "de", "ar"] as const
+const route = getRouteApi("/$lang/design")
 
 const COLOR_TOKENS = [
   ["primary", "Main action, active nav item, tiles"],
@@ -100,8 +97,8 @@ const FOCUS_RING =
 const MOTION_FAST =
   "transition-colors duration-(--zsd-x-zsd-motion-duration-fast) ease-(--zsd-x-zsd-motion-easing-standard) motion-reduce:transition-none"
 
-function DesignPage() {
-  const { lang } = Route.useParams()
+export function DesignPage() {
+  const { lang } = route.useParams()
   const dir = lang === "ar" ? "rtl" : "ltr"
 
   return (
