@@ -63,6 +63,7 @@ webrunner.dev ── Worker ─┬─ static assets (SPA)
 8. Лейаут: компактный хедер, полноэкранное меню (пока без «ромбовой» анимации), футер; страницы-заглушки: главная, CV, проекты, галерея, блог.
 9. Контакты в футере на всех страницах: почта (`mailto:` + копирование), Telegram, LinkedIn, GitHub; статичные данные пока. Отдельной страницы контактов нет.
 10. CI: GitHub Actions — lint, typecheck, Vitest, Playwright smoke; preview на PR, прод на `main`. CF Web Analytics.
+11. Git-хуки (#12): Husky + lint-staged. pre-commit — ESLint/Prettier по застейдженным файлам и gitleaks (без бинарника — предупреждение); commit-msg — commitlint; pre-push — Steiger, typecheck, Vitest. Обходятся `--no-verify`, поэтому главная защита — CI.
 
 **Готово, когда:** webrunner.dev открывает каркас на 6 языках в обеих темах, `/ar/` корректно зеркален; навигация и переходы работают; CI зелёный и деплоит preview/прод.
 
