@@ -1,8 +1,9 @@
 import { useEffect, useState, type ComponentProps, type ReactNode } from "react"
-import { Link, getRouteApi } from "@tanstack/react-router"
+import { getRouteApi } from "@tanstack/react-router"
 import { CircleAlert, CircleCheck, ExternalLink, Loader2 } from "lucide-react"
 
 import { LANGS } from "@contracts/lang"
+import { LangSwitcher } from "@/features/lang-switcher"
 import { cn } from "@/shared/lib/utils"
 import { useTheme } from "@/shared/lib/theme"
 import { Button } from "@/shared/ui/kit"
@@ -105,7 +106,7 @@ export function DesignPage() {
     <div lang={lang} dir={dir} className="min-h-svh">
       <title>Design system · WebRunner</title>
       <meta name="robots" content="noindex" />
-      <Header lang={lang} />
+      <Header />
       <main className="mx-auto max-w-(--zsd-x-zsd-layout-content-max) px-zsd-lg md:px-zsd-xxl">
         <div className="py-zsd-section lg:py-zsd-section-lg">
           <p className="font-zsd-label-mono text-zsd-label-mono text-zsd-primary-text uppercase rtl:normal-case">
@@ -138,7 +139,7 @@ export function DesignPage() {
   )
 }
 
-function Header({ lang }: { lang: string }) {
+function Header() {
   const { theme, setTheme } = useTheme()
 
   return (
@@ -149,26 +150,7 @@ function Header({ lang }: { lang: string }) {
           WebRunner
         </span>
         <BreakpointBadge />
-        <nav aria-label="Lang" className="ms-auto flex overflow-x-auto">
-          {LANGS.map((l) => (
-            <Link
-              key={l}
-              to="/$lang/design"
-              params={{ lang: l }}
-              aria-current={l === lang ? "page" : undefined}
-              className={cn(
-                "flex h-zsd-control-height min-w-zsd-control-height items-center justify-center px-zsd-sm font-zsd-label-mono text-zsd-label-mono uppercase",
-                FOCUS_RING,
-                "outline-offset-[-2px]",
-                l === lang
-                  ? "text-zsd-primary-text shadow-[inset_0_-2px_0_var(--zsd-colors-primary)]"
-                  : "text-zsd-on-surface-muted hover:text-zsd-on-surface"
-              )}
-            >
-              {l}
-            </Link>
-          ))}
-        </nav>
+        <LangSwitcher className="ms-auto overflow-x-auto" />
         <div
           role="group"
           aria-label="Mode"

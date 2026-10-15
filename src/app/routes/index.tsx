@@ -1,8 +1,14 @@
 import { createFileRoute, redirect } from "@tanstack/react-router"
 
-// Placeholder until i18n lands (#5): Accept-Language / cookie detection goes here.
+import { pickLang } from "@contracts/lang"
+
+// `/` → the Lang from the cookie, then the browser languages, then EN.
 export const Route = createFileRoute("/")({
   beforeLoad: () => {
-    throw redirect({ to: "/$lang", params: { lang: "en" } })
+    const lang = pickLang({
+      cookie: document.cookie,
+      acceptLanguage: navigator.languages.join(","),
+    })
+    throw redirect({ to: "/$lang", params: { lang }, replace: true })
   },
 })
