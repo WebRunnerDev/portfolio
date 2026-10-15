@@ -19,7 +19,29 @@
   // production `wrangler deploy`.
   "preview_urls": true,
   "observability": { "enabled": true },
+  // ADR-0002: all content. Schema in migrations/. IDs come from
+  // `wrangler d1 create` (worker/README.md › Deploy › One-time setup).
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "webrunner",
+      // Production. `npm run db:migrate` migrates it before the deploy.
+      "database_id": "dba20503-ef01-43b1-b035-4e56bfa6147b",
+      // The Preview database (same ID as in `previews` below), so that
+      // `npm run db:migrate:preview` (`--preview`) can reach it.
+      "preview_database_id": "650f6c38-8265-4647-9a26-a1497a882582",
+    },
+  ],
   // Workers Builds runs `wrangler preview` for non-main branches, which needs
-  // this block. Empty: previews inherit everything above.
-  "previews": {},
+  // this block. Previews inherit everything above except what is listed here.
+  "previews": {
+    // Previews never touch the production database.
+    "d1_databases": [
+      {
+        "binding": "DB",
+        "database_name": "webrunner-preview",
+        "database_id": "650f6c38-8265-4647-9a26-a1497a882582",
+      },
+    ],
+  },
 }
