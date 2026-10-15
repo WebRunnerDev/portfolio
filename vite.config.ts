@@ -1,6 +1,7 @@
 /// <reference types="vitest/config" />
 import { resolve } from "node:path"
 import { cloudflare } from "@cloudflare/vite-plugin"
+import { cloudflareTest, readD1Migrations } from "@cloudflare/vitest-plugin"
 import tailwindcss from "@tailwindcss/vite"
 import { tanstackRouter } from "@tanstack/router-plugin/vite"
 import react from "@vitejs/plugin-react"
@@ -31,6 +32,10 @@ function cloudflareWebAnalytics(token: string | undefined): Plugin {
   }
 }
 
+const contractsAlias = {
+  "@contracts": resolve(import.meta.dirname, "./contracts"),
+}
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
@@ -49,10 +54,41 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": resolve(import.meta.dirname, "./src"),
-      "@contracts": resolve(import.meta.dirname, "./contracts"),
+      ...contractsAlias,
     },
   },
   test: {
-    include: ["{src,contracts,migrations}/**/*.test.{ts,tsx}"],
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: "unit",
+          include: ["{src,contracts,migrations}/**/*.test.{ts,tsx}"],
+        },
+      },
+      {
+        // worker/ tests run in workerd with the bindings from wrangler.jsonc
+        // (local D1, migrated by the setup file).
+        plugins: [
+          cloudflareTest(async () => ({
+            wrangler: { configPath: "./wrangler.jsonc" },
+            miniflare: {
+              bindings: {
+                TEST_MIGRATIONS: await readD1Migrations("./migrations"),
+              },
+            },
+          })),
+        ],
+        resolve: { alias: contractsAlias },
+        test: {
+          name: "worker",
+          include: ["worker/**/*.test.ts"],
+          setupFiles: ["worker/test/apply-migrations.ts"],
+          // Vitest 5 hands cached modules over as OS paths, which `readFileSync`
+          // in workerd rejects on Windows.
+          fsModuleCache: false,
+        },
+      },
+    ],
   },
 })
