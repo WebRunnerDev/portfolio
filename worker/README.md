@@ -11,16 +11,15 @@ Code shared with the frontend (Lang list, API schemas and types) lives in `contr
 
 - `npm run dev` — Vite + the Worker in workerd (`@cloudflare/vite-plugin`), one process.
 - `npm run preview` — the production build, served the same way.
-- `npm run deploy` — build, then `wrangler deploy` (uses the config generated in `dist/`). Normally CI runs it.
+- `npm run deploy` — build, then `wrangler deploy` (uses the config generated in `dist/`). Normally Workers Builds runs it.
 - `npm run cf-typegen` — regenerate `worker-configuration.d.ts` after changing `wrangler.jsonc`. CI fails if it is stale.
 
 ## Deploy
 
-`.github/workflows/ci.yml` runs lint, typecheck, unit and e2e tests on every PR and push to `main`. A green push to `main` then deploys to production.
+Workers Builds (Cloudflare Git integration) builds and deploys every push to `main`; other branches get preview versions. GitHub Actions (`.github/workflows/ci.yml`) only runs checks: lint, typecheck, unit and e2e tests on every PR and push to `main`. Branch protection on `main` requires the `check` job, so only green code reaches production.
 
 One-time setup (owner):
 
 1. `webrunner.dev` must be a zone in the same Cloudflare account; the `custom_domain` route creates the DNS record and certificate on deploy.
-2. Create an API token from the "Edit Cloudflare Workers" template, scoped to this account and the `webrunner.dev` zone. If the first CI deploy can't attach the custom domain, add Zone → DNS → Edit, or run the first deploy locally (`npx wrangler login`, `npm run deploy`).
-3. In GitHub, add secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` (Settings → Secrets and variables → Actions). The deploy job runs in the `Cloudflare` environment; put the secrets there (or at repository level) and add protection rules if wanted.
-4. After the deploy, check `https://webrunner.dev/en/cv` and `https://webrunner.dev/api/health`.
+2. Dashboard → Workers & Pages → Create → Import a repository → `WebRunnerDev/portfolio`. Worker name `webrunner` (must match `name` in `wrangler.jsonc`), production branch `main`, build command `npm run build`, deploy command `npx wrangler deploy`, build variable `NODE_VERSION=24`.
+3. After the deploy, check `https://webrunner.dev/en/cv` and `https://webrunner.dev/api/health`.
