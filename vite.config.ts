@@ -53,6 +53,6 @@ export default defineConfig({
     },
   },
   test: {
-    include: ["{src,contracts}/**/*.test.{ts,tsx}"],
+    include: ["{src,contracts,migrations}/**/*.test.{ts,tsx}"],
   },
 })
