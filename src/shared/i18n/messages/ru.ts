@@ -5,4 +5,8 @@ export const ru: Messages = {
   "header.menu": "Меню",
   "header.design": "Дизайн-система",
   "langSwitcher.label": "Язык",
+  "themeSwitcher.label": "Тема",
+  "themeSwitcher.light": "Светлая",
+  "themeSwitcher.dark": "Тёмная",
+  "themeSwitcher.system": "Системная",
 }

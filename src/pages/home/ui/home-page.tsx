@@ -1,4 +1,5 @@
 import { LangSwitcher } from "@/features/lang-switcher"
+import { ThemeSwitcher } from "@/features/theme-switcher"
 import { useT } from "@/shared/i18n"
 
 import { SiteHeader } from "./site-header"
@@ -13,6 +14,7 @@ export function HomePage() {
         <h1 className="text-2xl font-medium">WebRunner</h1>
         <p className="text-zsd-on-surface-muted">{t("home.tagline")}</p>
         <LangSwitcher />
+        <ThemeSwitcher />
       </main>
     </div>
   )

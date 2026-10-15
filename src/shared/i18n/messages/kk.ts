@@ -5,4 +5,8 @@ export const kk: Messages = {
   "header.menu": "Мәзір",
   "header.design": "Дизайн жүйесі",
   "langSwitcher.label": "Тіл",
+  "themeSwitcher.label": "Тақырып",
+  "themeSwitcher.light": "Ашық",
+  "themeSwitcher.dark": "Қараңғы",
+  "themeSwitcher.system": "Жүйелік",
 }

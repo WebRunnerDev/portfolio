@@ -154,6 +154,13 @@
 }
 
 @layer base {
+  /* Native controls and scrollbars follow the theme class, not the OS. */
+  :root {
+    color-scheme: light;
+  }
+  .dark {
+    color-scheme: dark;
+  }
   * {
     @apply border-border outline-ring/50;
   }
@@ -162,5 +169,15 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+/* ADR-0005: View Transitions (theme crossfade, later page changes) are
+ * instant under reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
   }
 }
