@@ -15,3 +15,8 @@ dist/
 # OS / editor
 .DS_Store
 Thumbs.db
+
+# Tests
+coverage/
+playwright-report/
+test-results/
