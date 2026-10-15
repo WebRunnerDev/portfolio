@@ -3,8 +3,6 @@ import { getRouteApi } from "@tanstack/react-router"
 import { CircleAlert, CircleCheck, ExternalLink, Loader2 } from "lucide-react"
 
 import { LANGS, langDirection } from "@contracts/lang"
-import { LangSwitcher } from "@/features/lang-switcher"
-import { ThemeSwitcher } from "@/features/theme-switcher"
 import { useDirection } from "@/shared/lib/direction"
 import { cn } from "@/shared/lib/utils"
 import { Button } from "@/shared/ui/kit"
@@ -104,55 +102,43 @@ export function DesignPage() {
   const { dir } = useDirection()
 
   return (
-    <div lang={lang} dir={dir} className="min-h-svh">
+    <div
+      lang={lang}
+      dir={dir}
+      className="mx-auto w-full max-w-(--zsd-x-zsd-layout-content-max) px-zsd-lg md:px-zsd-xxl"
+    >
       <title>Design system · WebRunner</title>
       <meta name="robots" content="noindex" />
-      <Header />
-      <main className="mx-auto max-w-(--zsd-x-zsd-layout-content-max) px-zsd-lg md:px-zsd-xxl">
-        <div className="py-zsd-section lg:py-zsd-section-lg">
+      <div className="py-zsd-section lg:py-zsd-section-lg">
+        <div className="flex items-center gap-zsd-md">
           <p className="font-zsd-label-mono text-zsd-label-mono text-zsd-primary-text uppercase rtl:normal-case">
             DESIGN.md · draft
           </p>
-          <h1 className="mt-zsd-sm font-heading text-zsd-headline-md md:text-zsd-headline-lg">
-            Design system
-          </h1>
-          <p className="mt-zsd-lg max-w-(--zsd-x-zsd-layout-prose-max) text-zsd-body-lg text-zsd-on-surface-muted">
-            Every token from DESIGN.md with real fonts. Switch the mode and the
-            Lang in the header. Press Tab to check the focus outline.
-          </p>
+          <BreakpointBadge />
         </div>
-        <ColorsSection />
-        <TypographySection />
-        <LayoutSection />
-        <ShapesSection />
-        <ButtonsSection />
-        <FormSection />
-        <CardsSection />
-        <FeedbackSection />
-        <TilesSection />
-        <MotionSection />
-        <ShadcnSection />
-      </main>
-      <footer className="border-t border-border py-zsd-xl text-center text-zsd-body-sm text-zsd-on-surface-muted">
-        Source of truth: DESIGN.md → src/styles/tokens.css
-      </footer>
-    </div>
-  )
-}
-
-function Header() {
-  return (
-    <header className="sticky top-0 z-20 border-b border-border bg-card">
-      <div className="mx-auto flex h-(--zsd-x-zsd-layout-header-height) max-w-(--zsd-x-zsd-layout-content-max) items-center gap-zsd-lg px-zsd-lg md:px-zsd-xxl">
-        <Logo className="size-6 shrink-0" />
-        <span className="font-heading text-zsd-headline-sm max-sm:hidden">
-          WebRunner
-        </span>
-        <BreakpointBadge />
-        <LangSwitcher className="ms-auto overflow-x-auto" />
-        <ThemeSwitcher className="shrink-0" />
+        <h1 className="mt-zsd-sm font-heading text-zsd-headline-md md:text-zsd-headline-lg">
+          Design system
+        </h1>
+        <p className="mt-zsd-lg max-w-(--zsd-x-zsd-layout-prose-max) text-zsd-body-lg text-zsd-on-surface-muted">
+          Every token from DESIGN.md with real fonts. Switch the mode and the
+          Lang in the header. Press Tab to check the focus outline.
+        </p>
       </div>
-    </header>
+      <ColorsSection />
+      <TypographySection />
+      <LayoutSection />
+      <ShapesSection />
+      <ButtonsSection />
+      <FormSection />
+      <CardsSection />
+      <FeedbackSection />
+      <TilesSection />
+      <MotionSection />
+      <ShadcnSection />
+      <p className="py-zsd-xl text-center text-zsd-body-sm text-zsd-on-surface-muted">
+        Source of truth: DESIGN.md → src/styles/tokens.css
+      </p>
+    </div>
   )
 }
 

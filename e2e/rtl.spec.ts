@@ -1,4 +1,4 @@
-import { expect, test, type Locator, type Page } from "@playwright/test"
+import { expect, test, type Page } from "@playwright/test"
 
 // ADR-0007: the header and menu mirror in RTL; the logo and code don't.
 async function header(page: Page) {
@@ -11,39 +11,36 @@ async function header(page: Page) {
   return { logo, menu, logoBox, menuBox }
 }
 
-async function openMenu(page: Page, trigger: Locator) {
-  await trigger.click()
-  const content = page.getByRole("menu")
-  // Measure after the zoom-in animation, not mid-scale.
-  await content.evaluate((el) =>
-    Promise.all(
-      el.getAnimations().map((a: { finished: Promise<unknown> }) => a.finished)
-    )
-  )
-  return { content, contentBox: (await content.boundingBox())! }
-}
-
 test("/ar/ mirrors the header and menu but not the logo", async ({ page }) => {
-  await page.goto("/ar")
+  await page.goto("/ar/cv")
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl")
 
   const { logo, menu, logoBox, menuBox } = await header(page)
   expect(logoBox.x).toBeGreaterThan(menuBox.x)
+  // The current section sits after the brand in reading order: to its left.
+  const sectionBox = (await page.getByTestId("current-section").boundingBox())!
+  expect(sectionBox.x).toBeLessThan(logoBox.x)
   // The lockup keeps its LTR order: logo, then the name.
-  const brand = page.getByTestId("brand")
+  const brand = page.getByRole("banner").getByTestId("brand")
   await expect(brand).toHaveCSS("direction", "ltr")
   const nameBox = (await brand.locator("span").boundingBox())!
   expect(logoBox.x).toBeLessThan(nameBox.x)
   await expect(logo).toHaveCSS("transform", "none")
 
-  const { content, contentBox } = await openMenu(page, menu)
-  await expect(content).toHaveAttribute("dir", "rtl")
-  await expect(content).toHaveCSS("direction", "rtl")
-  // align="end" is the inline end: the left edge in RTL.
-  expect(Math.abs(contentBox.x - menuBox.x)).toBeLessThan(1)
-
-  const item = content.getByRole("menuitem", { name: "Design system" })
-  await expect(item.locator("svg")).toHaveCSS("rotate", "180deg")
+  await menu.click()
+  const dialog = page.getByRole("dialog")
+  await expect(dialog).toHaveCSS("direction", "rtl")
+  // The close button takes the trigger's place: the inline end, on the left.
+  const closeBox = (await dialog
+    .getByRole("button", { name: /close/i })
+    .boundingBox())!
+  expect(closeBox.x).toBeLessThan(200)
+  // The active marker is an inline-start border: on the right in RTL.
+  const active = dialog
+    .getByRole("navigation")
+    .locator('a[aria-current="page"]')
+  await expect(active).toHaveCSS("border-right-width", "2px")
+  await expect(active).toHaveCSS("border-left-width", "0px")
 })
 
 test("/en/ keeps the LTR header", async ({ page }) => {
@@ -53,12 +50,13 @@ test("/en/ keeps the LTR header", async ({ page }) => {
   const { menu, logoBox, menuBox } = await header(page)
   expect(logoBox.x).toBeLessThan(menuBox.x)
 
-  const { content, contentBox } = await openMenu(page, menu)
-  await expect(content).toHaveCSS("direction", "ltr")
-  const right = (box: { x: number; width: number }) => box.x + box.width
-  expect(Math.abs(right(contentBox) - right(menuBox))).toBeLessThan(1)
-  const item = content.getByRole("menuitem", { name: "Design system" })
-  await expect(item.locator("svg")).not.toHaveCSS("rotate", "180deg")
+  await menu.click()
+  const dialog = page.getByRole("dialog")
+  await expect(dialog).toHaveCSS("direction", "ltr")
+  const active = dialog
+    .getByRole("navigation")
+    .locator('a[aria-current="page"]')
+  await expect(active).toHaveCSS("border-left-width", "2px")
 })
 
 test("code blocks stay LTR on /ar/", async ({ page }) => {

@@ -12,7 +12,12 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LangRouteRouteImport } from './routes/$lang/route'
 import { Route as LangIndexRouteImport } from './routes/$lang/index'
+import { Route as LangBlogRouteImport } from './routes/$lang/blog'
+import { Route as LangContactsRouteImport } from './routes/$lang/contacts'
+import { Route as LangCvRouteImport } from './routes/$lang/cv'
 import { Route as LangDesignRouteImport } from './routes/$lang/design'
+import { Route as LangGalleryRouteImport } from './routes/$lang/gallery'
+import { Route as LangProjectsRouteImport } from './routes/$lang/projects'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -29,36 +34,103 @@ const LangIndexRoute = LangIndexRouteImport.update({
   path: '/',
   getParentRoute: () => LangRouteRoute,
 } as any)
+const LangBlogRoute = LangBlogRouteImport.update({
+  id: '/blog',
+  path: '/blog',
+  getParentRoute: () => LangRouteRoute,
+} as any)
+const LangContactsRoute = LangContactsRouteImport.update({
+  id: '/contacts',
+  path: '/contacts',
+  getParentRoute: () => LangRouteRoute,
+} as any)
+const LangCvRoute = LangCvRouteImport.update({
+  id: '/cv',
+  path: '/cv',
+  getParentRoute: () => LangRouteRoute,
+} as any)
 const LangDesignRoute = LangDesignRouteImport.update({
   id: '/design',
   path: '/design',
+  getParentRoute: () => LangRouteRoute,
+} as any)
+const LangGalleryRoute = LangGalleryRouteImport.update({
+  id: '/gallery',
+  path: '/gallery',
+  getParentRoute: () => LangRouteRoute,
+} as any)
+const LangProjectsRoute = LangProjectsRouteImport.update({
+  id: '/projects',
+  path: '/projects',
   getParentRoute: () => LangRouteRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$lang': typeof LangRouteRouteWithChildren
+  '/$lang/blog': typeof LangBlogRoute
+  '/$lang/contacts': typeof LangContactsRoute
+  '/$lang/cv': typeof LangCvRoute
   '/$lang/design': typeof LangDesignRoute
+  '/$lang/gallery': typeof LangGalleryRoute
+  '/$lang/projects': typeof LangProjectsRoute
   '/$lang/': typeof LangIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/$lang/blog': typeof LangBlogRoute
+  '/$lang/contacts': typeof LangContactsRoute
+  '/$lang/cv': typeof LangCvRoute
   '/$lang/design': typeof LangDesignRoute
+  '/$lang/gallery': typeof LangGalleryRoute
+  '/$lang/projects': typeof LangProjectsRoute
   '/$lang': typeof LangIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/$lang': typeof LangRouteRouteWithChildren
+  '/$lang/blog': typeof LangBlogRoute
+  '/$lang/contacts': typeof LangContactsRoute
+  '/$lang/cv': typeof LangCvRoute
   '/$lang/design': typeof LangDesignRoute
+  '/$lang/gallery': typeof LangGalleryRoute
+  '/$lang/projects': typeof LangProjectsRoute
   '/$lang/': typeof LangIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/$lang' | '/$lang/design' | '/$lang/'
+  fullPaths:
+    | '/'
+    | '/$lang'
+    | '/$lang/blog'
+    | '/$lang/contacts'
+    | '/$lang/cv'
+    | '/$lang/design'
+    | '/$lang/gallery'
+    | '/$lang/projects'
+    | '/$lang/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/$lang/design' | '/$lang'
-  id: '__root__' | '/' | '/$lang' | '/$lang/design' | '/$lang/'
+  to:
+    | '/'
+    | '/$lang/blog'
+    | '/$lang/contacts'
+    | '/$lang/cv'
+    | '/$lang/design'
+    | '/$lang/gallery'
+    | '/$lang/projects'
+    | '/$lang'
+  id:
+    | '__root__'
+    | '/'
+    | '/$lang'
+    | '/$lang/blog'
+    | '/$lang/contacts'
+    | '/$lang/cv'
+    | '/$lang/design'
+    | '/$lang/gallery'
+    | '/$lang/projects'
+    | '/$lang/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -89,6 +161,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LangIndexRouteImport
       parentRoute: typeof LangRouteRoute
     }
+    '/$lang/blog': {
+      id: '/$lang/blog'
+      path: '/blog'
+      fullPath: '/$lang/blog'
+      preLoaderRoute: typeof LangBlogRouteImport
+      parentRoute: typeof LangRouteRoute
+    }
+    '/$lang/contacts': {
+      id: '/$lang/contacts'
+      path: '/contacts'
+      fullPath: '/$lang/contacts'
+      preLoaderRoute: typeof LangContactsRouteImport
+      parentRoute: typeof LangRouteRoute
+    }
+    '/$lang/cv': {
+      id: '/$lang/cv'
+      path: '/cv'
+      fullPath: '/$lang/cv'
+      preLoaderRoute: typeof LangCvRouteImport
+      parentRoute: typeof LangRouteRoute
+    }
     '/$lang/design': {
       id: '/$lang/design'
       path: '/design'
@@ -96,16 +189,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LangDesignRouteImport
       parentRoute: typeof LangRouteRoute
     }
+    '/$lang/gallery': {
+      id: '/$lang/gallery'
+      path: '/gallery'
+      fullPath: '/$lang/gallery'
+      preLoaderRoute: typeof LangGalleryRouteImport
+      parentRoute: typeof LangRouteRoute
+    }
+    '/$lang/projects': {
+      id: '/$lang/projects'
+      path: '/projects'
+      fullPath: '/$lang/projects'
+      preLoaderRoute: typeof LangProjectsRouteImport
+      parentRoute: typeof LangRouteRoute
+    }
   }
 }
 
 interface LangRouteRouteChildren {
+  LangBlogRoute: typeof LangBlogRoute
+  LangContactsRoute: typeof LangContactsRoute
+  LangCvRoute: typeof LangCvRoute
   LangDesignRoute: typeof LangDesignRoute
+  LangGalleryRoute: typeof LangGalleryRoute
+  LangProjectsRoute: typeof LangProjectsRoute
   LangIndexRoute: typeof LangIndexRoute
 }
 
 const LangRouteRouteChildren: LangRouteRouteChildren = {
+  LangBlogRoute: LangBlogRoute,
+  LangContactsRoute: LangContactsRoute,
+  LangCvRoute: LangCvRoute,
   LangDesignRoute: LangDesignRoute,
+  LangGalleryRoute: LangGalleryRoute,
+  LangProjectsRoute: LangProjectsRoute,
   LangIndexRoute: LangIndexRoute,
 }
 

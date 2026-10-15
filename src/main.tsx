@@ -6,7 +6,9 @@ import "./index.css"
 import { routeTree } from "./app/routeTree.gen"
 import { ThemeProvider } from "./app/providers"
 
-const router = createRouter({ routeTree })
+// ADR-0005: page changes run in a View Transition; without the API they are
+// instant. index.css sets the animation.
+const router = createRouter({ routeTree, defaultViewTransition: true })
 
 declare module "@tanstack/react-router" {
   interface Register {
