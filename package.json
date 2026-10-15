@@ -17,7 +17,8 @@
     "preview": "vite preview",
     "deploy": "npm run build && wrangler deploy",
     "cf-typegen": "wrangler types",
-    "icons": "node scripts/generate-icons.mjs"
+    "icons": "node scripts/generate-icons.mjs",
+    "db:migrate": "node scripts/d1-migrate.mjs"
   },
   "dependencies": {
     "@fontsource-variable/fira-code": "^5.3.0",
