@@ -19,6 +19,7 @@
     "cf-typegen": "wrangler types",
     "icons": "node scripts/generate-icons.mjs",
     "db:migrate": "node scripts/d1-migrate.mjs",
+    "db:migrate:preview": "node scripts/d1-migrate.mjs --preview",
     "prepare": "husky"
   },
   "dependencies": {
