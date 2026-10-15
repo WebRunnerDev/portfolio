@@ -12,6 +12,7 @@
 ## Альтернативы
 - Чистое SPA — нет превью постов, слабое SEO.
 - TanStack Start (SSR) — полноценно, но сложнее и тяжелее для анимационного сайта.
+- Cloudflare Pages вместо Workers Static Assets — Cloudflare рекомендует Workers для новых проектов; на Pages API и meta injection ушли бы в Pages Functions, а Cron Triggers (отложенные задачи) там недоступны. Цена выбора Workers — preview-деплои на PR настраиваются в GitHub Actions вручную.
 
 ## Последствия
 - Превью и базовое SEO работают без SSR; плеер не прерывается.
