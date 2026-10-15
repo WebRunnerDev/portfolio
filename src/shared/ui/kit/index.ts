@@ -18,3 +18,5 @@ export {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "./dropdown-menu"
+export { Toggle, toggleVariants } from "./toggle"
+export { ToggleGroup, ToggleGroupItem } from "./toggle-group"
