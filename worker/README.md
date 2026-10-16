@@ -10,6 +10,7 @@ Code shared with the frontend (Lang list, UI dictionaries, page meta, API schema
 - `/api/*` is rate limited per IP (Rate limits below); pages, assets and `/media/*` are not.
 - `/api/*` gives no CORS headers (the SPA is on the same origin, ADR-0001) and refuses writes from other origins (Origin and body limits below).
 - `/api/admin/*` needs a Cloudflare Access sign-in (Admin access below). `GET /api/admin/me` → `{"email":"…"}` of the signed-in owner; the rest is CRUD of the content (Admin API below).
+- Every HTML answer (pages under a Lang, `/`, `/admin`, the SPA fallback) gets the security headers and a Report-Only CSP with a nonce (Security headers below).
 
 ## Meta Injection
 
@@ -21,6 +22,36 @@ ADR-0001: crawlers don't run JS, so `worker/meta/serve-page.ts` rewrites `index.
 - **Previews** (`*.workers.dev`) get `X-Robots-Tag: noindex` and `<meta name="robots" content="noindex">`.
 - **Caching:** the HTML loses the `ETag` of `index.html`, which is the same for every page.
 - **Pages with data from D1** (`projects/:slug`, `blog/:slug`): add a `DataPage` to `DATA_PAGES` in `worker/meta/pages.ts` — a pattern on the path after the Lang and a `meta(env, lang, match)` that reads D1 and answers null for an unknown slug (404). Static sections go in `PAGES` in `contracts/meta.ts`.
+
+## Security headers
+
+`securePage` (`worker/security/headers.ts`) runs on every answer `worker/index.ts` gives outside `/api/*` and `/media/*`, and changes only HTML ones. It is the free stand-in for Page Shield: only scripts the page itself loads can run.
+
+- **Headers:** `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Cross-Origin-Opener-Policy: same-origin` and a `Permissions-Policy` that turns everything off but `autoplay` and `fullscreen` on the site itself (only features Chrome knows, or it warns in the console). HSTS is set on the zone (#41), not here.
+- **CSP**, `Content-Security-Policy-Report-Only` for now: it reports and blocks nothing. Stage 6 (Audit in `docs/plan.md`) turns it to `Content-Security-Policy` once the hero, Shiki and the player are in.
+
+  | Directive | Value | Why |
+  | --- | --- | --- |
+  | `default-src` | `'self'` | Fonts and the manifest included |
+  | `script-src` | `'nonce-…' 'strict-dynamic'` | Only scripts with the nonce, and what they load (lazy chunks) |
+  | `style-src` | `'self' 'unsafe-inline'` | Radix's scroll lock adds `<style>` without a nonce |
+  | `img-src` | `'self'` | `/media/*` and `/cdn-cgi/image/*` are on the same origin |
+  | `media-src` | `'self' blob:` | The admin reads an audio file's length from a `blob:` URL |
+  | `connect-src` | `'self' https://cloudflareinsights.com` | The Web Analytics beacon reports there |
+  | `object-src`, `base-uri` | `'none'` | |
+  | `form-action` | `'self'` | |
+  | `frame-ancestors` | `'none'` | No framing |
+  | `report-uri`, `report-to` | `/api/csp-report`, `csp` | `Reporting-Endpoints: csp="<origin>/api/csp-report"` |
+
+- **Nonce:** 128 random bits, new on every answer. HTMLRewriter puts it on every `<script>` (the theme script, the entry, the beacon) and `<link rel="modulepreload|preload">`, and adds `<meta property="csp-nonce" nonce="…">`, from which Vite's preload helper takes it for the preloads of lazy chunks. Nothing to do in `index.html` or `vite.config.ts`: a new `<script>` there gets it too. A script the app adds at runtime needs no nonce (`'strict-dynamic'`).
+- **Caching:** the HTML has no `ETag`, and a navigation (`Accept: text/html`) reaches `ASSETS` without `If-None-Match`/`If-Modified-Since`, so a 304 never pairs an old nonce with a new policy.
+- **`/admin`** uses the same policy: same `index.html`, same origin.
+- **SRI:** not used. The only third-party script is the Web Analytics beacon, whose `beacon.min.js` Cloudflare updates under the same URL; fonts are self-hosted.
+- **`/assets/*`** never runs the Worker: `public/_headers` gives it `nosniff` and `Cache-Control: public, max-age=31536000, immutable` (the names carry a hash).
+
+**Reports:** `POST /api/csp-report` takes both formats, `report-uri` (`application/csp-report`, one violation) and `report-to` (`application/reports+json`, a batch; other report types are skipped), and answers 204. Each violation goes to Workers Logs as `console.warn({ message: "csp-violation", documentUrl, blockedUrl, directive, disposition, sourceFile, line, column, sample })`: filter by `message` in Observability. Bodies up to 64 KB (`MAX_CSP_REPORT_BYTES`), else 413; a body that is not a report answers 400. The rate limit counts it like any read (Rate limits below). The Origin check skips it: browsers send reports from outside the page, and they only reach the logs.
+
+**Check on a Preview:** open every page in every Lang and `/admin` with DevTools open: the console shows no `[Report Only]` messages. Workers Logs of the Preview show no `csp-violation` entries other than from extensions (`blockedUrl` `chrome-extension://…`). Chrome sends `report-to` batches about a minute late; headless Chrome in the e2e tests doesn't send them at all, so `e2e/security.spec.ts` watches the `securitypolicyviolation` event instead.
 
 ## API
 
@@ -40,7 +71,7 @@ ADR-0001: crawlers don't run JS, so `worker/meta/serve-page.ts` rewrites `index.
 | 404 | `not_found` | No route for the path |
 | 405 | `method_not_allowed` | The path exists, the method doesn't (`Allow` header lists the methods) |
 | 409 | `conflict` | `/api/admin/*`: the row is still in use (an album with photos, a file a row names) or the EN Translation is being removed |
-| 413 | `payload_too_large` | A JSON body over 1 MB, or an upload over its limit (Media below) |
+| 413 | `payload_too_large` | A JSON body over 1 MB, a CSP report over 64 KB, or an upload over its limit (Media below) |
 | 415 | `unsupported_media_type` | An upload whose bytes are not an allowed type |
 | 422 | `validation_failed` | `/api/admin/*` body doesn't match the schema, a unique value (slug, name…) is taken, or an id points at nothing. Also carries `fields`: `{ "<dot path>": ["message"] }` |
 | 429 | `too_many_requests` | The IP passed a rate limit (Rate limits below); `Retry-After` gives the seconds to wait |
@@ -73,7 +104,7 @@ ADR-0001: crawlers don't run JS, so `worker/meta/serve-page.ts` rewrites `index.
 After the rate limit, every `/api/*` request goes through `checkOrigin` (`worker/api/origin.ts`), then `limitBody` (`worker/api/body-limit.ts`).
 
 - **No CORS:** the SPA calls the API from its own origin (ADR-0001), so no answer carries `Access-Control-*` headers, whatever the `Origin` (`https://webrunner.dev` included), and a preflight gets no 204.
-- **Cross-site writes:** a request other than GET, HEAD or OPTIONS whose `Origin` is not the API's own origin answers 403 `forbidden`, whatever its `Content-Type`, before the Access check. So a form on another site can't use the owner's Access cookie. A request without `Origin` (curl, tests) passes: browsers always send it with writes.
+- **Cross-site writes:** a request other than GET, HEAD or OPTIONS whose `Origin` is not the API's own origin answers 403 `forbidden`, whatever its `Content-Type`, before the Access check. So a form on another site can't use the owner's Access cookie. A request without `Origin` (curl, tests) passes: browsers always send it with writes. `POST /api/csp-report` passes with any `Origin` (Security headers above).
 - **Body size:** `POST /api/admin/uploads` up to the largest upload limit (its own kind's limit is checked after sniffing, Media below), any other body up to 1 MB (`MAX_JSON_BYTES`). Over it: 413 `payload_too_large`, unread when `Content-Length` says so, cut off mid-stream otherwise.
 
 ## Public API

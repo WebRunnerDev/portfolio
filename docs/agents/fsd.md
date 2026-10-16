@@ -41,6 +41,7 @@ The `/$lang` route renders the layout: `SiteHeader` (`@/widgets/header`), `<main
 - **Sections:** `SECTIONS` in `src/shared/config/sections.ts` feeds the menu links and the current section in the header. A new section = a page slice, a route file, an entry there, an entry in `PAGES` (`contracts/meta.ts`, for its title and description) and `nav.*` + `meta.*` keys in every dictionary.
 - **Contacts** live in the footer (`src/widgets/footer/model/contacts.ts`), not on a page of their own. No phone anywhere.
 - **Head tags:** `LangHead` renders the title, description, canonical and hreflang of the page from `contracts/meta.ts`, the same values the Worker injects for crawlers (`worker/README.md` › Meta Injection). Pages don't render their own `<title>`; NotFoundPage is the exception.
+- **CSP** (`worker/README.md` › Security headers): the Worker puts a nonce on every `<script>` in `index.html`; scripts the app loads need none. No inline handlers (`onclick="…"`), `javascript:` URLs, `eval`, `data:` images or third-party origins: each is a violation. A new origin goes into the policy in `worker/security/headers.ts`.
 - **404:** an unknown path under a Lang renders `NotFoundPage` (`notFoundComponent` of `/$lang`) inside the layout.
 - **Page transitions:** `defaultViewTransition` in `src/main.tsx`; the animation is in `src/index.css`, instant under reduced motion.
 - **360px:** below `lg` the Lang and theme switchers live in the menu, not the header. `e2e/layout.spec.ts` checks every page in every Lang for horizontal scroll.
