@@ -1,5 +1,6 @@
 import { createMiddleware } from "hono/factory"
 import type { ApiEnv } from "./app"
+import { isUpload } from "./body-limit"
 import { apiError } from "./errors"
 import { isLocalRequest } from "./local"
 
@@ -21,7 +22,7 @@ function bucket(env: Env, method: string, path: string, ip: string) {
   if (READ_METHODS.has(method) || !path.startsWith("/api/admin/")) {
     return { limiter: env.API_RATE_LIMIT, key: `${ip} ${path}` }
   }
-  if (method === "POST" && /^\/api\/admin\/uploads\/?$/.test(path)) {
+  if (isUpload(method, path)) {
     return { limiter: env.UPLOAD_RATE_LIMIT, key: ip }
   }
   return { limiter: env.ADMIN_WRITE_RATE_LIMIT, key: ip }

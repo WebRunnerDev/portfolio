@@ -7,7 +7,8 @@ import { apiError, methodNotAllowed } from "../../errors"
 
 // POST /api/admin/uploads: the file is the raw body. Its type comes from its
 // bytes (415 unless MEDIA_TYPES has it), its key from the type and a uuid.
-const LARGEST = Math.max(...Object.values(MAX_UPLOAD_BYTES))
+// `limitBody` (body-limit.ts) has already refused a body over the largest
+// kind's limit.
 
 // Every column that holds an R2 key: a file one of them names stays.
 // (D1 allows only a few terms in a compound SELECT, hence no UNION.)
@@ -24,10 +25,6 @@ const KEY = "/:key{.+}"
 
 export const uploads = new Hono<AdminEnv>()
   .post("/", async (c) => {
-    // Refuse a declared oversize body before reading it.
-    if (Number(c.req.header("Content-Length")) > LARGEST) {
-      return apiError(c, 413, "payload_too_large")
-    }
     const bytes = new Uint8Array(await c.req.arrayBuffer())
     if (bytes.length === 0) return apiError(c, 400, "invalid_request")
     const media = sniffMedia(bytes)
