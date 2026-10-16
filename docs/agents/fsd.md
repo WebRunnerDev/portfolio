@@ -14,7 +14,7 @@ Frontend `src/` follows FSD 2.1 ([ADR-0009](../adr/0009-feature-sliced-design.md
 
 ## Shared with the Worker
 
-`contracts/` (repo root, alias `@contracts/*`) holds what both the frontend and `worker/` use: the Lang list, API schemas and types. The Worker imports from `contracts/`, never from `src/`.
+`contracts/` (repo root, alias `@contracts/*`) holds what both the frontend and `worker/` use: the Lang list, the UI dictionaries (`contracts/messages/`, read through `@/shared/i18n`), page meta, API schemas and types. The Worker imports from `contracts/`, never from `src/`.
 
 ## RTL
 
@@ -38,8 +38,9 @@ Frontend `src/` follows FSD 2.1 ([ADR-0009](../adr/0009-feature-sliced-design.md
 
 The `/$lang` route renders the layout: `SiteHeader` (`@/widgets/header`), `<main id="main">`, `SiteFooter` (`@/widgets/footer`). The menu (`@/widgets/menu`) goes into the header through its `menu` slot, because widgets can't import each other.
 
-- **Sections:** `SECTIONS` in `src/shared/config/sections.ts` feeds the menu links and the current section in the header. A new section = a page slice, a route file, an entry there and a `nav.*` key in every dictionary.
+- **Sections:** `SECTIONS` in `src/shared/config/sections.ts` feeds the menu links and the current section in the header. A new section = a page slice, a route file, an entry there, an entry in `PAGES` (`contracts/meta.ts`, for its title and description) and `nav.*` + `meta.*` keys in every dictionary.
 - **Contacts** live in the footer (`src/widgets/footer/model/contacts.ts`), not on a page of their own. No phone anywhere.
+- **Head tags:** `LangHead` renders the title, description, canonical and hreflang of the page from `contracts/meta.ts`, the same values the Worker injects for crawlers (`worker/README.md` › Meta Injection). Pages don't render their own `<title>`; NotFoundPage is the exception.
 - **404:** an unknown path under a Lang renders `NotFoundPage` (`notFoundComponent` of `/$lang`) inside the layout.
 - **Page transitions:** `defaultViewTransition` in `src/main.tsx`; the animation is in `src/index.css`, instant under reduced motion.
 - **360px:** below `lg` the Lang and theme switchers live in the menu, not the header. `e2e/layout.spec.ts` checks every page in every Lang for horizontal scroll.
