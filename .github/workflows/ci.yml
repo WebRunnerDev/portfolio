@@ -26,6 +26,8 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      # npm audit --audit-level=high, minus .github/audit-allowlist.json.
+      - run: node .github/scripts/npm-audit.mjs
       - run: npm run lint
       - run: npm run typecheck
       - run: npx wrangler types --check --env-file .dev.vars.example
