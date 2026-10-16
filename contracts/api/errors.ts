@@ -8,6 +8,8 @@ export const API_ERROR_CODES = [
   "not_found",
   "method_not_allowed",
   "conflict",
+  "payload_too_large",
+  "unsupported_media_type",
   "validation_failed",
   "internal_error",
 ] as const
