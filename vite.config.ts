@@ -73,7 +73,7 @@ export default defineConfig({
         },
       },
       {
-        // worker/ tests run in workerd with the bindings from wrangler.jsonc
+        // worker/ tests (and scripts/seed-cv/) run in workerd with the bindings from wrangler.jsonc
         // (local D1, migrated by the setup file).
         plugins: [
           cloudflareTest(async () => ({
@@ -92,7 +92,7 @@ export default defineConfig({
         resolve: { alias: contractsAlias },
         test: {
           name: "worker",
-          include: ["worker/**/*.test.ts"],
+          include: ["worker/**/*.test.ts", "scripts/**/*.test.ts"],
           setupFiles: ["worker/test/apply-migrations.ts"],
           // Vitest 5 hands cached modules over as OS paths, which `readFileSync`
           // in workerd rejects on Windows.

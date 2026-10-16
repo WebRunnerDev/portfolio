@@ -20,6 +20,7 @@
     "icons": "node scripts/generate-icons.mjs",
     "db:migrate": "node scripts/d1-migrate.mjs",
     "db:migrate:preview": "node scripts/d1-migrate.mjs --preview",
+    "db:seed-cv": "node scripts/seed-cv.mjs",
     "prepare": "husky"
   },
   "dependencies": {

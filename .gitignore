@@ -1,5 +1,6 @@
 # Private documents (CV sources, personal data)
-docs/private/
+docs/private/*
+!docs/private/seed.example.json
 
 # Dependencies & build
 node_modules/
