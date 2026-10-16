@@ -21,12 +21,11 @@
   "observability": { "enabled": true },
   // ADR-0004: the Access application that guards /admin* and /api/admin/*.
   // Values come from the Zero Trust dashboard (worker/README.md › Admin access).
-  // While empty, /api/admin/* answers 500.
   "vars": {
     // <team>.cloudflareaccess.com
-    "ACCESS_TEAM_DOMAIN": "",
+    "ACCESS_TEAM_DOMAIN": "webrunner.cloudflareaccess.com",
     // The application's Application Audience (AUD) Tag.
-    "ACCESS_AUD": "",
+    "ACCESS_AUD": "68e2aadff81d962098390f1d6a6b285001ed4425f1af5c3dbee17e2ad154e72f",
   },
   // ADR-0002: all content. Schema in migrations/. IDs come from
   // `wrangler d1 create` (worker/README.md › Deploy › One-time setup).
