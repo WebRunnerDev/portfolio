@@ -3,10 +3,18 @@ import { describe, expect, it } from "vitest"
 import { findEntity } from "../model/entities"
 import {
   buildBody,
+  completeness,
   initialValues,
   isRequired,
   otherErrors,
+  patchBody,
+  plainFields,
+  sameValues,
+  translatedFields,
+  translationBody,
   validateBody,
+  validatePatch,
+  validateTranslation,
 } from "./form"
 
 const projects = findEntity("projects")!
@@ -61,6 +69,99 @@ describe("initialValues", () => {
       r2Key: "",
       caption: "",
     })
+  })
+
+  it("shows a stored row: lines, ids, nulls", () => {
+    const values = initialValues(projects.fields, {
+      slug: "plotops",
+      demoUrl: null,
+      featured: true,
+      technologyIds: [3, 1],
+      cvBullets: ["One", "Two"],
+    })
+    expect(values).toMatchObject({
+      slug: "plotops",
+      demoUrl: "",
+      featured: true,
+      inCv: false,
+      technologyIds: [3, 1],
+      cvBullets: "One\nTwo",
+    })
+  })
+})
+
+describe("the editor", () => {
+  const posts = findEntity("posts")!
+
+  it("splits the fields into the row's and the Translation's", () => {
+    expect(plainFields(projects).map((field) => field.name)).not.toContain(
+      "title"
+    )
+    expect(translatedFields(projects).map((field) => field.name)).toEqual([
+      "title",
+      "description",
+      "cvBullets",
+      "caseStudy",
+    ])
+  })
+
+  it("patches every field and clears emptied optional ones", () => {
+    const values = {
+      ...initialValues(projects.fields, { slug: "plotops", coverKey: "k" }),
+      coverKey: "",
+      technologyIds: [2],
+    }
+    const body = patchBody(projects, values)
+    expect(body).toEqual({
+      slug: "plotops",
+      status: "in_progress",
+      githubUrl: null,
+      demoUrl: null,
+      featured: false,
+      inCv: false,
+      coverKey: null,
+      technologyIds: [2],
+    })
+    expect(validatePatch(projects, body)).toEqual({})
+  })
+
+  it("asks for an emptied required field", () => {
+    const body = patchBody(projects, initialValues(projects.fields))
+    expect(body).not.toHaveProperty("slug")
+    expect(validatePatch(projects, body).slug).toEqual(["Required"])
+  })
+
+  it("puts the whole Translation and leaves defaults to the schema", () => {
+    const body = translationBody(posts, {
+      ...initialValues(translatedFields(posts)),
+      title: "Привет",
+      readingMinutes: "4",
+    })
+    expect(body).toEqual({ title: "Привет", readingMinutes: 4 })
+    expect(validateTranslation(posts, body)).toEqual({})
+    expect(validateTranslation(posts, {}).title).toEqual(["Required"])
+  })
+
+  it("edits a timestamp in local time and sends it as ISO", () => {
+    const iso = "2026-10-16T09:30:00.000Z"
+    const values = initialValues(plainFields(posts), { publishedAt: iso })
+    expect(values.publishedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/)
+    expect(patchBody(posts, values).publishedAt).toBe(iso)
+  })
+
+  it("counts the filled fields of a Translation", () => {
+    expect(
+      completeness(projects, {
+        title: "PlotOps",
+        cvBullets: " ",
+        caseStudy: "",
+      })
+    ).toEqual({ filled: 1, total: 4 })
+  })
+
+  it("compares values", () => {
+    expect(sameValues({ a: "1", ids: [1] }, { a: "1", ids: [1] })).toBe(true)
+    expect(sameValues({ ids: [1, 2] }, { ids: [2, 1] })).toBe(false)
   })
 })
 
