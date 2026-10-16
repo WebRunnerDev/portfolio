@@ -43,3 +43,13 @@ The `/$lang` route renders the layout: `SiteHeader` (`@/widgets/header`), `<main
 - **404:** an unknown path under a Lang renders `NotFoundPage` (`notFoundComponent` of `/$lang`) inside the layout.
 - **Page transitions:** `defaultViewTransition` in `src/main.tsx`; the animation is in `src/index.css`, instant under reduced motion.
 - **360px:** below `lg` the Lang and theme switchers live in the menu, not the header. `e2e/layout.spec.ts` checks every page in every Lang for horizontal scroll.
+
+## Admin
+
+`/admin` ([ADR-0004](../adr/0004-cloudflare-access-for-admin.md)) sits outside `/$lang`: its own layout, EN only, `<html dir="ltr">`, `noindex`. Routes are in `src/app/routes/admin/`, everything else in one page slice, `src/pages/admin/`.
+
+- **Lazy:** admin route files hold only `component`, so the router puts the admin in its own chunks. `e2e/admin.spec.ts` checks that no public page loads a script with `/api/admin` in it.
+- **Shared code splits chunks:** every module the admin shares with the public pages (a kit component, a feature, an icon) moves out of its public chunk into a chunk of its own: more files and a bit more gzip on every public page. Import only what the admin needs; no theme switcher, no `useDirection`.
+- **API:** `api/admin-api.ts` calls `/api/admin/*`, checks answers against the schemas in `contracts/api/admin.ts` and throws `AdminApiError` (`code`, `status`, 422 `fields`). Data loads through `useResource(key, load)`.
+- **Entities:** `model/entities.ts` describes each entity once: its schemas, list columns and create-form fields. Lists, the create dialog and the nav are built from it, so a new entity is one entry there (after its API).
+- **Locally:** `npm run dev` with `ACCESS_DEV_EMAIL` in `.dev.vars` and a migrated local D1 (`worker/README.md` › Admin access), then open `http://localhost:5173/admin`.

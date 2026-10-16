@@ -11,12 +11,16 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LangRouteRouteImport } from './routes/$lang/route'
+import { Route as AdminRouteRouteImport } from './routes/admin/route'
 import { Route as LangIndexRouteImport } from './routes/$lang/index'
 import { Route as LangBlogRouteImport } from './routes/$lang/blog'
 import { Route as LangCvRouteImport } from './routes/$lang/cv'
 import { Route as LangDesignRouteImport } from './routes/$lang/design'
 import { Route as LangGalleryRouteImport } from './routes/$lang/gallery'
 import { Route as LangProjectsRouteImport } from './routes/$lang/projects'
+import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as AdminEntityIndexRouteImport } from './routes/admin/$entity/index'
+import { Route as AdminEntityIdRouteImport } from './routes/admin/$entity/$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -26,6 +30,11 @@ const IndexRoute = IndexRouteImport.update({
 const LangRouteRoute = LangRouteRouteImport.update({
   id: '/$lang',
   path: '/$lang',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRouteRoute = AdminRouteRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LangIndexRoute = LangIndexRouteImport.update({
@@ -58,16 +67,35 @@ const LangProjectsRoute = LangProjectsRouteImport.update({
   path: '/projects',
   getParentRoute: () => LangRouteRoute,
 } as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminEntityIndexRoute = AdminEntityIndexRouteImport.update({
+  id: '/$entity/',
+  path: '/$entity/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminEntityIdRoute = AdminEntityIdRouteImport.update({
+  id: '/$entity/$id',
+  path: '/$entity/$id',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$lang': typeof LangRouteRouteWithChildren
+  '/admin': typeof AdminRouteRouteWithChildren
   '/$lang/blog': typeof LangBlogRoute
   '/$lang/cv': typeof LangCvRoute
   '/$lang/design': typeof LangDesignRoute
   '/$lang/gallery': typeof LangGalleryRoute
   '/$lang/projects': typeof LangProjectsRoute
   '/$lang/': typeof LangIndexRoute
+  '/admin/': typeof AdminIndexRoute
+  '/admin/$entity/$id': typeof AdminEntityIdRoute
+  '/admin/$entity/': typeof AdminEntityIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -77,29 +105,40 @@ export interface FileRoutesByTo {
   '/$lang/gallery': typeof LangGalleryRoute
   '/$lang/projects': typeof LangProjectsRoute
   '/$lang': typeof LangIndexRoute
+  '/admin': typeof AdminIndexRoute
+  '/admin/$entity/$id': typeof AdminEntityIdRoute
+  '/admin/$entity': typeof AdminEntityIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/$lang': typeof LangRouteRouteWithChildren
+  '/admin': typeof AdminRouteRouteWithChildren
   '/$lang/blog': typeof LangBlogRoute
   '/$lang/cv': typeof LangCvRoute
   '/$lang/design': typeof LangDesignRoute
   '/$lang/gallery': typeof LangGalleryRoute
   '/$lang/projects': typeof LangProjectsRoute
   '/$lang/': typeof LangIndexRoute
+  '/admin/': typeof AdminIndexRoute
+  '/admin/$entity/$id': typeof AdminEntityIdRoute
+  '/admin/$entity/': typeof AdminEntityIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/$lang'
+    | '/admin'
     | '/$lang/blog'
     | '/$lang/cv'
     | '/$lang/design'
     | '/$lang/gallery'
     | '/$lang/projects'
     | '/$lang/'
+    | '/admin/'
+    | '/admin/$entity/$id'
+    | '/admin/$entity/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -109,21 +148,29 @@ export interface FileRouteTypes {
     | '/$lang/gallery'
     | '/$lang/projects'
     | '/$lang'
+    | '/admin'
+    | '/admin/$entity/$id'
+    | '/admin/$entity'
   id:
     | '__root__'
     | '/'
     | '/$lang'
+    | '/admin'
     | '/$lang/blog'
     | '/$lang/cv'
     | '/$lang/design'
     | '/$lang/gallery'
     | '/$lang/projects'
     | '/$lang/'
+    | '/admin/'
+    | '/admin/$entity/$id'
+    | '/admin/$entity/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LangRouteRoute: typeof LangRouteRouteWithChildren
+  AdminRouteRoute: typeof AdminRouteRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -140,6 +187,13 @@ declare module '@tanstack/react-router' {
       path: '/$lang'
       fullPath: '/$lang'
       preLoaderRoute: typeof LangRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/$lang/': {
@@ -184,6 +238,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LangProjectsRouteImport
       parentRoute: typeof LangRouteRoute
     }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/$entity/': {
+      id: '/admin/$entity/'
+      path: '/$entity'
+      fullPath: '/admin/$entity/'
+      preLoaderRoute: typeof AdminEntityIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/$entity/$id': {
+      id: '/admin/$entity/$id'
+      path: '/$entity/$id'
+      fullPath: '/admin/$entity/$id'
+      preLoaderRoute: typeof AdminEntityIdRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
   }
 }
 
@@ -209,9 +284,26 @@ const LangRouteRouteWithChildren = LangRouteRoute._addFileChildren(
   LangRouteRouteChildren,
 )
 
+interface AdminRouteRouteChildren {
+  AdminIndexRoute: typeof AdminIndexRoute
+  AdminEntityIdRoute: typeof AdminEntityIdRoute
+  AdminEntityIndexRoute: typeof AdminEntityIndexRoute
+}
+
+const AdminRouteRouteChildren: AdminRouteRouteChildren = {
+  AdminIndexRoute: AdminIndexRoute,
+  AdminEntityIdRoute: AdminEntityIdRoute,
+  AdminEntityIndexRoute: AdminEntityIndexRoute,
+}
+
+const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(
+  AdminRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LangRouteRoute: LangRouteRouteWithChildren,
+  AdminRouteRoute: AdminRouteRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
