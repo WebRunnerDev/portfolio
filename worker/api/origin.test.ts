@@ -32,65 +32,29 @@ const preflight = {
 }
 
 describe("CORS", () => {
-  it("allows https://webrunner.dev", async () => {
-    const response = await request(HEALTH, "https://webrunner.dev")
-    expect(response.status).toBe(200)
-    expect(response.headers.get("Access-Control-Allow-Origin")).toBe(
-      "https://webrunner.dev"
-    )
-    expect(response.headers.get("Vary")).toContain("Origin")
-  })
-
-  it("gives another origin no CORS headers", async () => {
+  it("gives no CORS headers to any Origin", async () => {
     for (const origin of [
+      "https://webrunner.dev",
       "https://evil.example",
-      "https://webrunner.dev.evil.example",
-      "http://webrunner.dev",
       "http://localhost:5173",
       "null",
     ]) {
       const response = await request(HEALTH, origin)
       expect(response.status).toBe(200)
       expect(corsHeaders(response)).toEqual([])
-      expect(response.headers.get("Vary")).toContain("Origin")
     }
   })
 
-  it("answers a preflight from https://webrunner.dev", async () => {
-    const response = await request(
-      "https://webrunner.dev/api/admin/tags",
-      "https://webrunner.dev",
-      preflight
-    )
-    expect(response.status).toBe(204)
-    expect(response.headers.get("Access-Control-Allow-Origin")).toBe(
-      "https://webrunner.dev"
-    )
-    expect(response.headers.get("Access-Control-Allow-Methods")).toContain(
-      "PATCH"
-    )
-    expect(response.headers.get("Access-Control-Allow-Headers")).toBe(
-      "Content-Type"
-    )
-  })
-
-  it("answers a preflight from another origin without CORS headers", async () => {
-    const response = await request(
-      "https://webrunner.dev/api/admin/tags",
-      "https://evil.example",
-      preflight
-    )
-    expect(corsHeaders(response)).toEqual([])
-  })
-
-  it("allows a localhost page only on a localhost Worker", async () => {
-    const response = await request(
-      "http://localhost:5174/api/health",
-      "http://localhost:5173"
-    )
-    expect(response.headers.get("Access-Control-Allow-Origin")).toBe(
-      "http://localhost:5173"
-    )
+  it("doesn't answer a preflight", async () => {
+    for (const origin of ["https://webrunner.dev", "https://evil.example"]) {
+      const response = await request(
+        "https://webrunner.dev/api/admin/tags",
+        origin,
+        preflight
+      )
+      expect(response.status).not.toBe(204)
+      expect(corsHeaders(response)).toEqual([])
+    }
   })
 })
 
@@ -111,13 +75,17 @@ describe("writes from another origin", () => {
     }
   })
 
-  it("answers 403 to a localhost page on the real site", async () => {
-    const response = await request(
+  it("answers 403 to a localhost page on another origin", async () => {
+    for (const url of [
       "https://webrunner.dev/api/admin/uploads",
-      "http://localhost:5173",
-      { method: "POST", body: "x" }
-    )
-    await expectError(response, 403, "forbidden")
+      "http://localhost:5174/api/admin/uploads",
+    ]) {
+      const response = await request(url, "http://localhost:5173", {
+        method: "POST",
+        body: "x",
+      })
+      await expectError(response, 403, "forbidden")
+    }
   })
 
   it("lets same-origin writes through, on a Preview too", async () => {
