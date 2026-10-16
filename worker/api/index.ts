@@ -3,6 +3,8 @@ import { requireAccess, type AdminEnv } from "./access"
 import { createApp } from "./app"
 import { createPublicApp } from "./public"
 import { adminMe } from "./routes/admin-me"
+import { content } from "./routes/admin/content"
+import { profileAdmin } from "./routes/admin/profile"
 import { health } from "./routes/health"
 import { albums } from "./routes/public/albums"
 import {
@@ -20,7 +22,11 @@ import { tracks } from "./routes/public/tracks"
 
 // Everything under /api/admin/* goes through the Access check first, unknown
 // paths included, so they answer 401 rather than 404.
-const admin = new Hono<AdminEnv>().use(requireAccess).route("/me", adminMe)
+const admin = new Hono<AdminEnv>()
+  .use(requireAccess)
+  .route("/me", adminMe)
+  .route("/profile", profileAdmin)
+  .route("/", content)
 
 // Everything under /api/public/:lang/* checks the Lang first (400 if unknown).
 const publicApi = createPublicApp()

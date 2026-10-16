@@ -7,7 +7,7 @@ Code shared with the frontend (Lang list, API schemas and types) lives in `contr
 - Static assets are served without invoking the Worker; unknown paths fall back to `index.html` (`not_found_handling: "single-page-application"`), so deep links like `/en/cv` work.
 - Only `/api/*` runs the Worker first; it goes to the API below. `GET /api/health` → `{"status":"ok"}`.
 - `/api/public/:lang/*` reads published content on a Lang (Public API below).
-- `/api/admin/*` needs a Cloudflare Access sign-in (Admin access below). `GET /api/admin/me` → `{"email":"…"}` of the signed-in owner.
+- `/api/admin/*` needs a Cloudflare Access sign-in (Admin access below). `GET /api/admin/me` → `{"email":"…"}` of the signed-in owner; the rest is CRUD of the content (Admin API below).
 
 ## API
 
@@ -25,6 +25,8 @@ Code shared with the frontend (Lang list, API schemas and types) lives in `contr
 | 401 | `unauthorized` | `/api/admin/*` without a valid Access JWT (Admin access below) |
 | 404 | `not_found` | No route for the path |
 | 405 | `method_not_allowed` | The path exists, the method doesn't (`Allow` header lists the methods) |
+| 409 | `conflict` | `/api/admin/*`: the row is still in use (an album with photos) or the EN Translation is being removed |
+| 422 | `validation_failed` | `/api/admin/*` body doesn't match the schema, a unique value (slug, name…) is taken, or an id points at nothing. Also carries `fields`: `{ "<dot path>": ["message"] }` |
 | 500 | `internal_error` | Unhandled exception; it goes to Workers Logs, the client gets no details |
 
 **New endpoint:**
@@ -51,6 +53,36 @@ Code shared with the frontend (Lang list, API schemas and types) lives in `contr
 **Fallback** (CONTEXT.md): each translated entity comes with its Translation on the Lang, or its EN one and `fallback: true` when there is none. An entity translated on neither is left out (404 by slug). The SQL is `translationOf()` in `worker/api/public.ts`: one join that picks the Lang's row, else EN, so fields never mix two Translations. A photo's caption is optional: a photo without any caption has `caption: null` and `fallback: false`.
 
 `*Key` fields are R2 object keys; turning them into URLs comes with media serving (#33).
+
+## Admin API
+
+`/api/admin/<entity>`, behind the Access check. Schemas in `contracts/api/admin.ts`: each entity has `create`, `patch`, `translation` and `entity` (the answer). Fields are camelCase; booleans are `true`/`false`, bullet lists are arrays.
+
+| Entities | Notes |
+| --- | --- |
+| `cv-sections`, `technologies`, `certifications`, `tags`, `tracks` | Not translated |
+| `experience`, `education`, `languages`, `projects`, `posts`, `albums` | Translated; EN required |
+| `photos` | Caption optional, so no Translation is required; `GET ?albumId=` lists one album |
+| `profile` | A single record, below |
+
+| Method and path | Answer |
+| --- | --- |
+| `GET /<entity>` | 200, every row, drafts included: by `position` where there is one, posts newest first |
+| `POST /<entity>` | 201 with the row. A translated entity takes `translations: { en: {…}, ru?: {…} }`; new rows go last |
+| `GET /<entity>/:id` | 200 with the row and all its Translations |
+| `PATCH /<entity>/:id` | 200; any subset of the untranslated fields. Link lists (`technologyIds`, `tagIds`) are replaced whole |
+| `DELETE /<entity>/:id` | 204; Translations and links go with it |
+| `PUT /<entity>/:id/translations/:lang` | 200; writes the whole Translation on that Lang |
+| `DELETE /<entity>/:id/translations/:lang` | 204; EN answers 409 (except photos) |
+| `PUT /<entity>/order` | 204; `{ "ids": [3, 1, 2] }` sets `position` by index. Entities with `position`: all but posts and tags |
+
+`/profile`: `GET` (404 until created), `PUT` with the `create` body creates it or overwrites its fields, keeping Translations it doesn't mention; `PATCH`, and `/profile/translations/:lang` as above. No delete.
+
+- **Links:** `technologyIds` of experience and projects keep their order; `tagIds` of a post are sorted by id. An unknown id answers 422 on that field.
+- **Posts:** publishing without `publishedAt` sets it to now; going back to draft keeps it.
+- **Photos:** deleting one doesn't remove its R2 object yet; that comes with media (#33).
+
+The routes come from `crudRoutes()` (`worker/api/admin.ts`) and the SQL from `worker/api/admin-store.ts`, both driven by one `Entity` per table in `worker/api/routes/admin/content.ts` (the Profile in `profile.ts`). A write that touches several tables (a row with its Translations and links) is one `db.batch()`, which D1 runs as a transaction. A new entity: its schemas in `contracts/api/admin.ts`, an `Entity` and a `.route()` in `content.ts`.
 
 ## Tests
 
