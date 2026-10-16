@@ -2,6 +2,7 @@ import { createMiddleware } from "hono/factory"
 import { createRemoteJWKSet, jwtVerify, type JWTVerifyGetKey } from "jose"
 import type { ApiEnv } from "./app"
 import { apiError } from "./errors"
+import { isLocalRequest } from "./local"
 
 // ADR-0004: Cloudflare Access sits in front of /api/admin/*, and the Worker
 // checks the JWT it adds to every request it lets through.
@@ -9,8 +10,6 @@ export type AdminEnv = ApiEnv & { Variables: { email: string } }
 
 // Only from .dev.vars, so it is not part of the generated Env.
 type LocalEnv = Env & { ACCESS_DEV_EMAIL?: string }
-
-const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"])
 
 // One key set per team domain for the life of the isolate. jose keeps the keys
 // in memory and refetches them when a token names a key it doesn't know (key
@@ -51,7 +50,7 @@ async function verifiedEmail(token: string, env: Env) {
 // so a variable set by mistake in production or a Preview opens nothing.
 function devEmail(url: string, env: LocalEnv) {
   if (!env.ACCESS_DEV_EMAIL) return undefined
-  if (!LOCAL_HOSTS.has(new URL(url).hostname)) return undefined
+  if (!isLocalRequest(url)) return undefined
   return env.ACCESS_DEV_EMAIL
 }
 

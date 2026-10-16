@@ -7,6 +7,7 @@ Code shared with the frontend (Lang list, UI dictionaries, page meta, API schema
 - Hashed build output (`/assets/*`) is served without invoking the Worker; everything else runs it first (`run_worker_first`) and goes to `ASSETS` unless a rule below takes it. Unknown paths fall back to `index.html` (`not_found_handling: "single-page-application"`).
 - Pages under a Lang (`/{lang}/…`) get Meta Injection (below). `/api/*` goes to the API below, `/media/*` to the MEDIA bucket (Media below). `GET /api/health` → `{"status":"ok"}`.
 - `/api/public/:lang/*` reads published content on a Lang (Public API below).
+- `/api/*` is rate limited per IP (Rate limits below); pages, assets and `/media/*` are not.
 - `/api/admin/*` needs a Cloudflare Access sign-in (Admin access below). `GET /api/admin/me` → `{"email":"…"}` of the signed-in owner; the rest is CRUD of the content (Admin API below).
 
 ## Meta Injection
@@ -40,6 +41,7 @@ ADR-0001: crawlers don't run JS, so `worker/meta/serve-page.ts` rewrites `index.
 | 413 | `payload_too_large` | An upload over its limit (Media below) |
 | 415 | `unsupported_media_type` | An upload whose bytes are not an allowed type |
 | 422 | `validation_failed` | `/api/admin/*` body doesn't match the schema, a unique value (slug, name…) is taken, or an id points at nothing. Also carries `fields`: `{ "<dot path>": ["message"] }` |
+| 429 | `too_many_requests` | The IP passed a rate limit (Rate limits below); `Retry-After` gives the seconds to wait |
 | 500 | `internal_error` | Unhandled exception; it goes to Workers Logs, the client gets no details |
 
 **New endpoint:**
@@ -48,6 +50,21 @@ ADR-0001: crawlers don't run JS, so `worker/meta/serve-page.ts` rewrites `index.
 2. `worker/api/routes/<name>.ts`: a `new Hono<ApiEnv>()` with the handlers, input through `sValidator(target, Schema, rejectInvalid)` (`@hono/standard-validator`), output typed with `satisfies <Response type>`, ending with `.all(path, methodNotAllowed("GET, HEAD"))`.
 3. Mount it in `worker/api/index.ts`: `.route("/<name>", <name>)`. An admin endpoint is a `new Hono<AdminEnv>()` mounted on `admin` there instead, behind the Access check; the email is `c.var.email`. A public one is a `new Hono<PublicEnv>()` in `worker/api/routes/public/`, mounted on `publicApi`; the Lang is `c.var.lang`.
 4. Tests next to it (`worker/**/*.test.ts`).
+
+## Rate limits
+
+`rateLimit` (`worker/api/rate-limit.ts`) runs first on every `/api/*` request, unknown paths and `/api/admin/*` before the Access check included. It uses the free [Workers Rate Limiting](https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/) bindings (`ratelimits` in `wrangler.jsonc`) instead of the paid Advanced Rate Limiting rules. Over a limit: 429 `too_many_requests` with `Retry-After: 60`.
+
+| Binding | Requests | Limit | Key |
+| --- | --- | --- | --- |
+| `API_RATE_LIMIT` | GET, HEAD, OPTIONS anywhere; anything outside `/api/admin/*` | 100 / 60 s | IP + path |
+| `ADMIN_WRITE_RATE_LIMIT` | Other methods on `/api/admin/*` | 60 / 60 s | IP |
+| `UPLOAD_RATE_LIMIT` | `POST /api/admin/uploads` | 20 / 60 s | IP |
+
+- The IP is `CF-Connecting-IP`, which Cloudflare's edge sets on every request. Reads count per path, so the few calls a page makes don't add up; writes per IP, since their paths carry ids.
+- Counters are kept per Cloudflare location and the binding allows only 10 or 60 s periods, so the limits are approximate. `RATE_LIMIT_PERIOD` in `rate-limit.ts` must equal `period`: it is the `Retry-After`.
+- **Dev and tests:** a request without `CF-Connecting-IP` (Vitest's `exports.default.fetch()`) or to `localhost` (`npm run dev`, e2e) is never limited. `worker/api/rate-limit.test.ts` sets the header and runs against Miniflare's simulation of the bindings.
+- `namespace_id` is a number unique within the Cloudflare account; there is nothing to create in the dashboard.
 
 ## Public API
 
