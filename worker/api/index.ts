@@ -7,6 +7,7 @@ import { createPublicApp } from "./public"
 import { rateLimit } from "./rate-limit"
 import { adminMe } from "./routes/admin-me"
 import { content } from "./routes/admin/content"
+import { cspReport } from "./routes/csp-report"
 import { profileAdmin } from "./routes/admin/profile"
 import { uploads } from "./routes/admin/uploads"
 import { health } from "./routes/health"
@@ -56,5 +57,6 @@ export const api = createApp()
   .use(checkOrigin)
   .use(limitBody)
   .route("/health", health)
+  .route("/csp-report", cspReport)
   .route("/admin", admin)
   .route("/public/:lang", publicApi)
