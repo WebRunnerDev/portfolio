@@ -8,11 +8,12 @@ const MESSAGES: Partial<Record<AdminApiError["code"], string>> = {
   network_error:
     "No answer from the API. If the Access session has expired, reload the page to sign in again.",
   unauthorized: "Not signed in. Reload the page to sign in through Access.",
+  forbidden: "Refused: the request came from another site.",
   not_found: "Not found.",
   conflict:
     "Still in use: remove what points at it first (an album's photos, a file a row names).",
   validation_failed: "Some fields are invalid.",
-  payload_too_large: "The file is too large.",
+  payload_too_large: "Too large: the file, or the text in the form.",
   unsupported_media_type: "This file type isn't allowed.",
   too_many_requests: "Too many requests. Wait a minute and try again.",
   bad_response:

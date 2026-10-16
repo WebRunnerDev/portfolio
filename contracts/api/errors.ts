@@ -5,6 +5,7 @@ import * as v from "valibot"
 export const API_ERROR_CODES = [
   "invalid_request",
   "unauthorized",
+  "forbidden",
   "not_found",
   "method_not_allowed",
   "conflict",

@@ -1,6 +1,8 @@
 import { Hono } from "hono"
 import { requireAccess, type AdminEnv } from "./access"
 import { createApp } from "./app"
+import { limitBody } from "./body-limit"
+import { checkOrigin } from "./origin"
 import { createPublicApp } from "./public"
 import { rateLimit } from "./rate-limit"
 import { adminMe } from "./routes/admin-me"
@@ -46,10 +48,13 @@ const publicApi = createPublicApp()
   .route("/tracks", tracks)
 
 // One route module per endpoint (worker/README.md › API). The rate limit
-// comes first, unknown paths included.
+// comes first, then the Origin check and the body limit, unknown paths
+// included.
 export const api = createApp()
   .basePath("/api")
   .use(rateLimit)
+  .use(checkOrigin)
+  .use(limitBody)
   .route("/health", health)
   .route("/admin", admin)
   .route("/public/:lang", publicApi)

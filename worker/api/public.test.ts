@@ -318,6 +318,11 @@ describe("projects", () => {
   it("answers 404 for an unknown slug", async () => {
     await expectError("/en/projects/nope", 404, "not_found")
   })
+
+  it("binds the slug as a value, never as SQL", async () => {
+    const slug = encodeURIComponent("nope' OR '1'='1")
+    await expectError(`/en/projects/${slug}`, 404, "not_found")
+  })
 })
 
 describe("posts", () => {
@@ -355,8 +360,13 @@ describe("posts", () => {
     expect(await get("/en/posts?tag=nope", v.array(PostSchema))).toEqual([])
   })
 
-  it("rejects an empty tag", async () => {
+  it("rejects an empty tag and unknown query parameters", async () => {
     await expectError("/en/posts?tag=", 400, "invalid_request")
+    await expectError(
+      "/en/posts?tag=cloudflare&limit=1",
+      400,
+      "invalid_request"
+    )
   })
 
   it("answers a post by slug with its body", async () => {
