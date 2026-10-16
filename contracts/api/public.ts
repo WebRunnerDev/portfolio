@@ -158,7 +158,7 @@ export const PostSchema = v.object({
 
 export type Post = v.InferOutput<typeof PostSchema>
 
-export const PostsQuerySchema = v.object({
+export const PostsQuerySchema = v.strictObject({
   tag: v.optional(v.pipe(v.string(), v.nonEmpty())),
 })
 

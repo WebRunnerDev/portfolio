@@ -16,7 +16,8 @@ export type AdminMeResponse = v.InferOutput<typeof AdminMeResponseSchema>
 // - `translation`: PUT /:id/translations/:lang body.
 // - `entity`: what every call answers with: the fields, `id` and all
 //   Translations at once.
-// Fields left out of `create` take the default shown here.
+// Fields left out of `create` take the default shown here. Request bodies are
+// strict objects: an unknown field answers 422 rather than being dropped.
 
 const Id = v.pipe(v.number(), v.integer(), v.minValue(1))
 
@@ -58,16 +59,19 @@ function translationsOf<T extends v.GenericSchema>(translation: T) {
   const entries = Object.fromEntries(
     LANGS.map((lang) => [lang, v.optional(translation)])
   ) as { [L in Lang]: v.OptionalSchema<T, undefined> }
-  return v.object(entries)
+  return v.strictObject(entries)
 }
 
 // EN is required when an entity is created (CONTEXT.md › Fallback).
 function translationsWithEn<T extends v.GenericSchema>(translation: T) {
-  return v.object({ ...translationsOf(translation).entries, en: translation })
+  return v.strictObject({
+    ...translationsOf(translation).entries,
+    en: translation,
+  })
 }
 
 function plainEntity<F extends v.ObjectEntries>(fields: F) {
-  const create = v.object(fields)
+  const create = v.strictObject(fields)
   return {
     create,
     patch: v.partial(create),
@@ -77,14 +81,14 @@ function plainEntity<F extends v.ObjectEntries>(fields: F) {
 
 function translatedEntity<
   F extends v.ObjectEntries,
-  T extends v.ObjectSchema<v.ObjectEntries, undefined>,
+  T extends v.StrictObjectSchema<v.ObjectEntries, undefined>,
 >(fields: F, translation: T) {
   return {
-    create: v.object({
+    create: v.strictObject({
       ...fields,
       translations: translationsWithEn(translation),
     }),
-    patch: v.partial(v.object(fields)),
+    patch: v.partial(v.strictObject(fields)),
     translation,
     entity: v.object({
       id: Id,
@@ -119,7 +123,7 @@ const profileFields = {
   photoKey: v.optional(v.nullable(Key), null),
 }
 
-const ProfileTranslationSchema = v.object({
+const ProfileTranslationSchema = v.strictObject({
   name: Text,
   headline: Text,
   about: OptionalText,
@@ -165,7 +169,7 @@ export const ExperienceAdmin = translatedEntity(
     endMonth: v.optional(v.nullable(Month), null),
     technologyIds: IdList,
   },
-  v.object({
+  v.strictObject({
     company: Text,
     role: Text,
     location: OptionalText,
@@ -180,7 +184,7 @@ export const EducationAdmin = translatedEntity(
     endMonth: v.optional(v.nullable(Month), null),
     gpa: OptionalText,
   },
-  v.object({ institution: Text, degree: Text, diploma: OptionalText })
+  v.strictObject({ institution: Text, degree: Text, diploma: OptionalText })
 )
 
 // /api/admin/certifications — not translated.
@@ -194,7 +198,7 @@ export const CertificationAdmin = plainEntity({
 // /api/admin/languages. `code` is the ISO 639-1 code of the spoken language.
 export const LanguageSkillAdmin = translatedEntity(
   { code: v.pipe(v.string(), v.regex(/^[a-z]{2}$/, "Expected ISO 639-1")) },
-  v.object({ name: Text, level: Text })
+  v.strictObject({ name: Text, level: Text })
 )
 
 // /api/admin/projects. `caseStudy` is Markdown; null means no
@@ -213,7 +217,7 @@ export const ProjectAdmin = translatedEntity(
     inCv: Flag(false),
     technologyIds: IdList,
   },
-  v.object({
+  v.strictObject({
     title: Text,
     description: Text,
     cvBullets: Lines,
@@ -234,7 +238,7 @@ export const PostAdmin = translatedEntity(
     ),
     tagIds: IdList,
   },
-  v.object({
+  v.strictObject({
     title: Text,
     excerpt: v.optional(v.string(), ""),
     // Markdown.
@@ -252,7 +256,7 @@ export const TagAdmin = plainEntity({ slug: Slug, name: Text })
 // /api/admin/albums. Deleting one that still has photos answers 409.
 export const AlbumAdmin = translatedEntity(
   { slug: Slug, coverKey: v.optional(v.nullable(Key), null) },
-  v.object({ title: Text })
+  v.strictObject({ title: Text })
 )
 
 // /api/admin/photos?albumId=<id>. The caption is optional, so a photo needs
@@ -261,11 +265,11 @@ const Pixels = v.pipe(v.number(), v.integer(), v.minValue(1))
 
 const photoFields = { albumId: Id, r2Key: Key, width: Pixels, height: Pixels }
 
-const PhotoTranslationSchema = v.object({ caption: Text })
+const PhotoTranslationSchema = v.strictObject({ caption: Text })
 
 export const PhotoAdmin = {
   ...translatedEntity(photoFields, PhotoTranslationSchema),
-  create: v.object({
+  create: v.strictObject({
     ...photoFields,
     translations: v.optional(translationsOf(PhotoTranslationSchema), {}),
   }),
@@ -283,7 +287,7 @@ export const TrackAdmin = plainEntity({
 
 // PUT /api/admin/<entity>/order — the new order of (some of) its rows;
 // positions follow the array.
-export const ReorderSchema = v.object({
+export const ReorderSchema = v.strictObject({
   ids: v.pipe(v.array(Id), v.nonEmpty(), v.check(unique, "Ids must be unique")),
 })
 
