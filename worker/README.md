@@ -49,15 +49,18 @@ ADR-0004: Cloudflare Access guards `/admin*` (the SPA route, before any asset is
 
 **Local dev:** there is no Access in front of `npm run dev`, so copy `.dev.vars.example` to `.dev.vars` and set `ACCESS_DEV_EMAIL`. Requests then pass as that email, but only when the host is `localhost`, `127.0.0.1` or `[::1]`: the same variable set in production or a Preview opens nothing, and the tests check both. `.dev.vars` is gitignored, and `cf-typegen` reads `.dev.vars.example` instead of it, so a local `.dev.vars` doesn't change `worker-configuration.d.ts`.
 
-**Previews** have no Access in front of them, so `/api/admin/*` answers 401 there: the admin works only on `webrunner.dev` and locally. To try it on a Preview later, turn on Access for Preview URLs (Worker → Settings → Domains & Routes) and give Previews that application's AUD through a `vars` block in `previews`.
+**Previews** have no Access in front of them, so `/api/admin/*` answers 401 there: the admin works only on `webrunner.dev` and locally. To try it on a Preview later: Workers & Pages → `webrunner` → **Access** tab → **Protect this Worker behind Access** → scope **Previews only** (not **All traffic**, which would close the public site too), then give Previews that application's AUD through a `vars` block in `previews`.
 
-One-time setup (owner, Zero Trust dashboard):
+One-time setup (owner). Menu names as of October 2026; in the Cloudflare dashboard, **Zero Trust** is in the left sidebar.
 
-1. Settings → Authentication → Login methods → add **GitHub** (a GitHub OAuth app with callback `https://<team>.cloudflareaccess.com/cdn-cgi/access/callback`). The team domain is in Settings → Custom pages.
-2. Access → Applications → Add an application → Self-hosted. Destinations: `webrunner.dev` with path `admin*` and `webrunner.dev` with path `api/admin/*`. Login methods: only GitHub, with instant auth.
-3. Policy: Allow, Include → Emails → the owner's email. Nobody else.
-4. Copy the application's **Application Audience (AUD) Tag** into `ACCESS_AUD` and `<team>.cloudflareaccess.com` into `ACCESS_TEAM_DOMAIN` in `wrangler.jsonc`, run `npm run cf-typegen`, commit and merge.
-5. Check in a private window: `https://webrunner.dev/admin` leads to the Access login; after it, `https://webrunner.dev/api/admin/me` shows the owner's email.
+1. **Zero Trust organization** (skip if Zero Trust already opens without onboarding): choose a team name, then the **Free** plan. Cloudflare asks for payment details even for Free and doesn't charge. The team domain is `<team name>.cloudflareaccess.com`; later it's in Zero Trust → **Settings** → **Team name and domain**.
+2. **GitHub OAuth app**: GitHub → Settings → Developer settings → OAuth Apps → **New OAuth app**. Homepage URL `https://<team name>.cloudflareaccess.com`, Authorization callback URL `https://<team name>.cloudflareaccess.com/cdn-cgi/access/callback`. **Register application**, copy the **Client ID**, then **Generate a new client secret** and copy it.
+3. **GitHub login**: Zero Trust → **Integrations** → **Identity providers** → **Add new identity provider** → **GitHub**. Paste the Client ID into **App ID** and the secret into **Client secret**, **Save**, **Finish setup**, then authorize when GitHub asks.
+4. **Application**: Zero Trust → **Access controls** → **Applications** → **Create new application** → **Self-hosted and private**. **Add public hostname** twice, both with the domain `webrunner.dev`: path `admin`, then path `api/admin`. A path covers everything under it (`/admin/posts`, `/api/admin/me`).
+5. **Policy** (on the same screen, under **Access policies**): create one with action **Allow** and the rule Include → **Emails** → the owner's email. Nobody else gets in, since Access denies anything without a matching Allow.
+6. **Login methods** (same screen): leave only **GitHub**, then **Create**.
+7. **Values for the Worker**: Applications → **Configure** on the new application → **Additional settings** → copy **Application Audience (AUD) Tag** into `ACCESS_AUD` in `wrangler.jsonc`, and `<team name>.cloudflareaccess.com` into `ACCESS_TEAM_DOMAIN`. Run `npm run cf-typegen`, commit and merge.
+8. **Check** in a private window: `https://webrunner.dev/admin` leads to the Access login; after it, `https://webrunner.dev/api/admin/me` shows the owner's email.
 
 ## Commands
 
