@@ -22,6 +22,7 @@ import {
 import { ValidationErrorSchema } from "@contracts/api/errors"
 import { api } from "."
 import { create, type Entity } from "./admin-store"
+import { MAX_JSON_BYTES } from "./body-limit"
 
 const adminEnv = { ...env, ACCESS_DEV_EMAIL: "owner@example.com" }
 
@@ -402,6 +403,40 @@ describe("validation", () => {
       "invalid_request"
     )
     await expectError(await call("GET", "/albums/abc"), 404, "not_found")
+  })
+
+  it("rejects unknown fields with 422 rather than dropping them", async () => {
+    const fields = await invalid(
+      await call("POST", "/albums", {
+        slug: "extra",
+        position: 0,
+        translations: { en: { title: "Extra", body: "x" }, fr: { title: "F" } },
+      })
+    )
+    expect(Object.keys(fields).sort()).toEqual([
+      "position",
+      "translations.en.body",
+      "translations.fr",
+    ])
+    const { id } = await json(
+      await call("POST", "/tags", { slug: "strict", name: "Strict" }),
+      201
+    )
+    expect(
+      Object.keys(await invalid(await call("PATCH", `/tags/${id}`, { id: 1 })))
+    ).toEqual(["id"])
+  })
+
+  it("refuses a JSON body over the limit with 413", async () => {
+    const title = "x".repeat(MAX_JSON_BYTES)
+    await expectError(
+      await call("POST", "/albums", {
+        slug: "huge",
+        translations: { en: { title } },
+      }),
+      413,
+      "payload_too_large"
+    )
   })
 
   it("answers other methods with 405 and Allow", async () => {
