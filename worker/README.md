@@ -6,6 +6,7 @@ Code shared with the frontend (Lang list, API schemas and types) lives in `contr
 
 - Static assets are served without invoking the Worker; unknown paths fall back to `index.html` (`not_found_handling: "single-page-application"`), so deep links like `/en/cv` work.
 - Only `/api/*` runs the Worker first; it goes to the API below. `GET /api/health` → `{"status":"ok"}`.
+- `/api/public/:lang/*` reads published content on a Lang (Public API below).
 - `/api/admin/*` needs a Cloudflare Access sign-in (Admin access below). `GET /api/admin/me` → `{"email":"…"}` of the signed-in owner.
 
 ## API
@@ -20,7 +21,7 @@ Code shared with the frontend (Lang list, API schemas and types) lives in `contr
 
 | Status | Code | When |
 | --- | --- | --- |
-| 400 | `invalid_request` | The input doesn't match the schema, or the JSON is malformed |
+| 400 | `invalid_request` | The input doesn't match the schema, the JSON is malformed, or the Lang is unknown |
 | 401 | `unauthorized` | `/api/admin/*` without a valid Access JWT (Admin access below) |
 | 404 | `not_found` | No route for the path |
 | 405 | `method_not_allowed` | The path exists, the method doesn't (`Allow` header lists the methods) |
@@ -30,8 +31,26 @@ Code shared with the frontend (Lang list, API schemas and types) lives in `contr
 
 1. Schemas in `contracts/api/<name>.ts`.
 2. `worker/api/routes/<name>.ts`: a `new Hono<ApiEnv>()` with the handlers, input through `sValidator(target, Schema, rejectInvalid)` (`@hono/standard-validator`), output typed with `satisfies <Response type>`, ending with `.all(path, methodNotAllowed("GET, HEAD"))`.
-3. Mount it in `worker/api/index.ts`: `.route("/<name>", <name>)`. An admin endpoint is a `new Hono<AdminEnv>()` mounted on `admin` there instead, behind the Access check; the email is `c.var.email`.
+3. Mount it in `worker/api/index.ts`: `.route("/<name>", <name>)`. An admin endpoint is a `new Hono<AdminEnv>()` mounted on `admin` there instead, behind the Access check; the email is `c.var.email`. A public one is a `new Hono<PublicEnv>()` in `worker/api/routes/public/`, mounted on `publicApi`; the Lang is `c.var.lang`.
 4. Tests next to it (`worker/**/*.test.ts`).
+
+## Public API
+
+`GET /api/public/:lang/<entity>`, schemas in `contracts/api/public.ts`. The Lang is always the path segment after `public`, like in page URLs; an unknown one answers 400 `invalid_request`. A 200 carries `Cache-Control: public, max-age=60`.
+
+| Path | Answer |
+| --- | --- |
+| `profile` | The Profile; 404 until it has a Translation |
+| `cv-sections` | `[{type}]` with `show_web`, by `position` |
+| `experience`, `education`, `languages` | Lists by `position`; experience with its technologies |
+| `certifications`, `technologies`, `tracks` | Untranslated lists; technologies by category |
+| `projects`, `projects/:slug` | List without `caseStudy` (`hasCaseStudy` instead); by slug with it |
+| `posts?tag=<slug>`, `posts/:slug` | Published only, newest first, list without `body`; drafts answer 404 |
+| `albums`, `albums/:slug` | List; by slug with its photos |
+
+**Fallback** (CONTEXT.md): each translated entity comes with its Translation on the Lang, or its EN one and `fallback: true` when there is none. An entity translated on neither is left out (404 by slug). The SQL is `translationOf()` in `worker/api/public.ts`: one join that picks the Lang's row, else EN, so fields never mix two Translations. A photo's caption is optional: a photo without any caption has `caption: null` and `fallback: false`.
+
+`*Key` fields are R2 object keys; turning them into URLs comes with media serving (#33).
 
 ## Tests
 
