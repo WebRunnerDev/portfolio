@@ -1,3 +1,10 @@
 # Used by the pre-commit hook and by gitleaks-action in CI.
 [extend]
 useDefault = true
+
+# The Access Application Audience (AUD) tag is public (every Access JWT carries
+# it), but its 64 hex chars trip generic-api-key.
+[allowlist]
+description = "Cloudflare Access AUD tag"
+regexTarget = "line"
+regexes = ['''ACCESS_AUD"?: "[0-9a-f]{64}"''']
