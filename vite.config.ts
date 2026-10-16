@@ -48,7 +48,13 @@ export default defineConfig({
     react(),
     tailwindcss(),
     // Runs worker/ in workerd for `dev` and `preview`; unit tests don't need it.
-    !process.env.VITEST && cloudflare(),
+    // The e2e tests of the Admin keep its D1 and R2 apart (scripts/e2e-dev.mjs).
+    !process.env.VITEST &&
+      cloudflare({
+        persistState: process.env.E2E_STATE
+          ? { path: process.env.E2E_STATE }
+          : true,
+      }),
     cloudflareWebAnalytics(process.env.CF_WEB_ANALYTICS_TOKEN),
   ],
   resolve: {

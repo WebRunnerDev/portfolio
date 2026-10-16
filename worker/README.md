@@ -114,6 +114,8 @@ One-time setup (owner), **before merging**: the deploy fails while a bucket in `
 
 `npm test` runs two Vitest projects (`vite.config.ts`): `unit` in Node and `worker`, which runs `worker/**/*.test.ts` in workerd through `@cloudflare/vitest-plugin` with the bindings from `wrangler.jsonc`. D1 is local and every test file starts with the schema from `migrations/` (`worker/test/apply-migrations.ts`). Call the Worker with `exports.default.fetch()` from `cloudflare:workers`, bindings are `env` from the same module. `npx vitest --project worker` runs only these.
 
+`npm run test:e2e` runs Playwright against `vite preview` and, for the Admin editor, against `vite dev` with its own local D1 and R2 in `.wrangler/e2e` and the Access dev bypass (`scripts/e2e-dev.mjs`, `docs/agents/fsd.md` › Admin).
+
 `fsModuleCache` is off for the `worker` project: with Vitest 5 on Windows the cached modules come as OS paths that workerd can't read.
 
 ## Admin access

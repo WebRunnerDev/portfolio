@@ -9,10 +9,14 @@ import {
   Textarea,
 } from "@/shared/ui/kit"
 
+import type { Direction, Lang } from "@contracts/lang"
+
 import type { Values } from "../api/admin-api"
+import type { FormValue } from "../lib/form"
 import type { Field } from "../model/entities"
 import { FileInput } from "./file-input"
 import { RefSelect } from "./ref-select"
+import { RefsInput } from "./refs-input"
 
 const INPUT_TYPES = {
   text: "text",
@@ -20,23 +24,29 @@ const INPUT_TYPES = {
   url: "url",
   email: "email",
   month: "month",
+  datetime: "datetime-local",
   number: "number",
 } as const
 
-// One field of the create form: its label, control, hint and messages.
+// One field of a form: its label, control, hint and messages. `lang` and
+// `dir`: the Translation's, on its text controls.
 export function FieldInput({
   field,
   value,
   required,
   errors,
+  lang,
+  dir,
   onChange,
   onUploaded,
 }: {
   field: Field
-  value: string | boolean
+  value: FormValue
   required: boolean
   errors: string[] | undefined
-  onChange: (value: string | boolean) => void
+  lang?: Lang
+  dir?: Direction
+  onChange: (value: FormValue) => void
   // A file field: the new key and what the upload filled in besides it.
   onUploaded: (key: string, extra: Values) => void
 }) {
@@ -50,9 +60,28 @@ export function FieldInput({
     "aria-required": required || undefined,
   }
   const text = typeof value === "string" ? value : ""
+  const writing = { lang, dir }
 
   let control: ReactNode
   switch (field.kind) {
+    case "refs":
+      return (
+        <fieldset className="flex flex-col gap-zsd-xs">
+          <legend className="mb-zsd-xs text-sm font-medium">
+            {field.label}
+          </legend>
+          <RefsInput
+            entityPath={field.entity}
+            value={Array.isArray(value) ? value : []}
+            onChange={onChange}
+          />
+          {errors?.map((message) => (
+            <p key={message} className="text-zsd-body-sm text-zsd-error">
+              {message}
+            </p>
+          ))}
+        </fieldset>
+      )
     case "boolean":
       return (
         <div className="flex items-center gap-zsd-sm">
@@ -66,10 +95,13 @@ export function FieldInput({
       )
     case "textarea":
     case "lines":
+    case "markdown":
       control = (
         <Textarea
           {...common}
-          rows={field.kind === "lines" ? 4 : 3}
+          {...writing}
+          rows={{ textarea: 3, lines: 4, markdown: 12 }[field.kind]}
+          className={field.kind === "markdown" ? "font-mono" : undefined}
           value={text}
           onChange={(event) => onChange(event.target.value)}
         />
@@ -108,6 +140,7 @@ export function FieldInput({
           accept={field.accept}
           fills={field.fills}
           value={text}
+          required={required}
           onChange={onChange}
           onUploaded={onUploaded}
         />
@@ -117,6 +150,7 @@ export function FieldInput({
       control = (
         <Input
           {...common}
+          {...(field.kind === "text" ? writing : {})}
           type={INPUT_TYPES[field.kind]}
           // A <input type="month"> without support falls back to text.
           placeholder={field.kind === "month" ? "YYYY-MM" : undefined}
