@@ -11,6 +11,12 @@ export const ru: Messages = {
   "nav.projects": "Проекты",
   "nav.gallery": "Галерея",
   "nav.blog": "Блог",
+  "meta.home":
+    "Портфолио веб-разработчика WebRunner: проекты, резюме, блог и фото.",
+  "meta.cv": "Опыт, технологии, образование и сертификаты.",
+  "meta.projects": "Пет-проекты с разбором: что сделано и как.",
+  "meta.gallery": "Фотоальбомы.",
+  "meta.blog": "Записи о веб-разработке.",
   "footer.contacts": "Контакты",
   "footer.copyEmail": "Скопировать почту",
   "footer.copied": "Скопировано",

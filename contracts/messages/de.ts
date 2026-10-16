@@ -11,6 +11,12 @@ export const de: Messages = {
   "nav.projects": "Projekte",
   "nav.gallery": "Galerie",
   "nav.blog": "Blog",
+  "meta.home":
+    "Portfolio von WebRunner, Webentwickler: Projekte, Lebenslauf, Blog und Fotos.",
+  "meta.cv": "Erfahrung, Technologien, Ausbildung und Zertifikate.",
+  "meta.projects": "Eigene Projekte mit Fallstudien: was gebaut wurde und wie.",
+  "meta.gallery": "Fotoalben.",
+  "meta.blog": "Beiträge über Webentwicklung.",
   "footer.contacts": "Kontakt",
   "footer.copyEmail": "E-Mail kopieren",
   "footer.copied": "Kopiert",
