@@ -10,6 +10,7 @@
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
+    "resolveJsonModule": true,
     "noEmit": true,
 
     /* Linting */
@@ -22,5 +23,10 @@
       "@contracts/*": ["./contracts/*"]
     }
   },
-  "include": ["worker", "contracts", "worker-configuration.d.ts"]
+  "include": [
+    "worker",
+    "contracts",
+    "scripts/seed-cv",
+    "worker-configuration.d.ts"
+  ]
 }

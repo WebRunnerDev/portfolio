@@ -1,0 +1,179 @@
+{
+  "profile": {
+    "email": "alex@example.com",
+    "telegramUrl": "https://t.me/example",
+    "linkedinUrl": "https://linkedin.com/in/example",
+    "githubUrl": "https://github.com/example",
+    "translations": {
+      "en": {
+        "name": "Alex Example",
+        "headline": "Front-End Developer",
+        "about": null,
+        "location": "Springfield, Exampleland"
+      },
+      "ru": {
+        "name": "Алекс Пример",
+        "headline": "Front-End разработчик",
+        "about": null,
+        "location": "Спрингфилд, Экзамплленд"
+      }
+    }
+  },
+  "cvSections": [
+    { "type": "experience", "showWeb": true, "showPdf": true },
+    { "type": "projects", "showWeb": true, "showPdf": true },
+    { "type": "technologies", "showWeb": true, "showPdf": true },
+    { "type": "education", "showWeb": true, "showPdf": true },
+    { "type": "certifications", "showWeb": true, "showPdf": false },
+    { "type": "languages", "showWeb": false, "showPdf": true }
+  ],
+  "technologies": [
+    { "name": "React", "category": "frontend", "icon": null },
+    { "name": "TypeScript", "category": "frontend", "icon": null },
+    { "name": "Node.js", "category": "backend_cloud", "icon": null },
+    { "name": "PostgreSQL", "category": "backend_cloud", "icon": null },
+    { "name": "Playwright", "category": "qa_testing", "icon": null },
+    { "name": "Figma", "category": "tools_design", "icon": null }
+  ],
+  "experience": [
+    {
+      "companyUrl": "https://example.com",
+      "startMonth": "2024-02",
+      "endMonth": null,
+      "technologies": ["TypeScript", "React", "Playwright"],
+      "translations": {
+        "en": {
+          "company": "Example Corp",
+          "role": "Front-End Developer",
+          "location": "Springfield, Exampleland",
+          "bullets": [
+            "Built the customer's dashboard; cut load time by 30%.",
+            "Wrote end-to-end tests for the checkout"
+          ]
+        },
+        "ru": {
+          "company": "Example Corp",
+          "role": "Front-End разработчик",
+          "location": "Спрингфилд, Экзамплленд",
+          "bullets": [
+            "Сделал дашборд клиента; ускорил загрузку на 30%.",
+            "Написал end-to-end тесты оформления заказа"
+          ]
+        }
+      }
+    },
+    {
+      "companyUrl": null,
+      "startMonth": "2022-06",
+      "endMonth": "2023-12",
+      "technologies": ["Figma"],
+      "translations": {
+        "en": {
+          "company": "Sample Studio",
+          "role": "UI Designer",
+          "location": null,
+          "bullets": ["Designed the mobile app"]
+        },
+        "ru": {
+          "company": "Sample Studio",
+          "role": "UI-дизайнер",
+          "location": null,
+          "bullets": ["Спроектировал мобильное приложение"]
+        }
+      }
+    }
+  ],
+  "education": [
+    {
+      "startMonth": "2020-09",
+      "endMonth": "2024-06",
+      "gpa": "3.5/4.0",
+      "translations": {
+        "en": {
+          "institution": "Example University",
+          "degree": "BSc in Computer Science",
+          "diploma": "A thesis about examples"
+        },
+        "ru": {
+          "institution": "Example University",
+          "degree": "Бакалавр компьютерных наук",
+          "diploma": "Дипломная работа о примерах"
+        }
+      }
+    }
+  ],
+  "certifications": [
+    {
+      "name": "Example Cloud Foundations",
+      "issuer": "Example Cloud",
+      "issuedMonth": "2025-03",
+      "credentialUrl": "https://example.com/credential/1"
+    },
+    {
+      "name": "Testing Basics",
+      "issuer": "Sample Academy",
+      "issuedMonth": null,
+      "credentialUrl": null
+    }
+  ],
+  "languages": [
+    {
+      "code": "en",
+      "translations": {
+        "en": { "name": "English", "level": "Native" },
+        "ru": { "name": "Английский", "level": "Родной" }
+      }
+    },
+    {
+      "code": "es",
+      "translations": {
+        "en": { "name": "Spanish", "level": "Intermediate (B1)" },
+        "ru": { "name": "Испанский", "level": "Средний (B1)" }
+      }
+    }
+  ],
+  "projects": [
+    {
+      "slug": "sample-tracker",
+      "status": "in_progress",
+      "githubUrl": "https://github.com/example/sample-tracker",
+      "demoUrl": "https://tracker.example.com",
+      "featured": true,
+      "inCv": true,
+      "technologies": ["React", "PostgreSQL"],
+      "translations": {
+        "en": {
+          "title": "Sample Tracker",
+          "description": "An issue tracker for examples",
+          "cvBullets": ["Built the board view", "Set up CI"]
+        },
+        "ru": {
+          "title": "Sample Tracker",
+          "description": "Трекер задач для примеров",
+          "cvBullets": ["Сделал доску задач", "Настроил CI"]
+        }
+      }
+    },
+    {
+      "slug": "demo-app",
+      "status": "completed",
+      "githubUrl": "https://github.com/example/demo-app",
+      "demoUrl": null,
+      "featured": false,
+      "inCv": true,
+      "technologies": ["TypeScript"],
+      "translations": {
+        "en": {
+          "title": "Demo App",
+          "description": "A role-based web app",
+          "cvBullets": ["Added sign-in with SSO"]
+        },
+        "ru": {
+          "title": "Demo App",
+          "description": "Веб-приложение с ролями",
+          "cvBullets": ["Добавил вход через SSO"]
+        }
+      }
+    }
+  ]
+}
