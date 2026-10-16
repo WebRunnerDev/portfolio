@@ -8,6 +8,7 @@ import {
   ValidationErrorSchema,
   type ApiErrorCode,
 } from "@contracts/api/errors"
+import type { Lang } from "@contracts/lang"
 
 // Client of /api/admin/* (worker/README.md › Admin API). Every call either
 // answers with the parsed body or throws an AdminApiError.
@@ -50,6 +51,11 @@ async function request(path: string, init: RequestInit = {}) {
   } catch {
     throw new AdminApiError(0, "network_error")
   }
+  return read(response)
+}
+
+// The body of a 2xx answer; any other throws.
+async function read(response: Response) {
   if (response.status === 204) return undefined
   const body: unknown = await response.json().catch(() => undefined)
   if (response.ok) return body
@@ -106,6 +112,35 @@ export async function getRow(
   return parsed(rowSchema, await request(`/${path}`)) as AdminRow
 }
 
+// `path`: `<entity>/<id>`, or `profile`.
+export async function patchRow(
+  path: string,
+  rowSchema: v.GenericSchema,
+  body: Values
+): Promise<AdminRow> {
+  return parsed(
+    rowSchema,
+    await request(`/${path}`, json("PATCH", body))
+  ) as AdminRow
+}
+
+// Writes the whole Translation on `lang`; answers with the row.
+export async function putTranslation(
+  path: string,
+  lang: Lang,
+  rowSchema: v.GenericSchema,
+  body: Values
+): Promise<AdminRow> {
+  return parsed(
+    rowSchema,
+    await request(`/${path}/translations/${lang}`, json("PUT", body))
+  ) as AdminRow
+}
+
+export async function deleteTranslation(path: string, lang: Lang) {
+  await request(`/${path}/translations/${lang}`, { method: "DELETE" })
+}
+
 // POST /<entity>, or PUT for the single Profile.
 export async function createRow(
   path: string,
@@ -127,12 +162,28 @@ export async function reorderRows(path: string, ids: number[]) {
   await request(`/${path}/order`, json("PUT", { ids }))
 }
 
-// The raw file as the body; the Worker sniffs its type.
-export async function uploadFile(file: File) {
-  return parsed(
-    UploadResponseSchema,
-    await request("/uploads", { method: "POST", body: file })
-  )
+// The raw file as the body; the Worker sniffs its type. Through XHR, since
+// fetch doesn't report upload progress: `onProgress` gets 0 to 1.
+export async function uploadFile(
+  file: File,
+  onProgress?: (fraction: number) => void
+) {
+  const response = await new Promise<Response>((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open("POST", `${BASE}/uploads`)
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) onProgress?.(event.loaded / event.total)
+    }
+    xhr.onload = () =>
+      resolve(
+        new Response(xhr.status === 204 ? null : xhr.responseText, {
+          status: xhr.status,
+        })
+      )
+    xhr.onerror = () => reject(new AdminApiError(0, "network_error"))
+    xhr.send(file)
+  })
+  return parsed(UploadResponseSchema, await read(response))
 }
 
 export async function deleteUpload(key: string) {
