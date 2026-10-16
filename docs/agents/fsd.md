@@ -46,6 +46,17 @@ The `/$lang` route renders the layout: `SiteHeader` (`@/widgets/header`), `<main
 - **Page transitions:** `defaultViewTransition` in `src/main.tsx`; the animation is in `src/index.css`, instant under reduced motion.
 - **360px:** below `lg` the Lang and theme switchers live in the menu, not the header. `e2e/layout.spec.ts` checks every page in every Lang for horizontal scroll.
 
+## Public data
+
+Public pages read `/api/public/:lang/*` (`worker/README.md` › Public API) through route loaders, no data library.
+
+- **Client:** `@/shared/api` has one function per endpoint (`getProjects(lang, { signal })`…). Answers are checked against `contracts/api/public.ts`; anything else throws `PublicApiError` (`status`, `code`: an API code, `network_error` or `bad_response`). `isNotFound(error)` tells a 404.
+- **Loader:** a page slice exports `load<Page>(lang, signal)` from `api/`; the route passes `params.lang` and `abortController.signal`. A missing slug throws `notFound()` there, and the route sets `notFoundComponent: NotFoundPage`.
+- **States:** the route sets `pendingComponent: () => <PagePending title="nav.x" />` and `errorComponent: () => <PageError title="nav.x" />` from `@/shared/ui/page-state`. Both keep the page title, so nothing jumps; PageError retries with `router.invalidate()`.
+- **Cache:** `defaultStaleTime` in `src/main.tsx` keeps loader data for the API's `max-age` (60 s). The Lang is a route param, so another Lang loads its own data.
+- **Fallback:** next to an entity with `fallback: true` render `<FallbackNotice fallback={x.fallback} />` (`@/shared/ui/fallback-notice`), and put `lang={fallbackLang(x)}` on the element with its text, not on the notice.
+- **E2E:** `e2e/public-data.spec.ts` mocks `/api/public/*`: the D1 behind `vite preview` is empty.
+
 ## Admin
 
 `/admin` ([ADR-0004](../adr/0004-cloudflare-access-for-admin.md)) sits outside `/$lang`: its own layout, EN only, `<html dir="ltr">`, `noindex`. Routes are in `src/app/routes/admin/`, everything else in one page slice, `src/pages/admin/`.
