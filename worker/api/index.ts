@@ -5,6 +5,7 @@ import { createPublicApp } from "./public"
 import { adminMe } from "./routes/admin-me"
 import { content } from "./routes/admin/content"
 import { profileAdmin } from "./routes/admin/profile"
+import { uploads } from "./routes/admin/uploads"
 import { health } from "./routes/health"
 import { albums } from "./routes/public/albums"
 import {
@@ -26,6 +27,7 @@ const admin = new Hono<AdminEnv>()
   .use(requireAccess)
   .route("/me", adminMe)
   .route("/profile", profileAdmin)
+  .route("/uploads", uploads)
   .route("/", content)
 
 // Everything under /api/public/:lang/* checks the Lang first (400 if unknown).
