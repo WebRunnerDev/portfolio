@@ -217,6 +217,7 @@ One-time setup (owner). Menu names as of October 2026; in the Cloudflare dashboa
 - `npm run deploy` — build, then `wrangler deploy` (uses the config generated in `dist/`). Normally Workers Builds runs it.
 - `npm run db:migrate` — apply D1 migrations to the production database (see D1).
 - `npm run db:migrate:preview` — the same for the Preview database.
+- `npm run db:seed-cv` — fill D1 with the CV from `docs/private/seed.json`; `-- --remote` for production (`migrations/README.md` › Seeding the CV).
 - `npm run cf-typegen` — regenerate `worker-configuration.d.ts` after changing `wrangler.jsonc` (reads `.dev.vars.example`, not your `.dev.vars`). CI fails if it is stale.
 
 ## Deploy
