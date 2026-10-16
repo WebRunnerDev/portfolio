@@ -47,8 +47,8 @@ function policyNonce(response: Response) {
 
 const nonces = (html: string) =>
   [
-    ...html.matchAll(/<script\b[^>]*>|<link\b[^>]*rel="modulepreload"[^>]*>/g),
-  ].map(([tag]) => /nonce="([^"]*)"/.exec(tag)?.[1])
+    ...html.matchAll(/<script\b[^>]*>|<link\b[^>]*rel="modulepreload"[^>]*>/gi),
+  ].map(([tag]) => /nonce="([^"]*)"/i.exec(tag)?.[1])
 
 describe("HTML answers", () => {
   it.each(["/en/cv", "/ar/nope", "/", "/admin", "/admin/posts/1"])(

@@ -31,7 +31,7 @@ test("pages carry the security headers, and their scripts the nonce", async ({
     const html = await response.text()
     const scripts = [
       ...html.matchAll(
-        /<script\b[^>]*>|<link\b[^>]*rel="modulepreload"[^>]*>/g
+        /<script\b[^>]*>|<link\b[^>]*rel="modulepreload"[^>]*>/gi
       ),
     ].map(([tag]) => /nonce="([^"]*)"/.exec(tag)?.[1])
     expect(scripts.length).toBeGreaterThan(1)
