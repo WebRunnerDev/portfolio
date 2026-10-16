@@ -1,5 +1,6 @@
 import * as v from "valibot"
 import { LANGS, type Lang } from "../lang"
+import { MEDIA_TYPE_NAMES } from "../media"
 
 // GET /api/admin/me — the owner signed in through Cloudflare Access (ADR-0004).
 export const AdminMeResponseSchema = v.object({
@@ -287,3 +288,16 @@ export const ReorderSchema = v.object({
 })
 
 export type Reorder = v.InferOutput<typeof ReorderSchema>
+
+// POST /api/admin/uploads — the file as the raw body (any Content-Type; the
+// Worker sniffs it). `width` and `height` are an image's displayed size
+// (EXIF rotation applied), null for audio and PDFs.
+export const UploadResponseSchema = v.object({
+  key: Key,
+  contentType: v.picklist(MEDIA_TYPE_NAMES),
+  size: v.pipe(v.number(), v.integer(), v.minValue(1)),
+  width: v.nullable(Pixels),
+  height: v.nullable(Pixels),
+})
+
+export type UploadResponse = v.InferOutput<typeof UploadResponseSchema>

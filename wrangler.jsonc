@@ -10,7 +10,7 @@
     // Unknown paths (deep links like /en/cv) get index.html instead of a 404.
     "not_found_handling": "single-page-application",
     // Everything else is served straight from assets without invoking the Worker.
-    "run_worker_first": ["/api/*"],
+    "run_worker_first": ["/api/*", "/media/*"],
   },
   "routes": [{ "pattern": "webrunner.dev", "custom_domain": true }],
   "workers_dev": false,
@@ -40,6 +40,16 @@
       "preview_database_id": "650f6c38-8265-4647-9a26-a1497a882582",
     },
   ],
+  // Uploaded media (images, audio, PDFs), served on /media/<key>. Buckets come
+  // from `wrangler r2 bucket create` (worker/README.md › Media).
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "webrunner-media",
+      // The Preview bucket (same as in `previews` below), for `--preview`.
+      "preview_bucket_name": "webrunner-media-preview",
+    },
+  ],
   // Workers Builds runs `wrangler preview` for non-main branches, which needs
   // this block. Previews inherit everything above except what is listed here.
   "previews": {
@@ -50,6 +60,10 @@
         "database_name": "webrunner-preview",
         "database_id": "650f6c38-8265-4647-9a26-a1497a882582",
       },
+    ],
+    // Nor the production media.
+    "r2_buckets": [
+      { "binding": "MEDIA", "bucket_name": "webrunner-media-preview" },
     ],
   },
 }
