@@ -360,13 +360,14 @@ describe("posts", () => {
     expect(await get("/en/posts?tag=nope", v.array(PostSchema))).toEqual([])
   })
 
-  it("rejects an empty tag and unknown query parameters", async () => {
+  it("rejects an empty tag", async () => {
     await expectError("/en/posts?tag=", 400, "invalid_request")
-    await expectError(
-      "/en/posts?tag=cloudflare&limit=1",
-      400,
-      "invalid_request"
-    )
+  })
+
+  it("drops unknown query parameters", async () => {
+    expect(
+      await get("/en/posts?tag=nope&limit=1", v.array(PostSchema))
+    ).toEqual([])
   })
 
   it("answers a post by slug with its body", async () => {

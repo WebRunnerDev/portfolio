@@ -8,7 +8,7 @@ Code shared with the frontend (Lang list, UI dictionaries, page meta, API schema
 - Pages under a Lang (`/{lang}/…`) get Meta Injection (below). `/api/*` goes to the API below, `/media/*` to the MEDIA bucket (Media below). `GET /api/health` → `{"status":"ok"}`.
 - `/api/public/:lang/*` reads published content on a Lang (Public API below).
 - `/api/*` is rate limited per IP (Rate limits below); pages, assets and `/media/*` are not.
-- `/api/*` gives CORS headers only to `https://webrunner.dev`, and refuses writes from other origins (Origin and body limits below).
+- `/api/*` gives no CORS headers (the SPA is on the same origin, ADR-0001) and refuses writes from other origins (Origin and body limits below).
 - `/api/admin/*` needs a Cloudflare Access sign-in (Admin access below). `GET /api/admin/me` → `{"email":"…"}` of the signed-in owner; the rest is CRUD of the content (Admin API below).
 
 ## Meta Injection
@@ -36,7 +36,7 @@ ADR-0001: crawlers don't run JS, so `worker/meta/serve-page.ts` rewrites `index.
 | --- | --- | --- |
 | 400 | `invalid_request` | The input doesn't match the schema, the JSON is malformed, or the Lang is unknown |
 | 401 | `unauthorized` | `/api/admin/*` without a valid Access JWT (Admin access below) |
-| 403 | `forbidden` | A write (not GET, HEAD, OPTIONS) whose `Origin` is not allowed (Origin and body limits below) |
+| 403 | `forbidden` | A write (not GET, HEAD, OPTIONS) whose `Origin` is not the API's own (Origin and body limits below) |
 | 404 | `not_found` | No route for the path |
 | 405 | `method_not_allowed` | The path exists, the method doesn't (`Allow` header lists the methods) |
 | 409 | `conflict` | `/api/admin/*`: the row is still in use (an album with photos, a file a row names) or the EN Translation is being removed |
@@ -49,7 +49,7 @@ ADR-0001: crawlers don't run JS, so `worker/meta/serve-page.ts` rewrites `index.
 **New endpoint:**
 
 1. Schemas in `contracts/api/<name>.ts`.
-2. `worker/api/routes/<name>.ts`: a `new Hono<ApiEnv>()` with the handlers, input through `sValidator(target, Schema, rejectInvalid)` (`@hono/standard-validator`), output typed with `satisfies <Response type>`, ending with `.all(path, methodNotAllowed("GET, HEAD"))`. Request schemas (bodies, queries) are `v.strictObject`: an unknown field is an error, not silently dropped. SQL only through `prepare()` with `?` placeholders and `.bind()`; table and column names in the SQL come from code, never from the request.
+2. `worker/api/routes/<name>.ts`: a `new Hono<ApiEnv>()` with the handlers, input through `sValidator(target, Schema, rejectInvalid)` (`@hono/standard-validator`), output typed with `satisfies <Response type>`, ending with `.all(path, methodNotAllowed("GET, HEAD"))`. Admin API bodies are `v.strictObject`: an unknown field answers 422, so a typo in a field name isn't silently lost. Public API queries and params are `v.object`: unknown keys are dropped. SQL only through `prepare()` with `?` placeholders and `.bind()`; table and column names in the SQL come from code, never from the request.
 3. Mount it in `worker/api/index.ts`: `.route("/<name>", <name>)`. An admin endpoint is a `new Hono<AdminEnv>()` mounted on `admin` there instead, behind the Access check; the email is `c.var.email`. A public one is a `new Hono<PublicEnv>()` in `worker/api/routes/public/`, mounted on `publicApi`; the Lang is `c.var.lang`.
 4. Tests next to it (`worker/**/*.test.ts`).
 
@@ -72,8 +72,8 @@ ADR-0001: crawlers don't run JS, so `worker/meta/serve-page.ts` rewrites `index.
 
 After the rate limit, every `/api/*` request goes through `checkOrigin` (`worker/api/origin.ts`), then `limitBody` (`worker/api/body-limit.ts`).
 
-- **CORS:** the SPA calls the API from its own origin, so it needs none. `Access-Control-Allow-Origin` goes only to `https://webrunner.dev`, the request's own origin, and, when the Worker itself is on localhost, a localhost page on another port. Never `*`, no credentials. A preflight (`OPTIONS` with `Access-Control-Request-Method`) from an allowed origin answers 204; from any other origin it gets no `Access-Control-*` headers. Every answer to a request with `Origin` has `Vary: Origin`.
-- **Cross-site writes:** a request other than GET, HEAD or OPTIONS with an `Origin` that isn't allowed answers 403 `forbidden`, whatever its `Content-Type`, before the Access check. So a form on another site can't use the owner's Access cookie. A request without `Origin` (curl, tests) passes: browsers always send it with writes.
+- **No CORS:** the SPA calls the API from its own origin (ADR-0001), so no answer carries `Access-Control-*` headers, whatever the `Origin` (`https://webrunner.dev` included), and a preflight gets no 204.
+- **Cross-site writes:** a request other than GET, HEAD or OPTIONS whose `Origin` is not the API's own origin answers 403 `forbidden`, whatever its `Content-Type`, before the Access check. So a form on another site can't use the owner's Access cookie. A request without `Origin` (curl, tests) passes: browsers always send it with writes.
 - **Body size:** `POST /api/admin/uploads` up to the largest upload limit (its own kind's limit is checked after sniffing, Media below), any other body up to 1 MB (`MAX_JSON_BYTES`). Over it: 413 `payload_too_large`, unread when `Content-Length` says so, cut off mid-stream otherwise.
 
 ## Public API

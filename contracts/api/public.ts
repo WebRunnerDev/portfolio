@@ -158,7 +158,9 @@ export const PostSchema = v.object({
 
 export type Post = v.InferOutput<typeof PostSchema>
 
-export const PostsQuerySchema = v.strictObject({
+// Unknown query parameters are dropped (request bodies of the Admin API are
+// strict instead, contracts/api/admin.ts).
+export const PostsQuerySchema = v.object({
   tag: v.optional(v.pipe(v.string(), v.nonEmpty())),
 })
 
