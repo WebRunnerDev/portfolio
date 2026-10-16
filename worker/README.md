@@ -1,13 +1,24 @@
 # worker/
 
-Cloudflare Worker (ADR-0001): serves the SPA through Workers Static Assets and owns `/api/*`. Meta Injection lands later. Config lives in `wrangler.jsonc` at the repo root.
+Cloudflare Worker (ADR-0001): serves the SPA through Workers Static Assets, owns `/api/*` and injects the head tags of every page (Meta Injection below). Config lives in `wrangler.jsonc` at the repo root.
 
-Code shared with the frontend (Lang list, API schemas and types) lives in `contracts/`, imported as `@contracts/*` (mapped in `tsconfig.worker.json`); never import from `src/`.
+Code shared with the frontend (Lang list, UI dictionaries, page meta, API schemas and types) lives in `contracts/`, imported as `@contracts/*` (mapped in `tsconfig.worker.json`); never import from `src/`.
 
-- Static assets are served without invoking the Worker; unknown paths fall back to `index.html` (`not_found_handling: "single-page-application"`), so deep links like `/en/cv` work.
-- Only `/api/*` and `/media/*` run the Worker first; `/api/*` goes to the API below, `/media/*` to the MEDIA bucket (Media below). `GET /api/health` → `{"status":"ok"}`.
+- Hashed build output (`/assets/*`) is served without invoking the Worker; everything else runs it first (`run_worker_first`) and goes to `ASSETS` unless a rule below takes it. Unknown paths fall back to `index.html` (`not_found_handling: "single-page-application"`).
+- Pages under a Lang (`/{lang}/…`) get Meta Injection (below). `/api/*` goes to the API below, `/media/*` to the MEDIA bucket (Media below). `GET /api/health` → `{"status":"ok"}`.
 - `/api/public/:lang/*` reads published content on a Lang (Public API below).
 - `/api/admin/*` needs a Cloudflare Access sign-in (Admin access below). `GET /api/admin/me` → `{"email":"…"}` of the signed-in owner; the rest is CRUD of the content (Admin API below).
+
+## Meta Injection
+
+ADR-0001: crawlers don't run JS, so `worker/meta/serve-page.ts` rewrites `index.html` with [HTMLRewriter](https://developers.cloudflare.com/workers/runtime-apis/html-rewriter/) for every path whose first segment is a Lang. Other paths (`/`, `/admin`, files in `public/`) pass through untouched.
+
+- **Tags:** `<html lang dir>`, `<title>`, description, `og:type`, `og:site_name`, `og:title`, `og:description`, `og:image` (`/og-default.png` unless the page has its own), `og:url`, `og:locale` (+ `og:locale:alternate`), `twitter:card`, `canonical` and hreflang on all 6 Langs + `x-default` (EN). URLs use the request's origin; a trailing slash is dropped.
+- **Values:** `contracts/meta.ts`, from the UI dictionaries (`nav.*` for titles, `meta.*` for descriptions). `LangHead` (`src/shared/i18n`) renders the same title, description, canonical and hreflang on the client and removes the injected tags (`data-meta`), which would go stale on the first navigation.
+- **404:** a path no page has answers 404 with the same SPA, the Not Found title and `noindex`.
+- **Previews** (`*.workers.dev`) get `X-Robots-Tag: noindex` and `<meta name="robots" content="noindex">`.
+- **Caching:** the HTML loses the `ETag` of `index.html`, which is the same for every page.
+- **Pages with data from D1** (`projects/:slug`, `blog/:slug`): add a `DataPage` to `DATA_PAGES` in `worker/meta/pages.ts` — a pattern on the path after the Lang and a `meta(env, lang, match)` that reads D1 and answers null for an unknown slug (404). Static sections go in `PAGES` in `contracts/meta.ts`.
 
 ## API
 
