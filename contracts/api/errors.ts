@@ -11,6 +11,7 @@ export const API_ERROR_CODES = [
   "payload_too_large",
   "unsupported_media_type",
   "validation_failed",
+  "too_many_requests",
   "internal_error",
 ] as const
 

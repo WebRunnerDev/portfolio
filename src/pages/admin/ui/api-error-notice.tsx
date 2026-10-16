@@ -14,6 +14,7 @@ const MESSAGES: Partial<Record<AdminApiError["code"], string>> = {
   validation_failed: "Some fields are invalid.",
   payload_too_large: "The file is too large.",
   unsupported_media_type: "This file type isn't allowed.",
+  too_many_requests: "Too many requests. Wait a minute and try again.",
   bad_response:
     "The API answered something unexpected. Details are in the console.",
 }
