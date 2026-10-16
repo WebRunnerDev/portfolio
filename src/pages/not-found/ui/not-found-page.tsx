@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router"
 
+import { notFoundMeta } from "@contracts/meta"
 import { useLang, useT } from "@/shared/i18n"
 import { PageStub } from "@/shared/ui/page-stub"
 
@@ -7,9 +8,11 @@ import { PageStub } from "@/shared/ui/page-stub"
 export function NotFoundPage() {
   const lang = useLang()
   const t = useT()
+  const meta = notFoundMeta(lang)
 
   return (
     <PageStub title={t("notFound.title")}>
+      <title>{meta.title}</title>
       <meta name="robots" content="noindex" />
       <p>{t("notFound.text")}</p>
       <p className="mt-zsd-md">

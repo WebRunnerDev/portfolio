@@ -9,8 +9,9 @@
     "binding": "ASSETS",
     // Unknown paths (deep links like /en/cv) get index.html instead of a 404.
     "not_found_handling": "single-page-application",
-    // Everything else is served straight from assets without invoking the Worker.
-    "run_worker_first": ["/api/*", "/media/*"],
+    // Everything but the hashed build output runs the Worker first: /api/*,
+    // /media/* and HTML pages, which get Meta Injection (worker/README.md).
+    "run_worker_first": ["/*", "!/assets/*"],
   },
   "routes": [{ "pattern": "webrunner.dev", "custom_domain": true }],
   "workers_dev": false,

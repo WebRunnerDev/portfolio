@@ -1,6 +1,6 @@
 import type { Lang } from "@contracts/lang"
 
-import { MESSAGES, type MessageKey } from "./messages"
+import { MESSAGES, type MessageKey } from "@contracts/messages"
 import { useLang } from "./use-lang"
 
 export function translate(lang: Lang, key: MessageKey): string {

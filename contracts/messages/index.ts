@@ -1,4 +1,4 @@
-import type { Lang } from "@contracts/lang"
+import type { Lang } from "../lang"
 
 import { ar } from "./ar"
 import { de } from "./de"

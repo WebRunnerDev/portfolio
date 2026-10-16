@@ -107,8 +107,6 @@ export function DesignPage() {
       dir={dir}
       className="mx-auto w-full max-w-(--zsd-x-zsd-layout-content-max) px-zsd-lg md:px-zsd-xxl"
     >
-      <title>Design system · WebRunner</title>
-      <meta name="robots" content="noindex" />
       <div className="py-zsd-section lg:py-zsd-section-lg">
         <div className="flex items-center gap-zsd-md">
           <p className="font-zsd-label-mono text-zsd-label-mono text-zsd-primary-text uppercase rtl:normal-case">

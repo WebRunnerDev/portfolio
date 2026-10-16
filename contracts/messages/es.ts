@@ -11,6 +11,13 @@ export const es: Messages = {
   "nav.projects": "Proyectos",
   "nav.gallery": "Galería",
   "nav.blog": "Blog",
+  "meta.home":
+    "Portafolio de WebRunner, desarrollador web: proyectos, CV, blog y fotos.",
+  "meta.cv": "Experiencia, tecnologías, formación y certificaciones.",
+  "meta.projects":
+    "Proyectos personales con casos de estudio: qué se hizo y cómo.",
+  "meta.gallery": "Álbumes de fotos.",
+  "meta.blog": "Publicaciones sobre desarrollo web.",
   "footer.contacts": "Contacto",
   "footer.copyEmail": "Copiar correo",
   "footer.copied": "Copiado",

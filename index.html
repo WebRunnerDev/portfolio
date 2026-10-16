@@ -23,7 +23,10 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>WebRunner</title>
+    <!-- The Worker fills in the title and the other head tags of a page
+         under a Lang (worker/README.md › Meta Injection); LangHead removes
+         everything marked data-meta once React renders its own. -->
+    <title data-meta>WebRunner</title>
   </head>
   <body>
     <div id="root"></div>

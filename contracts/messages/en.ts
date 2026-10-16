@@ -10,6 +10,12 @@ export const en = {
   "nav.projects": "Projects",
   "nav.gallery": "Gallery",
   "nav.blog": "Blog",
+  "meta.home":
+    "Portfolio of WebRunner, a web developer: projects, CV, blog and photos.",
+  "meta.cv": "Experience, technologies, education and certifications.",
+  "meta.projects": "Pet projects with case studies: what was built and how.",
+  "meta.gallery": "Photo albums.",
+  "meta.blog": "Posts about web development.",
   "footer.contacts": "Contacts",
   "footer.copyEmail": "Copy email",
   "footer.copied": "Copied",
