@@ -5,7 +5,7 @@ Cloudflare Worker (ADR-0001): serves the SPA through Workers Static Assets and o
 Code shared with the frontend (Lang list, API schemas and types) lives in `contracts/`, imported as `@contracts/*` (mapped in `tsconfig.worker.json`); never import from `src/`.
 
 - Static assets are served without invoking the Worker; unknown paths fall back to `index.html` (`not_found_handling: "single-page-application"`), so deep links like `/en/cv` work.
-- Only `/api/*` runs the Worker first; it goes to the API below. `GET /api/health` → `{"status":"ok"}`.
+- Only `/api/*` and `/media/*` run the Worker first; `/api/*` goes to the API below, `/media/*` to the MEDIA bucket (Media below). `GET /api/health` → `{"status":"ok"}`.
 - `/api/public/:lang/*` reads published content on a Lang (Public API below).
 - `/api/admin/*` needs a Cloudflare Access sign-in (Admin access below). `GET /api/admin/me` → `{"email":"…"}` of the signed-in owner; the rest is CRUD of the content (Admin API below).
 
@@ -25,7 +25,9 @@ Code shared with the frontend (Lang list, API schemas and types) lives in `contr
 | 401 | `unauthorized` | `/api/admin/*` without a valid Access JWT (Admin access below) |
 | 404 | `not_found` | No route for the path |
 | 405 | `method_not_allowed` | The path exists, the method doesn't (`Allow` header lists the methods) |
-| 409 | `conflict` | `/api/admin/*`: the row is still in use (an album with photos) or the EN Translation is being removed |
+| 409 | `conflict` | `/api/admin/*`: the row is still in use (an album with photos, a file a row names) or the EN Translation is being removed |
+| 413 | `payload_too_large` | An upload over its limit (Media below) |
+| 415 | `unsupported_media_type` | An upload whose bytes are not an allowed type |
 | 422 | `validation_failed` | `/api/admin/*` body doesn't match the schema, a unique value (slug, name…) is taken, or an id points at nothing. Also carries `fields`: `{ "<dot path>": ["message"] }` |
 | 500 | `internal_error` | Unhandled exception; it goes to Workers Logs, the client gets no details |
 
@@ -52,7 +54,7 @@ Code shared with the frontend (Lang list, API schemas and types) lives in `contr
 
 **Fallback** (CONTEXT.md): each translated entity comes with its Translation on the Lang, or its EN one and `fallback: true` when there is none. An entity translated on neither is left out (404 by slug). The SQL is `translationOf()` in `worker/api/public.ts`: one join that picks the Lang's row, else EN, so fields never mix two Translations. A photo's caption is optional: a photo without any caption has `caption: null` and `fallback: false`.
 
-`*Key` fields are R2 object keys; turning them into URLs comes with media serving (#33).
+`*Key` fields are R2 object keys; `mediaUrl()`, `imageUrl()` and `imageSrcSet()` from `contracts/media.ts` turn them into URLs (Media below).
 
 ## Admin API
 
@@ -80,9 +82,33 @@ Code shared with the frontend (Lang list, API schemas and types) lives in `contr
 
 - **Links:** `technologyIds` of experience and projects keep their order; `tagIds` of a post are sorted by id. An unknown id answers 422 on that field.
 - **Posts:** publishing without `publishedAt` sets it to now; going back to draft keeps it.
-- **Photos:** deleting one doesn't remove its R2 object yet; that comes with media (#33).
+- **Photos and tracks:** deleting one leaves its file in R2; delete it with `DELETE /uploads/<key>` (Media below).
 
 The routes come from `crudRoutes()` (`worker/api/admin.ts`) and the SQL from `worker/api/admin-store.ts`, both driven by one `Entity` per table in `worker/api/routes/admin/content.ts` (the Profile in `profile.ts`). A write that touches several tables (a row with its Translations and links) is one `db.batch()`, which D1 runs as a transaction. A new entity: its schemas in `contracts/api/admin.ts`, an `Entity` and a `.route()` in `content.ts`.
+
+## Media
+
+Images, audio and PDFs live in R2 behind the `MEDIA` binding: bucket `webrunner-media` in production, `webrunner-media-preview` for Previews (the `previews` block in `wrangler.jsonc`) and a local one in `.wrangler/` for dev and tests. Types, limits and URL helpers are in `contracts/media.ts`.
+
+**Upload** (`worker/api/routes/admin/uploads.ts`, behind Access):
+
+- `POST /api/admin/uploads` with the file as the raw body (`fetch(url, { method: "POST", body: file })`). The type comes from the file's first bytes (`worker/media/sniff.ts`), never from `Content-Type`: JPEG, PNG, WebP, MP3, M4A, Ogg, PDF. Anything else (SVG, GIF, HEIC…) answers 415; over 20 MB for an image, 50 MB for audio or 10 MB for a PDF, 413.
+- 201 `{ key, contentType, size, width, height }` (`UploadResponseSchema`). The key is `<image|audio|pdf>/<uuid>.<ext>`. `width` and `height` are the displayed size of an image (a JPEG turned by EXIF counts as turned), null otherwise; they go into a photo's `width`/`height`.
+- `DELETE /api/admin/uploads/<key>`: 204; 404 if there is no such file; 409 while a `*_key` column of any row still names it. Post bodies aren't checked.
+
+**Serving** (`worker/media/serve.ts`): `GET /media/<key>` with the stored `Content-Type`, `ETag` (`If-None-Match` → 304), `X-Content-Type-Options: nosniff` and:
+
+- `Cache-Control: public, max-age=31536000, immutable` when the key holds a uuid (every upload), `public, max-age=60` otherwise (a file rewritten under the same key, like a future CV PDF).
+- One byte range (`Range: bytes=…`) → 206 with `Content-Range`, so audio can seek; past the end → 416. Several ranges or a malformed header get the whole file (200).
+- A missing key → 404, methods other than GET/HEAD → 405, both without a body.
+
+**Resized images** through Cloudflare Images, transformations over `/media/*` on the zone: `imageUrl(key, width)` gives `/cdn-cgi/image/width=<w>,fit=scale-down,format=auto/media/<key>`, `imageSrcSet(key, width)` a `srcset` of the `IMAGE_WIDTHS` below the original plus the original. `/cdn-cgi/image/` exists only on the zone: locally, and on Previews (`workers.dev`), use `mediaUrl(key)`.
+
+One-time setup (owner), **before merging**: the deploy fails while a bucket in `wrangler.jsonc` doesn't exist.
+
+1. `npx wrangler r2 bucket create webrunner-media` and `npx wrangler r2 bucket create webrunner-media-preview`. Nothing else: the buckets stay private, the Worker serves them.
+2. Dashboard → `webrunner.dev` zone → **Images** → **Transformations** → **Enable for zone**. The source is the zone itself, so no allowed origins are needed.
+3. After the deploy, sign in at `https://webrunner.dev/admin`, then in the DevTools console (Chrome) pick a photo: `const [f] = await showOpenFilePicker(); await (await fetch("/api/admin/uploads", { method: "POST", body: await f.getFile() })).json()`. Open `https://webrunner.dev/media/<key>` from the answer, and `https://webrunner.dev/cdn-cgi/image/width=320,format=auto/media/<key>` for the small copy.
 
 ## Tests
 
