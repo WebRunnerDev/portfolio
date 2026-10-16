@@ -169,8 +169,15 @@ Git hooks (Husky, installed by `npm install`): pre-commit runs `lint-staged.conf
 
 GitHub Actions never deploys:
 
-- `.github/workflows/ci.yml`, on every PR and push to `main`: `check` (lint, typecheck, `wrangler types --check`, Prettier, Vitest, Playwright), `gitleaks` (secrets in the pushed commits) and, on PRs, `commitlint` (Conventional Commits; config in `commitlint.config.js`). The `main` ruleset requires `check` and `gitleaks`, so only green code reaches production.
+- `.github/workflows/ci.yml`, on every PR and push to `main`: `check` (`npm audit`, lint, typecheck, `wrangler types --check`, Prettier, Vitest, Playwright), `gitleaks` (secrets in the pushed commits) and, on PRs, `commitlint` (Conventional Commits; config in `commitlint.config.js`). The `main` ruleset requires `check` and `gitleaks`, so only green code reaches production.
 - `.github/workflows/lighthouse.yml`, on PRs: waits for the `Workers Builds: webrunner` check, then runs Lighthouse CI (mobile, `lighthouserc.json`) on `/en` and `/en/cv` of the Preview. Warning only: budgets (categories ≥ 90, LCP < 2.5 s, initial JS ≤ 150 KB) show up as ⚠️ in the job summary, reports are in the `lighthouse` artifact.
+- `.github/workflows/codeql.yml`, on PRs, pushes to `main` and every Monday: CodeQL (`javascript-typescript`). Findings are in Security › Code scanning; not a required check.
+
+Dependencies:
+
+- `npm audit` in `check` fails on any high or critical advisory (`.github/scripts/npm-audit.mjs`). An advisory with no fix that only reaches build tooling goes into `.github/audit-allowlist.json` with a reason and an `expires` date; past that date CI fails again until someone checks it.
+- Dependabot (`.github/dependabot.yml`) opens update PRs every Monday for npm and GitHub Actions: minor and patch bumps grouped into one PR per ecosystem, each major on its own. Security updates come as soon as an alert opens. Alerts are in Security › Dependabot.
+- Secret scanning with push protection is on in the repo settings, next to `gitleaks`.
 
 Cloudflare Web Analytics: the beacon is added to `index.html` at build time when `CF_WEB_ANALYTICS_TOKEN` is set (`vite.config.ts`). Only Workers Builds sets it, so dev, CI and e2e builds have no beacon; Preview traffic is reported too, filter by host in the dashboard.
 
