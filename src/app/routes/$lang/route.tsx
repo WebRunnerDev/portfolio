@@ -1,6 +1,6 @@
 import { Outlet, createFileRoute, redirect } from "@tanstack/react-router"
 
-import { DEFAULT_LANG, isLang, withLang } from "@contracts/lang"
+import { DEFAULT_LANG, isLang, withLang, type Lang } from "@contracts/lang"
 import { DirectionProvider } from "@/app/providers"
 import { NotFoundPage } from "@/pages/not-found"
 import { LangHead } from "@/shared/i18n"
@@ -11,6 +11,8 @@ import { SiteMenu } from "@/widgets/menu"
 // Every page lives under a Lang; an unknown one redirects to EN, same path.
 // An unknown path under a Lang renders NotFoundPage inside the layout.
 export const Route = createFileRoute("/$lang")({
+  // Only types `lang` for the loaders below: beforeLoad redirects any other.
+  params: { parse: ({ lang }) => ({ lang: lang as Lang }) },
   beforeLoad: ({ params, location }) => {
     if (!isLang(params.lang)) {
       throw redirect({
