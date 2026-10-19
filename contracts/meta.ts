@@ -65,6 +65,20 @@ export function pageMeta(lang: Lang, path: string): PageMeta | null {
   return PAGES.find((page) => page.path === path)?.meta(lang) ?? null
 }
 
+// The CV is titled with the owner's name and headline from the Profile on
+// that Lang; without a Profile it keeps the section meta.
+export function cvMeta(
+  lang: Lang,
+  profile: { name: string; headline: string } | null
+): PageMeta {
+  const meta = pageMeta(lang, "cv")!
+  if (!profile) return meta
+  return {
+    title: withBrand(`${profile.name}: ${t(lang, "nav.cv")}`),
+    description: `${profile.headline}. ${meta.description}`,
+  }
+}
+
 export function notFoundMeta(lang: Lang): PageMeta {
   return {
     title: withBrand(t(lang, "notFound.title")),

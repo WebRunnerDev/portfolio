@@ -1,109 +1,83 @@
 import { getRouteApi } from "@tanstack/react-router"
 
 import type { CvSection } from "@contracts/api/public"
-import { useT, type MessageKey } from "@/shared/i18n"
-import { FallbackNotice, fallbackLang } from "@/shared/ui/fallback-notice"
-import { PageStub } from "@/shared/ui/page-stub"
+import { useT } from "@/shared/i18n"
 
 import type { CvData } from "../api/load-cv"
+import { CvHeader } from "./cv-header"
+import {
+  CertificationList,
+  EducationList,
+  ExperienceList,
+  LanguageList,
+  ProjectList,
+  SECTION_HEADINGS,
+  TechnologyGroups,
+} from "./cv-sections"
 
 const route = getRouteApi("/$lang/cv")
 
-type Item = {
-  id: number
-  primary: string
-  secondary?: string | null
-  fallback: boolean
-}
-
-const HEADINGS: Record<CvSection["type"], MessageKey> = {
-  experience: "cv.experience",
-  projects: "cv.projects",
-  technologies: "cv.technologies",
-  education: "cv.education",
-  certifications: "cv.certifications",
-  languages: "cv.languages",
-}
-
-function sectionItems(type: CvSection["type"], data: CvData): Item[] {
+function SectionBody({
+  type,
+  data,
+}: {
+  type: CvSection["type"]
+  data: CvData
+}) {
   switch (type) {
     case "experience":
-      return data.experience.map((e) => ({
-        ...e,
-        primary: e.role,
-        secondary: e.company,
-      }))
+      return <ExperienceList items={data.experience} />
     case "projects":
-      return data.projects.map((p) => ({
-        ...p,
-        primary: p.title,
-        secondary: p.description,
-      }))
+      return <ProjectList items={data.projects} />
     case "technologies":
-      return data.technologies.map((t) => ({
-        ...t,
-        primary: t.name,
-        fallback: false,
-      }))
+      return <TechnologyGroups items={data.technologies} />
     case "education":
-      return data.education.map((e) => ({
-        ...e,
-        primary: e.institution,
-        secondary: e.degree,
-      }))
+      return <EducationList items={data.education} />
     case "certifications":
-      return data.certifications.map((c) => ({
-        ...c,
-        fallback: false,
-        primary: c.name,
-        secondary: c.issuer,
-      }))
+      return <CertificationList items={data.certifications} />
     case "languages":
-      return data.languages.map((l) => ({
-        ...l,
-        primary: l.name,
-        secondary: l.level,
-      }))
+      return <LanguageList items={data.languages} />
   }
 }
 
-// The CV data as plain lists; the Web CV design lands with #66.
+const isEmpty = (type: CvSection["type"], data: CvData) =>
+  data[type].length === 0
+
+// The Web CV (CONTEXT.md › CV): the header with the photo, then the CV
+// Sections shown on the web, in their order. An empty section is left out.
 export function CvPage() {
   const t = useT()
   const data = route.useLoaderData()
   const { profile } = data
 
   return (
-    <PageStub title={t("nav.cv")}>
-      {profile && (
-        <div className="flex flex-col gap-zsd-xs">
-          <FallbackNotice fallback={profile.fallback} />
-          <div lang={fallbackLang(profile)}>
-            <p className="font-heading text-zsd-headline-sm text-zsd-on-surface">
-              {profile.name}
-            </p>
-            <p>{profile.headline}</p>
-          </div>
-        </div>
+    <div className="mx-auto w-full max-w-(--zsd-x-zsd-layout-content-max) px-zsd-lg py-zsd-section md:px-zsd-xxl lg:py-zsd-section-lg">
+      {profile ? (
+        // `actions`: the CV PDF download goes here.
+        <CvHeader profile={profile} photo />
+      ) : (
+        <h1 className="font-heading text-zsd-headline-md break-words md:text-zsd-headline-lg">
+          {t("nav.cv")}
+        </h1>
       )}
-      {data.sections.map(({ type }) => (
-        <section key={type} className="mt-zsd-xl">
-          <h2 className="font-heading text-zsd-headline-sm text-zsd-on-surface">
-            {t(HEADINGS[type])}
-          </h2>
-          <ul className="mt-zsd-sm flex flex-col gap-zsd-md">
-            {sectionItems(type, data).map((item) => (
-              <li key={item.id}>
-                <FallbackNotice fallback={item.fallback} />
-                <div lang={fallbackLang(item)}>
-                  <p className="text-zsd-on-surface">{item.primary}</p>
-                  {item.secondary && <p>{item.secondary}</p>}
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))}
-    </PageStub>
+      {data.sections
+        .filter(({ type }) => !isEmpty(type, data))
+        .map(({ type }) => (
+          <section
+            key={type}
+            aria-labelledby={`cv-${type}`}
+            data-testid="cv-section"
+            className="mt-zsd-section border-t border-zsd-outline-muted pt-zsd-xl lg:mt-zsd-section-lg"
+          >
+            <h2
+              id={`cv-${type}`}
+              className="mb-zsd-xl font-heading text-zsd-headline-md text-zsd-on-surface"
+            >
+              {t(SECTION_HEADINGS[type])}
+            </h2>
+            <SectionBody type={type} data={data} />
+          </section>
+        ))}
+    </div>
   )
 }

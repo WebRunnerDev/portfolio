@@ -90,6 +90,47 @@ describe("servePage", () => {
     )
   })
 
+  it("titles the CV from the Profile on the Lang, EN where it has none", async () => {
+    await env.DB.batch([
+      env.DB.prepare(`INSERT INTO profile (id) VALUES (1)`),
+      env.DB.prepare(
+        `INSERT INTO profile_translation (profile_id, lang, name, headline)
+        VALUES (1, 'en', 'Zhasulan Abdigaliyev', 'Frontend developer'),
+          (1, 'ru', 'Жасулан Абдигалиев', 'Фронтенд-разработчик')`
+      ),
+    ])
+    try {
+      const ru = await page("https://webrunner.dev/ru/cv")
+      expect(ru.attr(/<title data-meta>([^<]*)</)).toBe(
+        "Жасулан Абдигалиев: Резюме · WebRunner"
+      )
+      expect(ru.attr(content("description"))).toBe(
+        "Фронтенд-разработчик. Опыт, технологии, образование и сертификаты."
+      )
+      const de = await page("https://webrunner.dev/de/cv")
+      expect(de.attr(/<title data-meta>([^<]*)</)).toBe(
+        "Zhasulan Abdigaliyev: Lebenslauf · WebRunner"
+      )
+    } finally {
+      await env.DB.batch([
+        env.DB.prepare(`DELETE FROM profile_translation`),
+        env.DB.prepare(`DELETE FROM profile`),
+      ])
+    }
+  })
+
+  it("keeps the CV section meta when D1 fails", async () => {
+    const broken = {
+      ...testEnv,
+      DB: {
+        prepare: () => {
+          throw new Error("no such table: profile")
+        },
+      },
+    } as unknown as Env
+    expect(await resolveMeta(broken, "ru", "cv")).toEqual(pageMeta("ru", "cv"))
+  })
+
   it("canonicalizes a trailing slash", async () => {
     const { attr } = await page("https://webrunner.dev/de/blog/")
     expect(attr(/rel="canonical" href="([^"]+)"/)).toBe(
