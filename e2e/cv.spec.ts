@@ -224,9 +224,12 @@ test("the CV fits 360px in LTR and RTL", async ({ page }) => {
   for (const lang of ["de", "ar"]) {
     await page.goto(`/${lang}/cv`)
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible()
-    const overflow = await page.evaluate(
-      () => document.documentElement.scrollWidth - window.innerWidth
-    )
+    const overflow = await page
+      .locator("html")
+      .evaluate(
+        (el: { scrollWidth: number; clientWidth: number }) =>
+          el.scrollWidth - el.clientWidth
+      )
     expect(overflow).toBeLessThanOrEqual(0)
   }
 })
