@@ -53,6 +53,7 @@ export {
   NativeSelectOptGroup,
   NativeSelectOption,
 } from "./native-select"
+export { Skeleton } from "./skeleton"
 export {
   Table,
   TableBody,

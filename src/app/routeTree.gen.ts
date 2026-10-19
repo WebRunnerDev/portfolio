@@ -17,8 +17,9 @@ import { Route as LangBlogRouteImport } from './routes/$lang/blog'
 import { Route as LangCvRouteImport } from './routes/$lang/cv'
 import { Route as LangDesignRouteImport } from './routes/$lang/design'
 import { Route as LangGalleryRouteImport } from './routes/$lang/gallery'
-import { Route as LangProjectsRouteImport } from './routes/$lang/projects'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as LangProjectsIndexRouteImport } from './routes/$lang/projects/index'
+import { Route as LangProjectsSlugRouteImport } from './routes/$lang/projects/$slug'
 import { Route as AdminEntityIndexRouteImport } from './routes/admin/$entity/index'
 import { Route as AdminEntityIdRouteImport } from './routes/admin/$entity/$id'
 
@@ -62,15 +63,20 @@ const LangGalleryRoute = LangGalleryRouteImport.update({
   path: '/gallery',
   getParentRoute: () => LangRouteRoute,
 } as any)
-const LangProjectsRoute = LangProjectsRouteImport.update({
-  id: '/projects',
-  path: '/projects',
-  getParentRoute: () => LangRouteRoute,
-} as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AdminRouteRoute,
+} as any)
+const LangProjectsIndexRoute = LangProjectsIndexRouteImport.update({
+  id: '/projects/',
+  path: '/projects/',
+  getParentRoute: () => LangRouteRoute,
+} as any)
+const LangProjectsSlugRoute = LangProjectsSlugRouteImport.update({
+  id: '/projects/$slug',
+  path: '/projects/$slug',
+  getParentRoute: () => LangRouteRoute,
 } as any)
 const AdminEntityIndexRoute = AdminEntityIndexRouteImport.update({
   id: '/$entity/',
@@ -91,10 +97,11 @@ export interface FileRoutesByFullPath {
   '/$lang/cv': typeof LangCvRoute
   '/$lang/design': typeof LangDesignRoute
   '/$lang/gallery': typeof LangGalleryRoute
-  '/$lang/projects': typeof LangProjectsRoute
   '/$lang/': typeof LangIndexRoute
   '/admin/': typeof AdminIndexRoute
+  '/$lang/projects/$slug': typeof LangProjectsSlugRoute
   '/admin/$entity/$id': typeof AdminEntityIdRoute
+  '/$lang/projects/': typeof LangProjectsIndexRoute
   '/admin/$entity/': typeof AdminEntityIndexRoute
 }
 export interface FileRoutesByTo {
@@ -103,10 +110,11 @@ export interface FileRoutesByTo {
   '/$lang/cv': typeof LangCvRoute
   '/$lang/design': typeof LangDesignRoute
   '/$lang/gallery': typeof LangGalleryRoute
-  '/$lang/projects': typeof LangProjectsRoute
   '/$lang': typeof LangIndexRoute
   '/admin': typeof AdminIndexRoute
+  '/$lang/projects/$slug': typeof LangProjectsSlugRoute
   '/admin/$entity/$id': typeof AdminEntityIdRoute
+  '/$lang/projects': typeof LangProjectsIndexRoute
   '/admin/$entity': typeof AdminEntityIndexRoute
 }
 export interface FileRoutesById {
@@ -118,10 +126,11 @@ export interface FileRoutesById {
   '/$lang/cv': typeof LangCvRoute
   '/$lang/design': typeof LangDesignRoute
   '/$lang/gallery': typeof LangGalleryRoute
-  '/$lang/projects': typeof LangProjectsRoute
   '/$lang/': typeof LangIndexRoute
   '/admin/': typeof AdminIndexRoute
+  '/$lang/projects/$slug': typeof LangProjectsSlugRoute
   '/admin/$entity/$id': typeof AdminEntityIdRoute
+  '/$lang/projects/': typeof LangProjectsIndexRoute
   '/admin/$entity/': typeof AdminEntityIndexRoute
 }
 export interface FileRouteTypes {
@@ -134,10 +143,11 @@ export interface FileRouteTypes {
     | '/$lang/cv'
     | '/$lang/design'
     | '/$lang/gallery'
-    | '/$lang/projects'
     | '/$lang/'
     | '/admin/'
+    | '/$lang/projects/$slug'
     | '/admin/$entity/$id'
+    | '/$lang/projects/'
     | '/admin/$entity/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -146,10 +156,11 @@ export interface FileRouteTypes {
     | '/$lang/cv'
     | '/$lang/design'
     | '/$lang/gallery'
-    | '/$lang/projects'
     | '/$lang'
     | '/admin'
+    | '/$lang/projects/$slug'
     | '/admin/$entity/$id'
+    | '/$lang/projects'
     | '/admin/$entity'
   id:
     | '__root__'
@@ -160,10 +171,11 @@ export interface FileRouteTypes {
     | '/$lang/cv'
     | '/$lang/design'
     | '/$lang/gallery'
-    | '/$lang/projects'
     | '/$lang/'
     | '/admin/'
+    | '/$lang/projects/$slug'
     | '/admin/$entity/$id'
+    | '/$lang/projects/'
     | '/admin/$entity/'
   fileRoutesById: FileRoutesById
 }
@@ -231,19 +243,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LangGalleryRouteImport
       parentRoute: typeof LangRouteRoute
     }
-    '/$lang/projects': {
-      id: '/$lang/projects'
-      path: '/projects'
-      fullPath: '/$lang/projects'
-      preLoaderRoute: typeof LangProjectsRouteImport
-      parentRoute: typeof LangRouteRoute
-    }
     '/admin/': {
       id: '/admin/'
       path: '/'
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRouteRoute
+    }
+    '/$lang/projects/': {
+      id: '/$lang/projects/'
+      path: '/projects'
+      fullPath: '/$lang/projects/'
+      preLoaderRoute: typeof LangProjectsIndexRouteImport
+      parentRoute: typeof LangRouteRoute
+    }
+    '/$lang/projects/$slug': {
+      id: '/$lang/projects/$slug'
+      path: '/projects/$slug'
+      fullPath: '/$lang/projects/$slug'
+      preLoaderRoute: typeof LangProjectsSlugRouteImport
+      parentRoute: typeof LangRouteRoute
     }
     '/admin/$entity/': {
       id: '/admin/$entity/'
@@ -267,8 +286,9 @@ interface LangRouteRouteChildren {
   LangCvRoute: typeof LangCvRoute
   LangDesignRoute: typeof LangDesignRoute
   LangGalleryRoute: typeof LangGalleryRoute
-  LangProjectsRoute: typeof LangProjectsRoute
   LangIndexRoute: typeof LangIndexRoute
+  LangProjectsSlugRoute: typeof LangProjectsSlugRoute
+  LangProjectsIndexRoute: typeof LangProjectsIndexRoute
 }
 
 const LangRouteRouteChildren: LangRouteRouteChildren = {
@@ -276,8 +296,9 @@ const LangRouteRouteChildren: LangRouteRouteChildren = {
   LangCvRoute: LangCvRoute,
   LangDesignRoute: LangDesignRoute,
   LangGalleryRoute: LangGalleryRoute,
-  LangProjectsRoute: LangProjectsRoute,
   LangIndexRoute: LangIndexRoute,
+  LangProjectsSlugRoute: LangProjectsSlugRoute,
+  LangProjectsIndexRoute: LangProjectsIndexRoute,
 }
 
 const LangRouteRouteWithChildren = LangRouteRoute._addFileChildren(

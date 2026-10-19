@@ -8,7 +8,13 @@ import { ThemeProvider } from "./app/providers"
 
 // ADR-0005: page changes run in a View Transition; without the API they are
 // instant. index.css sets the animation.
-const router = createRouter({ routeTree, defaultViewTransition: true })
+// Loader data stays fresh as long as the Public API's `max-age`: going back to
+// a page within a minute doesn't ask again. A new Lang is a new cache entry.
+const router = createRouter({
+  routeTree,
+  defaultViewTransition: true,
+  defaultStaleTime: 60_000,
+})
 
 declare module "@tanstack/react-router" {
   interface Register {
