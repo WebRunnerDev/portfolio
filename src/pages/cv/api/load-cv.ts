@@ -1,4 +1,5 @@
 import type { Lang } from "@contracts/lang"
+import { cvMeta } from "@contracts/meta"
 import {
   getCertifications,
   getCvSections,
@@ -12,7 +13,7 @@ import {
 } from "@/shared/api"
 
 // Everything the CV is built from, in one round of parallel requests. The
-// Profile is null until it has a Translation.
+// Profile is null until it has a Translation. `meta` goes to LangHead.
 export async function loadCv(lang: Lang, signal: AbortSignal) {
   const options = { signal }
   const [
@@ -38,6 +39,7 @@ export async function loadCv(lang: Lang, signal: AbortSignal) {
     getLanguages(lang, options),
   ])
   return {
+    meta: cvMeta(lang, profile),
     profile,
     sections,
     experience,

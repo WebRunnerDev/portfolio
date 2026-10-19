@@ -1,9 +1,31 @@
 import { useEffect } from "react"
-import { useLocation } from "@tanstack/react-router"
+import { useLocation, useMatches } from "@tanstack/react-router"
 
-import { alternates, pageMeta, pageUrl, parsePagePath } from "@contracts/meta"
+import {
+  alternates,
+  pageMeta,
+  pageUrl,
+  parsePagePath,
+  type PageMeta,
+} from "@contracts/meta"
 
 import { useLang } from "./use-lang"
+
+// The meta a loader returns with its data (`{ meta, … }`), for pages whose
+// meta comes from D1, the same the Worker injects (worker/meta/pages.ts).
+function useLoaderMeta(): PageMeta | undefined {
+  return useMatches({
+    select: (matches) => {
+      const data = matches.findLast(
+        ({ loaderData }) =>
+          typeof loaderData === "object" &&
+          loaderData !== null &&
+          "meta" in loaderData
+      )?.loaderData as { meta: PageMeta } | undefined
+      return data?.meta
+    },
+  })
+}
 
 // `<html lang>`, title, description, canonical and hreflang of the current
 // page, from the same contracts/meta.ts the Worker injects them with
@@ -14,7 +36,7 @@ export function LangHead() {
   const { pathname } = useLocation()
   const { origin } = window.location
   const path = parsePagePath(pathname)?.path ?? ""
-  const meta = pageMeta(lang, path)
+  const meta = useLoaderMeta() ?? pageMeta(lang, path)
 
   useEffect(() => {
     document.documentElement.lang = lang

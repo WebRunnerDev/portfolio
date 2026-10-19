@@ -4,6 +4,7 @@ import { LANGS } from "./lang"
 import {
   PAGE_PATHS,
   alternates,
+  cvMeta,
   notFoundMeta,
   pageMeta,
   parsePagePath,
@@ -45,6 +46,22 @@ describe("pageMeta", () => {
       title: "Страница не найдена · WebRunner",
       noindex: true,
     })
+  })
+})
+
+describe("cvMeta", () => {
+  it("titles the CV with the Profile on the Lang", () => {
+    expect(
+      cvMeta("ru", { name: "Жасулан Абдигалиев", headline: "Веб-разработчик" })
+    ).toEqual({
+      title: "Жасулан Абдигалиев: Резюме · WebRunner",
+      description:
+        "Веб-разработчик. Опыт, технологии, образование и сертификаты.",
+    })
+  })
+
+  it("keeps the section meta without a Profile", () => {
+    expect(cvMeta("de", null)).toEqual(pageMeta("de", "cv"))
   })
 })
 
