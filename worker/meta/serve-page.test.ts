@@ -119,6 +119,18 @@ describe("servePage", () => {
     }
   })
 
+  it("keeps the CV section meta when D1 fails", async () => {
+    const broken = {
+      ...testEnv,
+      DB: {
+        prepare: () => {
+          throw new Error("no such table: profile")
+        },
+      },
+    } as unknown as Env
+    expect(await resolveMeta(broken, "ru", "cv")).toEqual(pageMeta("ru", "cv"))
+  })
+
   it("canonicalizes a trailing slash", async () => {
     const { attr } = await page("https://webrunner.dev/de/blog/")
     expect(attr(/rel="canonical" href="([^"]+)"/)).toBe(

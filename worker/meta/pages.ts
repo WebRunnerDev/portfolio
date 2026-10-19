@@ -18,7 +18,16 @@ export type DataPage = {
 export const DATA_PAGES: readonly DataPage[] = [
   {
     pattern: /^cv$/,
-    meta: async (env, lang) => cvMeta(lang, await readProfile(env.DB, lang)),
+    // The page must not fail with D1: without the Profile it keeps the
+    // section meta.
+    meta: async (env, lang) => {
+      try {
+        return cvMeta(lang, await readProfile(env.DB, lang))
+      } catch (error) {
+        console.error("cv meta: no Profile from D1", error)
+        return cvMeta(lang, null)
+      }
+    },
   },
 ]
 
