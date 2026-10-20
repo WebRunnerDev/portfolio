@@ -115,10 +115,22 @@ const DATA = {
   ],
 }
 
+// `cv-sections?form=print` answers what D1 has with `show_pdf = 1`:
+// Technologies and Projects are left out, Education comes in.
+const PRINT_SECTIONS = [
+  { type: "experience" },
+  { type: "education" },
+  { type: "languages" },
+]
+
 async function mockPublicApi(page: Page) {
   await page.route("**/api/public/**", (route) => {
-    const entity = new URL(route.request().url()).pathname.split("/")[4]
-    const body = DATA[entity as keyof typeof DATA]
+    const url = new URL(route.request().url())
+    const entity = url.pathname.split("/")[4]
+    const body =
+      entity === "cv-sections" && url.searchParams.get("form") === "print"
+        ? PRINT_SECTIONS
+        : DATA[entity as keyof typeof DATA]
     return body
       ? route.fulfill({ json: body })
       : route.fulfill({ status: 404, json: { error: "not_found" } })
@@ -231,5 +243,67 @@ test("the CV fits 360px in LTR and RTL", async ({ page }) => {
           el.scrollWidth - el.clientWidth
       )
     expect(overflow).toBeLessThanOrEqual(0)
+  }
+})
+
+// Issue #67: the Print CV, the source of the CV PDF (ADR-0003).
+test.describe("Print CV", () => {
+  test("has no site layout, only the sections of the PDF, and noindex", async ({
+    page,
+  }) => {
+    await mockPublicApi(page)
+    await page.goto("/en/cv/print")
+    await expect(page.locator("html")).toHaveAttribute("data-print-ready", "")
+    await expect(page.getByRole("banner")).toHaveCount(0)
+    await expect(page.getByRole("contentinfo")).toHaveCount(0)
+    await expect(page.getByRole("button", { name: "Menu" })).toHaveCount(0)
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Zhasulan Abdigaliyev" })
+    ).toBeVisible()
+    expect(await sectionTitles(page)).toEqual([
+      "Experience",
+      "Education",
+      "Languages",
+    ])
+    await expect(page.getByText("PlotOps")).toHaveCount(0)
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
+      "content",
+      "noindex"
+    )
+    // Contacts spell the URL out, for paper.
+    await expect(
+      page.getByRole("link", { name: "github.com/me" })
+    ).toHaveAttribute("href", "https://github.com/me")
+    expect(await page.content()).not.toContain(PHONE)
+  })
+
+  test("is light even when the visitor chose dark", async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("theme", "dark"))
+    await mockPublicApi(page)
+    await page.goto("/en/cv/print")
+    await expect(page.locator("html")).toHaveAttribute("data-print-ready", "")
+    await expect(page.locator("html")).toHaveClass(/\blight\b/)
+    await expect(page.locator("html")).not.toHaveClass(/\bdark\b/)
+  })
+
+  for (const lang of ["en", "ru", "ar"]) {
+    test(`prints /${lang} on one A4 page with clickable links`, async ({
+      page,
+    }) => {
+      await mockPublicApi(page)
+      await page.goto(`/${lang}/cv/print`)
+      await expect(page.locator("html")).toHaveAttribute("data-print-ready", "")
+      const pdf = (
+        await page.pdf({ preferCSSPageSize: true, tagged: true })
+      ).toString("latin1")
+      expect(pdf.match(/\/Type\s*\/Page\b/g)).toHaveLength(1)
+      // A4 is 595 × 842 pt.
+      const [, width, height] = /\/MediaBox \[0 0 ([\d.]+) ([\d.]+)\]/.exec(
+        pdf
+      )!
+      expect(Math.round(Number(width))).toBe(595)
+      expect(Math.round(Number(height))).toBe(842)
+      expect(pdf).toContain("/URI (https://github.com/me)")
+    })
   }
 })
