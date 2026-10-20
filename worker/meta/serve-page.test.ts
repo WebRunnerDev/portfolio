@@ -119,6 +119,13 @@ describe("servePage", () => {
     }
   })
 
+  it("serves the Print CV with noindex", async () => {
+    const { response, attr } = await page("https://webrunner.dev/en/cv/print")
+    expect(response.status).toBe(200)
+    expect(attr(/<title data-meta>([^<]*)</)).toBe("CV · WebRunner")
+    expect(attr(content("robots"))).toBe("noindex")
+  })
+
   it("keeps the CV section meta when D1 fails", async () => {
     const broken = {
       ...testEnv,
