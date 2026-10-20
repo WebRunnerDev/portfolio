@@ -90,7 +90,9 @@ async function mockPublicApi(
     if (entity === "projects" && slug) {
       const found = data.projects.find((p) => p.slug === slug)
       return found
-        ? route.fulfill({ json: { ...found, caseStudy: "# Case" } })
+        ? route.fulfill({
+            json: { ...found, caseStudy: found.hasCaseStudy ? "# Case" : null },
+          })
         : route.fulfill({ status: 404, json: { error: "not_found" } })
     }
     const body = data[entity as keyof typeof data]

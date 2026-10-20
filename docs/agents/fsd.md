@@ -77,6 +77,16 @@ Public pages read `/api/public/:lang/*` (`worker/README.md` › Public API) thro
 - **Status:** `in_progress` is `badge-success`, the others neutral; each with its icon and the `project.status.*` text.
 - **E2E:** `e2e/projects.spec.ts`.
 
+## Case Study
+
+`/{lang}/projects/:slug` (`ProjectPage` in `src/pages/project/`): the header of the Project (title, status, description, technologies, links, cover at `fetchpriority="high"`) and its Case Study. `ProjectTechnologies` and `ProjectLinks` (`@/entities/project`) are the card's own.
+
+- **404:** `loadProject` throws `notFound()` for an unknown slug and for a Project whose `caseStudy` is null; its `meta` comes from `projectMeta` (`contracts/meta.ts`), the same the Worker injects.
+- **Markdown:** `Markdown` (`@/shared/ui/markdown`, react-markdown + GFM) renders Markdown from D1. Raw HTML is dropped, `javascript:` and `data:` URLs are emptied; headings go one level down (the page title is the only h1). Links to `http(s)` open in a new tab with `rel="noopener noreferrer"`. Images on `/media/<key>` go through Cloudflare Images; any other image is its alt text (CSP `img-src 'self'`).
+- **Code:** fenced blocks render through `CodeBlock` (`code-block.tsx`): `dir="ltr"`, their own scroll region, the language in `data-language`. Shiki (stage 5) goes in there; inline code is `dir="ltr"` too.
+- **Fallback:** `lang={fallbackLang(project)}` on the title, the description and the `Markdown`.
+- **Unit:** `markdown.test.tsx` renders to static HTML; **E2E:** `e2e/projects.spec.ts`.
+
 ## Admin
 
 `/admin` ([ADR-0004](../adr/0004-cloudflare-access-for-admin.md)) sits outside `/$lang`: its own layout, EN only, `<html dir="ltr">`, `noindex`. Routes are in `src/app/routes/admin/`, everything else in one page slice, `src/pages/admin/`.

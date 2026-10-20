@@ -1,6 +1,13 @@
 import type { Lang } from "@contracts/lang"
-import { cvMeta, pageMeta, printCvMeta, type PageMeta } from "@contracts/meta"
+import {
+  cvMeta,
+  pageMeta,
+  printCvMeta,
+  projectMeta,
+  type PageMeta,
+} from "@contracts/meta"
 import { readProfile } from "../api/routes/public/profile"
+import { readProject } from "../api/routes/public/projects"
 
 // A page whose meta comes from D1, such as `cv` or `projects/:slug`.
 // `pattern` matches the path after the Lang; `meta` answers null when there
@@ -26,7 +33,30 @@ async function profileOrNull(env: Env, lang: Lang) {
   }
 }
 
+// `%E0` and the like: no slug, so no page.
+function decodeSlug(encoded: string) {
+  try {
+    return decodeURIComponent(encoded)
+  } catch {
+    return null
+  }
+}
+
 export const DATA_PAGES: readonly DataPage[] = [
+  {
+    pattern: /^projects\/([^/]+)$/,
+    meta: async (env, lang, [, encoded]) => {
+      const slug = decodeSlug(encoded)
+      if (slug === null) return null
+      try {
+        return projectMeta(await readProject(env.DB, lang, slug))
+      } catch (error) {
+        // Not a 404 when D1 fails: the page may well be there.
+        console.error("project meta: no Project from D1", error)
+        return pageMeta(lang, "projects")
+      }
+    },
+  },
   {
     pattern: /^cv$/,
     meta: async (env, lang) => cvMeta(lang, await profileOrNull(env, lang)),

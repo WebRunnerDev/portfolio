@@ -119,6 +119,74 @@ describe("servePage", () => {
     }
   })
 
+  it("titles a Project's page from the Project on the Lang, EN where it has none", async () => {
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO project (id, slug, cover_key)
+        VALUES (1, 'plotops', 'projects/plotops.png'), (2, 'ams', NULL),
+          (3, 'old', NULL)`
+      ),
+      env.DB.prepare(
+        `INSERT INTO project_translation
+          (project_id, lang, title, description, case_study)
+        VALUES (1, 'en', 'PlotOps', 'Field operations', '# Case'),
+          (1, 'ru', 'ПлотОпс', 'Полевые работы', '# Кейс'),
+          (2, 'en', 'AITU AMS', 'Attendance management', '# Case'),
+          (3, 'en', 'Old one', 'Long ago', NULL)`
+      ),
+    ])
+    try {
+      const ru = await page("https://webrunner.dev/ru/projects/plotops")
+      expect(ru.response.status).toBe(200)
+      expect(ru.attr(/<title data-meta>([^<]*)</)).toBe("ПлотОпс · WebRunner")
+      expect(ru.attr(content("og:title"))).toBe("ПлотОпс · WebRunner")
+      expect(ru.attr(content("description"))).toBe("Полевые работы")
+      expect(ru.attr(content("og:image"))).toBe(
+        "https://webrunner.dev/cdn-cgi/image/width=1200,fit=scale-down,format=auto/media/projects/plotops.png"
+      )
+      expect(ru.attr(/rel="canonical" href="([^"]+)"/)).toBe(
+        "https://webrunner.dev/ru/projects/plotops"
+      )
+      expect(ru.attr(content("robots"))).toBeUndefined()
+
+      // No RU Translation: EN; no cover: the default OG image.
+      const ams = await page("https://webrunner.dev/ru/projects/ams")
+      expect(ams.response.status).toBe(200)
+      expect(ams.attr(/<title data-meta>([^<]*)</)).toBe("AITU AMS · WebRunner")
+      expect(ams.attr(content("og:image"))).toBe(
+        "https://webrunner.dev/og-default.png"
+      )
+
+      // No Case Study, an unknown or a broken slug: 404.
+      for (const slug of ["old", "nope", "%E0"]) {
+        const { response, attr } = await page(
+          `https://webrunner.dev/ru/projects/${slug}`
+        )
+        expect(response.status).toBe(404)
+        expect(attr(content("robots"))).toBe("noindex")
+      }
+    } finally {
+      await env.DB.batch([
+        env.DB.prepare(`DELETE FROM project_translation`),
+        env.DB.prepare(`DELETE FROM project`),
+      ])
+    }
+  })
+
+  it("keeps a Project's page when D1 fails", async () => {
+    const broken = {
+      ...testEnv,
+      DB: {
+        prepare: () => {
+          throw new Error("no such table: project")
+        },
+      },
+    } as unknown as Env
+    expect(await resolveMeta(broken, "ru", "projects/plotops")).toEqual(
+      pageMeta("ru", "projects")
+    )
+  })
+
   it("serves the Print CV with noindex", async () => {
     const { response, attr } = await page("https://webrunner.dev/en/cv/print")
     expect(response.status).toBe(200)

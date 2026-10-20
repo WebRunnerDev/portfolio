@@ -8,6 +8,7 @@ import {
   notFoundMeta,
   pageMeta,
   parsePagePath,
+  projectMeta,
 } from "./meta"
 import { MESSAGES } from "./messages"
 
@@ -62,6 +63,35 @@ describe("cvMeta", () => {
 
   it("keeps the section meta without a Profile", () => {
     expect(cvMeta("de", null)).toEqual(pageMeta("de", "cv"))
+  })
+})
+
+describe("projectMeta", () => {
+  const project = {
+    title: "PlotOps",
+    description: "Field operations",
+    coverKey: "projects/plot ops.png",
+    caseStudy: "# Case",
+  }
+
+  it("titles the page with the Project and its cover as OG image", () => {
+    expect(projectMeta(project)).toEqual({
+      title: "PlotOps · WebRunner",
+      description: "Field operations",
+      image:
+        "/cdn-cgi/image/width=1200,fit=scale-down,format=auto/media/projects/plot%20ops.png",
+    })
+  })
+
+  it("keeps the default OG image without a cover", () => {
+    expect(projectMeta({ ...project, coverKey: null })).not.toHaveProperty(
+      "image"
+    )
+  })
+
+  it("is null without a Case Study or a Project", () => {
+    expect(projectMeta({ ...project, caseStudy: null })).toBeNull()
+    expect(projectMeta(null)).toBeNull()
   })
 })
 

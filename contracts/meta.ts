@@ -2,6 +2,7 @@
 // injects them into index.html for crawlers without JS; LangHead renders the
 // same ones on the client.
 import { DEFAULT_LANG, LANGS, isLang, type Lang } from "./lang"
+import { imageUrl } from "./media"
 import { MESSAGES, type MessageKey } from "./messages"
 
 export const BRAND = "WebRunner"
@@ -12,7 +13,7 @@ export const DEFAULT_OG_IMAGE = "/og-default.png"
 export type PageMeta = {
   title: string
   description: string
-  // A path on the site (`/media/<key>`) or an absolute URL.
+  // A path on the site (`/media/<key>`, `/cdn-cgi/image/…`) or an absolute URL.
   image?: string
   noindex?: boolean
 }
@@ -76,6 +77,31 @@ export function cvMeta(
   return {
     title: withBrand(`${profile.name}: ${t(lang, "nav.cv")}`),
     description: `${profile.headline}. ${meta.description}`,
+  }
+}
+
+// Cloudflare Images width of a cover as `og:image`: what LinkedIn and others
+// show at most, and well under their size limits.
+const OG_IMAGE_WIDTH = 1200
+
+// A Project's page (`projects/:slug`), titled and described by the Project on
+// that Lang (EN as its Fallback), with its cover as the OG image. Null without
+// a Case Study: the page is a 404.
+export function projectMeta(
+  project: {
+    title: string
+    description: string
+    coverKey: string | null
+    caseStudy: string | null
+  } | null
+): PageMeta | null {
+  if (project?.caseStudy == null) return null
+  return {
+    title: withBrand(project.title),
+    description: project.description,
+    ...(project.coverKey && {
+      image: imageUrl(project.coverKey, OG_IMAGE_WIDTH),
+    }),
   }
 }
 

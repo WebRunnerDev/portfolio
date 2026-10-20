@@ -1,5 +1,6 @@
 import { Hono } from "hono"
 import type { Project, ProjectDetail, Technology } from "@contracts/api/public"
+import type { Lang } from "@contracts/lang"
 import { apiError, methodNotAllowed } from "../../errors"
 import {
   parseJson,
@@ -50,6 +51,21 @@ function toProject(row: ProjectRow): Project {
   }
 }
 
+// The Project at `slug` on a Lang, with its Case Study; null for an unknown
+// slug. Meta Injection of its page reads it too.
+export async function readProject(
+  db: D1Database,
+  lang: Lang,
+  slug: string
+): Promise<ProjectDetail | null> {
+  const row = await db
+    .prepare(`${SELECT_PROJECT} WHERE p.slug = ?2`)
+    .bind(lang, slug)
+    .first<ProjectRow>()
+  if (!row) return null
+  return { ...toProject(row), caseStudy: row.case_study }
+}
+
 // The list leaves out the case study; the client filters `featured` / `inCv`.
 export const projects = new Hono<PublicEnv>()
   .get("/", async (c) => {
@@ -61,14 +77,9 @@ export const projects = new Hono<PublicEnv>()
     return c.json(results.map(toProject) satisfies Project[])
   })
   .get("/:slug", async (c) => {
-    const row = await c.env.DB.prepare(`${SELECT_PROJECT} WHERE p.slug = ?2`)
-      .bind(c.var.lang, c.req.param("slug"))
-      .first<ProjectRow>()
-    if (!row) return apiError(c, 404, "not_found")
-    return c.json({
-      ...toProject(row),
-      caseStudy: row.case_study,
-    } satisfies ProjectDetail)
+    const found = await readProject(c.env.DB, c.var.lang, c.req.param("slug"))
+    if (!found) return apiError(c, 404, "not_found")
+    return c.json(found satisfies ProjectDetail)
   })
   .all("/", methodNotAllowed("GET, HEAD"))
   .all("/:slug", methodNotAllowed("GET, HEAD"))
