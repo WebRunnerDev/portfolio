@@ -46,6 +46,16 @@ The `/$lang` route renders the layout: `SiteHeader` (`@/widgets/header`), `<main
 - **Page transitions:** `defaultViewTransition` in `src/main.tsx`; the animation is in `src/index.css`, instant under reduced motion.
 - **360px:** below `lg` the Lang and theme switchers live in the menu, not the header. `e2e/layout.spec.ts` checks every page in every Lang for horizontal scroll.
 
+## Print CV
+
+`/{lang}/cv/print` (route `$lang_.cv.print.tsx`, `PrintCvPage` in `src/pages/cv/`) is what Browser Rendering prints to the CV PDF ([ADR-0003](../adr/0003-cv-pdf-via-browser-rendering.md)).
+
+- **Outside the layout:** the `_` in `$lang_` keeps it out of `/$lang`, so no header, footer or menu; the route checks the Lang and renders `DirectionProvider` and `LangHead` itself.
+- **Always light:** `staticData: { theme: "light" }` on the route; the root route passes it to `ThemeProvider` as `forcedTheme`. The inline script in `index.html` matches the path too, so a dark visitor sees no flash.
+- **Sections:** `loadCv(lang, signal, "print")` asks `cv-sections?form=print` (`show_pdf`). No photo, no Fallback notice, links spelled out.
+- **One A4 page:** `print-sheet` in `src/index.css` with `@page cv`. The tokens stay; `--print-zoom` scales them all. Check with real content: `e2e/cv.spec.ts` prints the mock data only.
+- **Ready flag:** `<html data-print-ready>` once the data is rendered and `document.fonts.ready`; Browser Rendering waits for it before `page.pdf()`.
+
 ## Public data
 
 Public pages read `/api/public/:lang/*` (`worker/README.md` › Public API) through route loaders, no data library.

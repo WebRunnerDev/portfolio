@@ -22,7 +22,7 @@ ADR-0001: crawlers don't run JS, so `worker/meta/serve-page.ts` rewrites `index.
 - **Previews** (`*.workers.dev`) get `X-Robots-Tag: noindex` and `<meta name="robots" content="noindex">`.
 - **Caching:** the HTML loses the `ETag` of `index.html`, which is the same for every page.
 - **Pages with data from D1** (`cv`, `projects/:slug`, `blog/:slug`): add a `DataPage` to `DATA_PAGES` in `worker/meta/pages.ts` — a pattern on the path after the Lang and a `meta(env, lang, match)` that reads D1 and answers null for an unknown slug (404). It goes before the static meta of the same path. Build the meta with a function in `contracts/meta.ts` (`cvMeta`) and return it as `meta` from the page's loader too: `LangHead` takes it from there. Static sections go in `PAGES` in `contracts/meta.ts`.
-- **CV:** the title and description come from the Profile on the Lang (EN when it has none); without a Profile, the section meta.
+- **CV:** the title and description come from the Profile on the Lang (EN when it has none); without a Profile, the section meta. `cv/print` (the Print CV) gets the same meta and `noindex`.
 
 ## Security headers
 
@@ -115,7 +115,7 @@ After the rate limit, every `/api/*` request goes through `checkOrigin` (`worker
 | Path | Answer |
 | --- | --- |
 | `profile` | The Profile; 404 until it has a Translation |
-| `cv-sections` | `[{type}]` with `show_web`, by `position` |
+| `cv-sections?form=web\|print` | `[{type}]` with `show_web` (default) or `show_pdf`, by `position` |
 | `experience`, `education`, `languages` | Lists by `position`; experience with its technologies |
 | `certifications`, `technologies`, `tracks` | Untranslated lists; technologies by category |
 | `projects`, `projects/:slug` | List without `caseStudy` (`hasCaseStudy` instead); by slug with it |
