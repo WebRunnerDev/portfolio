@@ -18,6 +18,7 @@ import { Route as LangCvRouteImport } from './routes/$lang/cv'
 import { Route as LangDesignRouteImport } from './routes/$lang/design'
 import { Route as LangGalleryRouteImport } from './routes/$lang/gallery'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as AdminCvPdfRouteImport } from './routes/admin/cv-pdf'
 import { Route as LangProjectsIndexRouteImport } from './routes/$lang/projects/index'
 import { Route as LangProjectsSlugRouteImport } from './routes/$lang/projects/$slug'
 import { Route as LangCvPrintRouteImport } from './routes/$lang_.cv.print'
@@ -69,6 +70,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const AdminCvPdfRoute = AdminCvPdfRouteImport.update({
+  id: '/cv-pdf',
+  path: '/cv-pdf',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const LangProjectsIndexRoute = LangProjectsIndexRouteImport.update({
   id: '/projects/',
   path: '/projects/',
@@ -103,6 +109,7 @@ export interface FileRoutesByFullPath {
   '/$lang/cv': typeof LangCvRoute
   '/$lang/design': typeof LangDesignRoute
   '/$lang/gallery': typeof LangGalleryRoute
+  '/admin/cv-pdf': typeof AdminCvPdfRoute
   '/$lang/': typeof LangIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/$lang/projects/$slug': typeof LangProjectsSlugRoute
@@ -117,6 +124,7 @@ export interface FileRoutesByTo {
   '/$lang/cv': typeof LangCvRoute
   '/$lang/design': typeof LangDesignRoute
   '/$lang/gallery': typeof LangGalleryRoute
+  '/admin/cv-pdf': typeof AdminCvPdfRoute
   '/$lang': typeof LangIndexRoute
   '/admin': typeof AdminIndexRoute
   '/$lang/projects/$slug': typeof LangProjectsSlugRoute
@@ -134,6 +142,7 @@ export interface FileRoutesById {
   '/$lang/cv': typeof LangCvRoute
   '/$lang/design': typeof LangDesignRoute
   '/$lang/gallery': typeof LangGalleryRoute
+  '/admin/cv-pdf': typeof AdminCvPdfRoute
   '/$lang/': typeof LangIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/$lang/projects/$slug': typeof LangProjectsSlugRoute
@@ -152,6 +161,7 @@ export interface FileRouteTypes {
     | '/$lang/cv'
     | '/$lang/design'
     | '/$lang/gallery'
+    | '/admin/cv-pdf'
     | '/$lang/'
     | '/admin/'
     | '/$lang/projects/$slug'
@@ -166,6 +176,7 @@ export interface FileRouteTypes {
     | '/$lang/cv'
     | '/$lang/design'
     | '/$lang/gallery'
+    | '/admin/cv-pdf'
     | '/$lang'
     | '/admin'
     | '/$lang/projects/$slug'
@@ -182,6 +193,7 @@ export interface FileRouteTypes {
     | '/$lang/cv'
     | '/$lang/design'
     | '/$lang/gallery'
+    | '/admin/cv-pdf'
     | '/$lang/'
     | '/admin/'
     | '/$lang/projects/$slug'
@@ -263,6 +275,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/admin/cv-pdf': {
+      id: '/admin/cv-pdf'
+      path: '/cv-pdf'
+      fullPath: '/admin/cv-pdf'
+      preLoaderRoute: typeof AdminCvPdfRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/$lang/projects/': {
       id: '/$lang/projects/'
       path: '/projects'
@@ -326,12 +345,14 @@ const LangRouteRouteWithChildren = LangRouteRoute._addFileChildren(
 )
 
 interface AdminRouteRouteChildren {
+  AdminCvPdfRoute: typeof AdminCvPdfRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminEntityIdRoute: typeof AdminEntityIdRoute
   AdminEntityIndexRoute: typeof AdminEntityIndexRoute
 }
 
 const AdminRouteRouteChildren: AdminRouteRouteChildren = {
+  AdminCvPdfRoute: AdminCvPdfRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminEntityIdRoute: AdminEntityIdRoute,
   AdminEntityIndexRoute: AdminEntityIndexRoute,

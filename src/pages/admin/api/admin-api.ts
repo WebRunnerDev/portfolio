@@ -1,6 +1,7 @@
 import * as v from "valibot"
 import {
   AdminMeResponseSchema,
+  CvPdfSchema,
   UploadResponseSchema,
 } from "@contracts/api/admin"
 import {
@@ -189,4 +190,25 @@ export async function uploadFile(
 export async function deleteUpload(key: string) {
   const path = key.split("/").map(encodeURIComponent).join("/")
   await request(`/uploads/${path}`, { method: "DELETE" })
+}
+
+// /cv-pdf (worker/README.md › CV PDF): the Langs that have a CV PDF.
+export async function listCvPdfs() {
+  return parsed(v.array(CvPdfSchema), await request("/cv-pdf"))
+}
+
+// Prints the Print CV through Browser Rendering: takes a few seconds.
+export async function generateCvPdf(lang: Lang) {
+  return parsed(
+    CvPdfSchema,
+    await request(`/cv-pdf/${lang}`, { method: "POST" })
+  )
+}
+
+// A PDF made elsewhere, as the raw body, in place of the generated one.
+export async function uploadCvPdf(lang: Lang, file: File) {
+  return parsed(
+    CvPdfSchema,
+    await request(`/cv-pdf/${lang}`, { method: "PUT", body: file })
+  )
 }

@@ -18,6 +18,14 @@ export function AdminHomePage() {
             </Link>
           </li>
         ))}
+        <li>
+          <Link
+            to="/admin/cv-pdf"
+            className="block border border-border bg-card px-zsd-md py-zsd-sm outline-offset-2 hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
+          >
+            CV PDF
+          </Link>
+        </li>
       </ul>
     </>
   )
