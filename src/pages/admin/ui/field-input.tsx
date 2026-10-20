@@ -14,6 +14,7 @@ import type { Direction, Lang } from "@contracts/lang"
 import type { Values } from "../api/admin-api"
 import type { FormValue } from "../lib/form"
 import type { Field } from "../model/entities"
+import { CoverInput, type Gallery } from "./cover-input"
 import { FileInput } from "./file-input"
 import { RefSelect } from "./ref-select"
 import { RefsInput } from "./refs-input"
@@ -39,6 +40,7 @@ export function FieldInput({
   dir,
   onChange,
   onUploaded,
+  gallery,
 }: {
   field: Field
   value: FormValue
@@ -49,6 +51,8 @@ export function FieldInput({
   onChange: (value: FormValue) => void
   // A file field: the new key and what the upload filled in besides it.
   onUploaded: (key: string, extra: Values) => void
+  // The rows a `cover` field picks from.
+  gallery?: Gallery
 }) {
   const id = useId()
   const describedBy = `${id}-hint`
@@ -80,6 +84,28 @@ export function FieldInput({
               {message}
             </p>
           ))}
+        </fieldset>
+      )
+    case "cover":
+      return (
+        <fieldset
+          aria-describedby={describedBy}
+          className="flex flex-col gap-zsd-xs"
+        >
+          <legend className="mb-zsd-xs text-sm font-medium">
+            {field.label}
+          </legend>
+          <CoverInput gallery={gallery} value={text} onChange={onChange} />
+          <div id={describedBy} className="text-zsd-body-sm">
+            {field.hint && (
+              <p className="text-muted-foreground">{field.hint}</p>
+            )}
+            {errors?.map((message) => (
+              <p key={message} className="text-zsd-error">
+                {message}
+              </p>
+            ))}
+          </div>
         </fieldset>
       )
     case "boolean":
