@@ -45,6 +45,13 @@ export const en = {
   "cv.tech.backend_cloud": "Back-End & Cloud",
   "cv.tech.qa_testing": "QA & Testing",
   "cv.tech.tools_design": "Tools & Design",
+  "project.status.in_progress": "In progress",
+  "project.status.completed": "Completed",
+  "project.status.archived": "Archived",
+  "project.demo": "Demo",
+  "projects.empty.title": "No projects yet",
+  "projects.empty.text":
+    "Pet projects with case studies appear here: what was built and how.",
   "langSwitcher.label": "Language",
   "themeSwitcher.label": "Theme",
   "themeSwitcher.light": "Light",
