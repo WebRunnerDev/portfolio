@@ -5,7 +5,7 @@ Cloudflare Worker (ADR-0001): serves the SPA through Workers Static Assets, owns
 Code shared with the frontend (Lang list, UI dictionaries, page meta, API schemas and types) lives in `contracts/`, imported as `@contracts/*` (mapped in `tsconfig.worker.json`); never import from `src/`.
 
 - Hashed build output (`/assets/*`) is served without invoking the Worker; everything else runs it first (`run_worker_first`) and goes to `ASSETS` unless a rule below takes it. Unknown paths fall back to `index.html` (`not_found_handling: "single-page-application"`).
-- Pages under a Lang (`/{lang}/…`) get Meta Injection (below). `/api/*` goes to the API below, `/media/*` to the MEDIA bucket (Media below). `GET /api/health` → `{"status":"ok"}`.
+- Pages under a Lang (`/{lang}/…`) get Meta Injection (below). `/api/*` goes to the API below, `/media/*` to the MEDIA bucket (Media below), `/{lang}/cv.pdf` to the CV PDF (CV PDF below). `GET /api/health` → `{"status":"ok"}`.
 - `/api/public/:lang/*` reads published content on a Lang (Public API below).
 - `/api/*` is rate limited per IP (Rate limits below); pages, assets and `/media/*` are not.
 - `/api/*` gives no CORS headers (the SPA is on the same origin, ADR-0001) and refuses writes from other origins (Origin and body limits below).
@@ -77,6 +77,8 @@ ADR-0001: crawlers don't run JS, so `worker/meta/serve-page.ts` rewrites `index.
 | 422 | `validation_failed` | `/api/admin/*` body doesn't match the schema, a unique value (slug, name…) is taken, or an id points at nothing. Also carries `fields`: `{ "<dot path>": ["message"] }` |
 | 429 | `too_many_requests` | The IP passed a rate limit (Rate limits below); `Retry-After` gives the seconds to wait |
 | 500 | `internal_error` | Unhandled exception; it goes to Workers Logs, the client gets no details |
+| 502 | `render_failed` | CV PDF generation: the Print CV didn't get ready or didn't print (CV PDF below) |
+| 503 | `browser_unavailable` | CV PDF generation: Browser Rendering gave no browser (CV PDF below) |
 
 **New endpoint:**
 
@@ -93,7 +95,8 @@ ADR-0001: crawlers don't run JS, so `worker/meta/serve-page.ts` rewrites `index.
 | --- | --- | --- | --- |
 | `API_RATE_LIMIT` | GET, HEAD, OPTIONS anywhere; anything outside `/api/admin/*` | 100 / 60 s | IP + path |
 | `ADMIN_WRITE_RATE_LIMIT` | Other methods on `/api/admin/*` | 60 / 60 s | IP |
-| `UPLOAD_RATE_LIMIT` | `POST /api/admin/uploads` | 20 / 60 s | IP |
+| `UPLOAD_RATE_LIMIT` | `POST /api/admin/uploads`, `PUT /api/admin/cv-pdf/:lang` | 20 / 60 s | IP |
+| `CV_PDF_RATE_LIMIT` | `POST /api/admin/cv-pdf/:lang` (starts a browser) | 6 / 60 s | IP |
 
 - The IP is `CF-Connecting-IP`, which Cloudflare's edge sets on every request. Reads count per path, so the few calls a page makes don't add up; writes per IP, since their paths carry ids.
 - Counters are kept per Cloudflare location and the binding allows only 10 or 60 s periods, so the limits are approximate. `RATE_LIMIT_PERIOD` in `rate-limit.ts` must equal `period`: it is the `Retry-After`.
@@ -106,7 +109,7 @@ After the rate limit, every `/api/*` request goes through `checkOrigin` (`worker
 
 - **No CORS:** the SPA calls the API from its own origin (ADR-0001), so no answer carries `Access-Control-*` headers, whatever the `Origin` (`https://webrunner.dev` included), and a preflight gets no 204.
 - **Cross-site writes:** a request other than GET, HEAD or OPTIONS whose `Origin` is not the API's own origin answers 403 `forbidden`, whatever its `Content-Type`, before the Access check. So a form on another site can't use the owner's Access cookie. A request without `Origin` (curl, tests) passes: browsers always send it with writes. `POST /api/csp-report` passes with any `Origin` (Security headers above).
-- **Body size:** `POST /api/admin/uploads` up to the largest upload limit (its own kind's limit is checked after sniffing, Media below), any other body up to 1 MB (`MAX_JSON_BYTES`). Over it: 413 `payload_too_large`, unread when `Content-Length` says so, cut off mid-stream otherwise.
+- **Body size:** `POST /api/admin/uploads` and `PUT /api/admin/cv-pdf/:lang` up to the largest upload limit (its own kind's limit is checked after sniffing, Media below), any other body up to 1 MB (`MAX_JSON_BYTES`). Over it: 413 `payload_too_large`, unread when `Content-Length` says so, cut off mid-stream otherwise.
 
 ## Public API
 
@@ -116,6 +119,7 @@ After the rate limit, every `/api/*` request goes through `checkOrigin` (`worker
 | --- | --- |
 | `profile` | The Profile; 404 until it has a Translation |
 | `cv-sections?form=web\|print` | `[{type}]` with `show_web` (default) or `show_pdf`, by `position` |
+| `cv-pdf` | `{lang, generatedAt, fallback}` of the CV PDF to link: the Lang's own, else EN's (`fallback: true`); 404 while neither exists |
 | `experience`, `education`, `languages` | Lists by `position`; experience with its technologies |
 | `certifications`, `technologies`, `tracks` | Untranslated lists; technologies by category |
 | `projects`, `projects/:slug` | List without `caseStudy` (`hasCaseStudy` instead); by slug with it |
@@ -168,7 +172,7 @@ Images, audio and PDFs live in R2 behind the `MEDIA` binding: bucket `webrunner-
 
 **Serving** (`worker/media/serve.ts`): `GET /media/<key>` with the stored `Content-Type`, `ETag` (`If-None-Match` → 304), `X-Content-Type-Options: nosniff` and:
 
-- `Cache-Control: public, max-age=31536000, immutable` when the key holds a uuid (every upload), `public, max-age=60` otherwise (a file rewritten under the same key, like a future CV PDF).
+- `Cache-Control: public, max-age=31536000, immutable` when the key holds a uuid (every upload), `public, max-age=60` otherwise (a file rewritten under the same key, like the CV PDF).
 - One byte range (`Range: bytes=…`) → 206 with `Content-Range`, so audio can seek; past the end → 416. Several ranges or a malformed header get the whole file (200).
 - A missing key → 404, methods other than GET/HEAD → 405, both without a body.
 
@@ -179,6 +183,19 @@ One-time setup (owner), **before merging**: the deploy fails while a bucket in `
 1. `npx wrangler r2 bucket create webrunner-media` and `npx wrangler r2 bucket create webrunner-media-preview`. Nothing else: the buckets stay private, the Worker serves them.
 2. Dashboard → `webrunner.dev` zone → **Images** → **Transformations** → **Enable for zone**. The source is the zone itself, so no allowed origins are needed.
 3. After the deploy, sign in at `https://webrunner.dev/admin`, then in the DevTools console (Chrome) pick a photo: `const [f] = await showOpenFilePicker(); await (await fetch("/api/admin/uploads", { method: "POST", body: await f.getFile() })).json()`. Open `https://webrunner.dev/media/<key>` from the answer, and `https://webrunner.dev/cdn-cgi/image/width=320,format=auto/media/<key>` for the small copy.
+
+## CV PDF
+
+ADR-0003: one PDF per Lang, printed from the Print CV (`/{lang}/cv/print`, `docs/agents/fsd.md` › Print CV) by [Browser Rendering](https://developers.cloudflare.com/browser-rendering/) (`browser` binding `BROWSER`, `@cloudflare/puppeteer`), or uploaded by hand. Code in `worker/cv-pdf/`, keys and paths in `contracts/cv-pdf.ts`.
+
+- **Storage:** R2 key `cv/<lang>.pdf` (always the same, so a new file replaces the old) and the `cv_pdf` row (`lang`, `r2_key`, `generated_at`). The file is written first, then the row. `DELETE /api/admin/uploads/cv/<lang>.pdf` answers 409 while the row names it.
+- **Admin** (behind Access): `GET /api/admin/cv-pdf` → `[{lang, generatedAt}]` of the Langs that have one. `POST /api/admin/cv-pdf/:lang` launches a browser, opens `/{lang}/cv/print` on the request's origin, waits up to 30 s for `html[data-print-ready]`, prints `page.pdf({ format: "A4", printBackground: true, preferCSSPageSize: true })` and answers the row. No browser → 503 `browser_unavailable`; the page never ready or the print failing → 502 `render_failed`; both log `{ message: "cv-pdf-render", lang, url, err }`. `PUT /api/admin/cv-pdf/:lang` takes a PDF as the raw body (sniffed like an upload; else 415; over 10 MB 413) and stores it the same way. An unknown Lang → 400.
+- **Public:** `GET /{lang}/cv.pdf` (`worker/cv-pdf/serve.ts`, before Meta Injection) serves the file like `/media/*` (ETag, ranges, `nosniff`, `Cache-Control: public, max-age=60`) with `Content-Disposition: inline; filename="webrunner-cv-<lang>.pdf"`; 404 without a body while the Lang has none. A path whose first segment is not a Lang goes to the pages. The Web CV asks `GET /api/public/:lang/cv-pdf` which file to link.
+- **Where it works:** webrunner.dev. Previews have no Access (Admin access below), so the admin answers 401 there. Locally Wrangler starts its own Chrome (downloaded on first use), but its `Page.printToPDF` never answers (Wrangler 4.151, Windows), so `POST` ends in 502 after about 30 s: use the manual upload, or check on webrunner.dev.
+- **Limits** (Workers Paid, checked 2026-10-20, ADR-0003): 10 browser hours a month, then $0.09 an hour; 10 concurrent browsers; 3 new browsers a second; a browser closes after 60 s idle. `CV_PDF_RATE_LIMIT` (Rate limits above) keeps a stuck button from starting more than 6 a minute.
+- **Tests:** `worker/cv-pdf/cv-pdf.test.ts` puts a fake browser in with `vi.spyOn(browsers, "launch")` (`worker/cv-pdf/browser.ts`): `vi.mock` doesn't work in workerd.
+
+**Check after the deploy:** at `https://webrunner.dev/admin/cv-pdf` press **Generate** for EN and RU, then open each `/{lang}/cv.pdf`: one page, the text selects, links click, no phone.
 
 ## Tests
 
