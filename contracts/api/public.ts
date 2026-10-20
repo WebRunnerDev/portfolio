@@ -1,4 +1,5 @@
 import * as v from "valibot"
+import { LANGS } from "../lang"
 
 // GET /api/public/:lang/* — published content on a Lang (worker/README.md ›
 // Public API). An entity without a Translation on that Lang comes with its EN
@@ -224,3 +225,14 @@ export const TrackSchema = v.object({
 })
 
 export type Track = v.InferOutput<typeof TrackSchema>
+
+// GET /api/public/:lang/cv-pdf — the CV PDF to link from the Web CV: the
+// Lang's own, else the EN one with `fallback: true`; 404 while neither
+// exists. The file is at `cvPdfPath(lang)` (contracts/cv-pdf.ts).
+export const CvPdfLinkSchema = v.object({
+  ...Fallback,
+  lang: v.picklist(LANGS),
+  generatedAt: v.string(),
+})
+
+export type CvPdfLink = v.InferOutput<typeof CvPdfLinkSchema>

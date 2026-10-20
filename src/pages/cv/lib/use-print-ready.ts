@@ -1,9 +1,9 @@
 import { useEffect } from "react"
 
+import { PRINT_READY_ATTRIBUTE } from "@contracts/cv-pdf"
+
 // Browser Rendering (ADR-0003) waits for `html[data-print-ready]` before
 // `page.pdf()`: the loader's data is rendered and the fonts are in.
-export const PRINT_READY_ATTRIBUTE = "data-print-ready"
-
 export function usePrintReady() {
   useEffect(() => {
     const root = document.documentElement

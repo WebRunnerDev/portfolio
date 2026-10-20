@@ -39,6 +39,8 @@ export const en = {
   "cv.gpa": "GPA",
   "cv.credential": "Credential",
   "cv.demo": "Demo",
+  "cv.downloadPdf": "Download PDF",
+  "cv.downloadPdfEn": "Download PDF (English)",
   "cv.tech.frontend": "Front-End",
   "cv.tech.backend_cloud": "Back-End & Cloud",
   "cv.tech.qa_testing": "QA & Testing",

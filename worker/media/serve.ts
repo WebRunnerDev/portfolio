@@ -48,10 +48,15 @@ function unsatisfiable(size: number) {
 }
 
 export async function serveMedia(request: Request, env: Env) {
+  return serveObject(request, env, keyOf(request.url))
+}
+
+// The MEDIA object under `key`, with the headers above. Also serves the CV
+// PDF (worker/cv-pdf/serve.ts).
+export async function serveObject(request: Request, env: Env, key: string) {
   if (request.method !== "GET" && request.method !== "HEAD") {
     return status(405, { Allow: "GET, HEAD" })
   }
-  const key = keyOf(request.url)
   if (!key) return status(404)
 
   // A range needs the size first.

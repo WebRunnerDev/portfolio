@@ -1,6 +1,7 @@
 import * as v from "valibot"
 import {
   CertificationSchema,
+  CvPdfLinkSchema,
   CvSectionSchema,
   EducationSchema,
   ExperienceSchema,
@@ -74,6 +75,10 @@ export const getProfile = (lang: Lang, options?: Options) =>
 
 export const getCvSections = (lang: Lang, form: CvForm, options?: Options) =>
   get(lang, `cv-sections?form=${form}`, v.array(CvSectionSchema), options)
+
+// 404 while neither the Lang nor EN has a CV PDF.
+export const getCvPdf = (lang: Lang, options?: Options) =>
+  get(lang, "cv-pdf", CvPdfLinkSchema, options)
 
 export const getExperience = (lang: Lang, options?: Options) =>
   get(lang, "experience", v.array(ExperienceSchema), options)

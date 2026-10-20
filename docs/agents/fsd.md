@@ -54,7 +54,8 @@ The `/$lang` route renders the layout: `SiteHeader` (`@/widgets/header`), `<main
 - **Always light:** `staticData: { theme: "light" }` on the route; the root route passes it to `ThemeProvider` as `forcedTheme`. The inline script in `index.html` matches the path too, so a dark visitor sees no flash.
 - **Sections:** `loadCv(lang, signal, "print")` asks `cv-sections?form=print` (`show_pdf`). No photo, no Fallback notice, links spelled out.
 - **One A4 page:** `print-sheet` in `src/index.css` with `@page cv`. The tokens stay; `--print-zoom` scales them all. Check with real content: `e2e/cv.spec.ts` prints the mock data only.
-- **Ready flag:** `<html data-print-ready>` once the data is rendered and `document.fonts.ready`; Browser Rendering waits for it before `page.pdf()`.
+- **Ready flag:** `<html data-print-ready>` (`PRINT_READY_ATTRIBUTE` in `contracts/cv-pdf.ts`) once the data is rendered and `document.fonts.ready`; Browser Rendering waits for it before `page.pdf()`.
+- **CV PDF** (`worker/README.md` › CV PDF): the admin's **CV PDF** page (`ui/cv-pdf-page.tsx`, route `admin/cv-pdf.tsx`) generates or uploads one per Lang. The Web CV loads `cv-pdf` with the rest (`loadCv`, web form only) and shows `CvPdfLink` in the header's `actions`: the Lang's own PDF, else the EN one labelled so, nothing while neither exists.
 
 ## Public data
 

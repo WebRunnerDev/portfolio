@@ -123,14 +123,16 @@ const PRINT_SECTIONS = [
   { type: "languages" },
 ]
 
-async function mockPublicApi(page: Page) {
+// `extra` adds entities, like the `cv-pdf` link, which is 404 otherwise.
+async function mockPublicApi(page: Page, extra: Record<string, unknown> = {}) {
   await page.route("**/api/public/**", (route) => {
     const url = new URL(route.request().url())
     const entity = url.pathname.split("/")[4]
+    const data: Record<string, unknown> = { ...DATA, ...extra }
     const body =
       entity === "cv-sections" && url.searchParams.get("form") === "print"
         ? PRINT_SECTIONS
-        : DATA[entity as keyof typeof DATA]
+        : data[entity]
     return body
       ? route.fulfill({ json: body })
       : route.fulfill({ status: 404, json: { error: "not_found" } })
@@ -244,6 +246,60 @@ test("the CV fits 360px in LTR and RTL", async ({ page }) => {
       )
     expect(overflow).toBeLessThanOrEqual(0)
   }
+})
+
+// Issue #68: the CV PDF download.
+test.describe("CV PDF download", () => {
+  const GENERATED_AT = "2026-10-20T10:00:00.000Z"
+
+  test("links the Lang's own PDF", async ({ page }) => {
+    await mockPublicApi(page, {
+      "cv-pdf": { fallback: false, lang: "ru", generatedAt: GENERATED_AT },
+    })
+    await page.goto("/ru/cv")
+    const link = page.getByRole("link", { name: "Скачать PDF" })
+    await expect(link).toHaveAttribute("href", "/ru/cv.pdf")
+    await expect(link).toHaveAttribute("download", "webrunner-cv-ru.pdf")
+  })
+
+  test("links the EN PDF and says so when the Lang has none", async ({
+    page,
+  }) => {
+    await mockPublicApi(page, {
+      "cv-pdf": { fallback: true, lang: "en", generatedAt: GENERATED_AT },
+    })
+    await page.goto("/de/cv")
+    const link = page.getByRole("link", {
+      name: "PDF herunterladen (Englisch)",
+    })
+    await expect(link).toHaveAttribute("href", "/en/cv.pdf")
+    await expect(link).toHaveAttribute("hreflang", "en")
+  })
+
+  test("is not there while no PDF exists", async ({ page }) => {
+    await mockPublicApi(page)
+    await page.goto("/en/cv")
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Zhasulan Abdigaliyev" })
+    ).toBeVisible()
+    await expect(page.getByTestId("cv-pdf-link")).toHaveCount(0)
+  })
+
+  test("downloads the file the Worker serves", async ({ page }) => {
+    await mockPublicApi(page, {
+      "cv-pdf": { fallback: false, lang: "en", generatedAt: GENERATED_AT },
+    })
+    await page.route("**/en/cv.pdf", (route) =>
+      route.fulfill({
+        contentType: "application/pdf",
+        body: "%PDF-1.7\n",
+      })
+    )
+    await page.goto("/en/cv")
+    const download = page.waitForEvent("download")
+    await page.getByRole("link", { name: "Download PDF" }).click()
+    expect((await download).suggestedFilename()).toBe("webrunner-cv-en.pdf")
+  })
 })
 
 // Issue #67: the Print CV, the source of the CV PDF (ADR-0003).

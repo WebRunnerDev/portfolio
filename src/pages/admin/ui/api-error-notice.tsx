@@ -16,6 +16,10 @@ const MESSAGES: Partial<Record<AdminApiError["code"], string>> = {
   payload_too_large: "Too large: the file, or the text in the form.",
   unsupported_media_type: "This file type isn't allowed.",
   too_many_requests: "Too many requests. Wait a minute and try again.",
+  browser_unavailable:
+    "No browser: Browser Rendering refused (its limits), or locally wrangler couldn't start Chrome. Try again in a minute, or upload a PDF by hand.",
+  render_failed:
+    "No PDF: the Print CV didn't get ready, or the browser didn't print it. Open the Print CV to check it loads; details are in Workers Logs (cv-pdf-render). Locally, Chrome from wrangler doesn't print at all: upload a PDF by hand.",
   bad_response:
     "The API answered something unexpected. Details are in the console.",
 }

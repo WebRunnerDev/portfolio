@@ -41,7 +41,7 @@ function contacts(profile: Profile, form: CvForm) {
 // The CV header of both forms (CONTEXT.md › CV): name, headline and the
 // Profile's contacts, never a phone. The Web CV adds the photo and the
 // Fallback notice; the Print CV is denser and spells the links out.
-// `actions` holds the CV PDF download.
+// `actions` holds the CV PDF download (Web CV only).
 export function CvHeader({
   profile,
   form = "web",

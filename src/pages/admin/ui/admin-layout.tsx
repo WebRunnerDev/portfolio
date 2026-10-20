@@ -70,6 +70,18 @@ export function AdminLayout() {
                   </Link>
                 </li>
               ))}
+              <li>
+                <Link
+                  to="/admin/cv-pdf"
+                  className={`block rounded-md px-zsd-sm py-zsd-xs text-zsd-body-sm hover:bg-muted ${FOCUS_RING}`}
+                  activeProps={{
+                    className: "bg-muted font-medium",
+                    "aria-current": "page",
+                  }}
+                >
+                  CV PDF
+                </Link>
+              </li>
             </ul>
           </nav>
           <main

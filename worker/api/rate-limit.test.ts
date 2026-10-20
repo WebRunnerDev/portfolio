@@ -11,6 +11,7 @@ import { RATE_LIMIT_PERIOD } from "./rate-limit"
 const API_LIMIT = 100
 const ADMIN_WRITE_LIMIT = 60
 const UPLOAD_LIMIT = 20
+const CV_PDF_LIMIT = 6
 
 // Every test sends from its own IP, so counts don't carry over.
 let lastOctet = 0
@@ -79,6 +80,21 @@ describe("rate limit on /api/*", { timeout: 30_000 }, () => {
     const passed = await statuses(UPLOAD_LIMIT, upload)
     expect(passed.every((status) => status === 401)).toBe(true)
     await expectLimited(await upload())
+  })
+
+  it("limits CV PDF generation hardest, and its manual upload as an upload", async () => {
+    const ip = nextIp()
+    const generate = () =>
+      request("/api/admin/cv-pdf/en", ip, { method: "POST" })
+    const passed = await statuses(CV_PDF_LIMIT, generate)
+    expect(passed.every((status) => status === 401)).toBe(true)
+    await expectLimited(await generate())
+    // A manual upload counts against the upload limit, not this one.
+    const upload = await request("/api/admin/cv-pdf/en", ip, {
+      method: "PUT",
+      body: "x",
+    })
+    expect(upload.status).toBe(401)
   })
 
   it("limits admin writes per IP across paths, but not reads", async () => {

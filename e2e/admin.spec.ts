@@ -136,3 +136,58 @@ test("admin lists, creates and deletes projects", async ({ page }) => {
     .click()
   await expect(page.getByText("No projects yet.")).toBeVisible()
 })
+
+// Issue #68: generate or upload the CV PDF of each Lang.
+test("admin generates and uploads the CV PDF by Lang", async ({ page }) => {
+  await mockAdminApi(page)
+  const pdfs: { lang: string; generatedAt: string }[] = [
+    { lang: "en", generatedAt: "2026-10-19T09:30:00.000Z" },
+  ]
+  // Registered last, so it answers /cv-pdf before mockAdminApi does.
+  await page.route("**/api/admin/cv-pdf**", async (route) => {
+    const request = route.request()
+    const lang = new URL(request.url()).pathname.split("/")[4]
+    if (request.method() === "GET") return route.fulfill({ json: pdfs })
+    // Locally without Chrome, or over Browser Rendering's limits.
+    if (lang === "de") {
+      return route.fulfill({
+        status: 503,
+        json: { error: "browser_unavailable" },
+      })
+    }
+    const row = { lang, generatedAt: "2026-10-20T10:00:00.000Z" }
+    pdfs.push(row)
+    return route.fulfill({ json: row })
+  })
+
+  await page.goto("/admin")
+  await page
+    .getByRole("navigation")
+    .getByRole("link", { name: "CV PDF" })
+    .click()
+  await expect(page.getByRole("heading", { name: "CV PDF" })).toBeVisible()
+
+  const en = page.getByTestId("cv-pdf-en")
+  await expect(en.getByRole("link", { name: "/en/cv.pdf" })).toBeVisible()
+  const ru = page.getByTestId("cv-pdf-ru")
+  await expect(ru.getByRole("link", { name: "/ru/cv.pdf" })).toHaveCount(0)
+
+  await ru.getByRole("button", { name: "Generate" }).click()
+  await expect(ru.getByRole("link", { name: "/ru/cv.pdf" })).toBeVisible()
+  await expect(ru.locator("time")).toHaveAttribute(
+    "datetime",
+    "2026-10-20T10:00:00.000Z"
+  )
+
+  const de = page.getByTestId("cv-pdf-de")
+  await de.getByRole("button", { name: "Generate" }).click()
+  await expect(de).toContainText("No browser")
+
+  const kk = page.getByTestId("cv-pdf-kk")
+  await kk.getByLabel("Upload a PDF by hand (KK)").setInputFiles({
+    name: "cv.pdf",
+    mimeType: "application/pdf",
+    buffer: Buffer.from("%PDF-1.7\n"),
+  })
+  await expect(kk.getByRole("link", { name: "/kk/cv.pdf" })).toBeVisible()
+})

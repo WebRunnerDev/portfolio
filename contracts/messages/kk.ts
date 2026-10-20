@@ -41,6 +41,8 @@ export const kk: Messages = {
   "cv.gpa": "Орташа балл",
   "cv.credential": "Сертификат",
   "cv.demo": "Демо",
+  "cv.downloadPdf": "PDF жүктеу",
+  "cv.downloadPdfEn": "PDF жүктеу (ағылшынша)",
   "cv.tech.frontend": "Фронтенд",
   "cv.tech.backend_cloud": "Бэкенд және бұлт",
   "cv.tech.qa_testing": "Тестілеу",

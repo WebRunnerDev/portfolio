@@ -3,6 +3,7 @@ import type { Lang } from "@contracts/lang"
 import { cvMeta, printCvMeta } from "@contracts/meta"
 import {
   getCertifications,
+  getCvPdf,
   getCvSections,
   getEducation,
   getExperience,
@@ -13,8 +14,17 @@ import {
   isNotFound,
 } from "@/shared/api"
 
+// Null on a 404: the resource just isn't there yet.
+function orNull<T>(request: Promise<T>) {
+  return request.catch((error: unknown) => {
+    if (isNotFound(error)) return null
+    throw error
+  })
+}
+
 // Everything the CV is built from, in one round of parallel requests. The
-// Profile is null until it has a Translation. `form` picks the CV Sections
+// Profile is null until it has a Translation; the CV PDF (web form only) is
+// null while neither the Lang nor EN has one. `form` picks the CV Sections
 // (`show_web` or `show_pdf`) and the meta, which goes to LangHead.
 export async function loadCv(
   lang: Lang,
@@ -31,11 +41,9 @@ export async function loadCv(
     education,
     certifications,
     languages,
+    pdf,
   ] = await Promise.all([
-    getProfile(lang, options).catch((error: unknown) => {
-      if (isNotFound(error)) return null
-      throw error
-    }),
+    orNull(getProfile(lang, options)),
     getCvSections(lang, form, options),
     getExperience(lang, options),
     getProjects(lang, options),
@@ -43,6 +51,7 @@ export async function loadCv(
     getEducation(lang, options),
     getCertifications(lang, options),
     getLanguages(lang, options),
+    form === "web" ? orNull(getCvPdf(lang, options)) : null,
   ])
   return {
     meta: form === "print" ? printCvMeta(lang, profile) : cvMeta(lang, profile),
@@ -54,6 +63,7 @@ export async function loadCv(
     education,
     certifications,
     languages,
+    pdf,
   }
 }
 

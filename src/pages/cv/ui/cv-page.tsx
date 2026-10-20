@@ -5,6 +5,7 @@ import { useT } from "@/shared/i18n"
 
 import type { CvData } from "../api/load-cv"
 import { CvHeader } from "./cv-header"
+import { CvPdfLink } from "./cv-pdf-link"
 import {
   CertificationList,
   EducationList,
@@ -49,16 +50,19 @@ export function CvPage() {
   const t = useT()
   const data = route.useLoaderData()
   const { profile } = data
+  const download = data.pdf && <CvPdfLink pdf={data.pdf} />
 
   return (
     <div className="mx-auto w-full max-w-(--zsd-x-zsd-layout-content-max) px-zsd-lg py-zsd-section md:px-zsd-xxl lg:py-zsd-section-lg">
       {profile ? (
-        // `actions`: the CV PDF download goes here.
-        <CvHeader profile={profile} />
+        <CvHeader profile={profile} actions={download} />
       ) : (
-        <h1 className="font-heading text-zsd-headline-md break-words md:text-zsd-headline-lg">
-          {t("nav.cv")}
-        </h1>
+        <div className="flex flex-wrap items-center justify-between gap-zsd-md">
+          <h1 className="font-heading text-zsd-headline-md break-words md:text-zsd-headline-lg">
+            {t("nav.cv")}
+          </h1>
+          {download}
+        </div>
       )}
       {data.sections
         .filter(({ type }) => !isEmpty(type, data))
