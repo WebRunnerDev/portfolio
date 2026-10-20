@@ -8,6 +8,7 @@ D1 schema migrations (`wrangler d1 migrations`) for the `DB` binding: all conten
 - Translations and link tables (`project_technology`, `experience_technology`, `post_tag`) are `ON DELETE CASCADE`. `photo` is not: an album with photos can't be deleted, the API removes photos with their R2 objects first.
 - Tables are `STRICT`. Booleans are `INTEGER` 0/1, timestamps ISO 8601 UTC text, month dates `YYYY-MM`, `*_key` columns R2 keys, `position` sorts ascending, lists are JSON arrays.
 - No phone anywhere (CONTEXT.md › Profile).
+- An album's `cover_key` is the `r2_key` of one of its photos, or null for the first one; triggers on `photo` keep it so (`0002`).
 
 ## Workflow
 
