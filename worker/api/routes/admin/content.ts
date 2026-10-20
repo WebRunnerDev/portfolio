@@ -88,6 +88,7 @@ const project: Entity = {
     "featured",
     "inCv",
   ],
+  files: ["coverKey"],
   booleans: ["featured", "inCv"],
   links: [technologies("project")],
   translation: {
@@ -102,6 +103,7 @@ const project: Entity = {
 const post: Entity = {
   table: "post",
   fields: ["slug", "status", "coverKey", "publishedAt"],
+  files: ["coverKey"],
   links: [
     {
       field: "tagIds",
@@ -134,14 +136,15 @@ const tag: Entity = {
 const album: Entity = {
   table: "album",
   fields: ["slug", "coverKey"],
+  files: ["coverKey"],
   translation: { fields: ["title"], enRequired: true },
   ordered: true,
 }
 
-// Removing the R2 object of a deleted photo comes with media (#33).
 const photo: Entity = {
   table: "photo",
   fields: ["albumId", "r2Key", "width", "height"],
+  files: ["r2Key"],
   refs: { albumId: "album" },
   translation: { fields: ["caption"], enRequired: false },
   ordered: true,
@@ -151,6 +154,7 @@ const photo: Entity = {
 const track: Entity = {
   table: "track",
   fields: ["title", "artist", "source", "license", "r2Key", "durationSeconds"],
+  files: ["r2Key"],
   ordered: true,
 }
 

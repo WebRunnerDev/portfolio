@@ -4,22 +4,12 @@ import { MAX_UPLOAD_BYTES, MEDIA_TYPES, mediaKind } from "@contracts/media"
 import { sniffMedia } from "../../../media/sniff"
 import type { AdminEnv } from "../../access"
 import { apiError, methodNotAllowed } from "../../errors"
+import { keyInUse } from "../../media-keys"
 
 // POST /api/admin/uploads: the file is the raw body. Its type comes from its
 // bytes (415 unless MEDIA_TYPES has it), its key from the type and a uuid.
 // `limitBody` (body-limit.ts) has already refused a body over the largest
 // kind's limit.
-
-// Every column that holds an R2 key: a file one of them names stays.
-// (D1 allows only a few terms in a compound SELECT, hence no UNION.)
-const KEY_IN_USE = `
-  SELECT EXISTS (SELECT 1 FROM profile WHERE photo_key = ?1)
-    OR EXISTS (SELECT 1 FROM project WHERE cover_key = ?1)
-    OR EXISTS (SELECT 1 FROM post WHERE cover_key = ?1)
-    OR EXISTS (SELECT 1 FROM album WHERE cover_key = ?1)
-    OR EXISTS (SELECT 1 FROM photo WHERE r2_key = ?1)
-    OR EXISTS (SELECT 1 FROM track WHERE r2_key = ?1)
-    OR EXISTS (SELECT 1 FROM cv_pdf WHERE r2_key = ?1) AS in_use`
 
 const KEY = "/:key{.+}"
 
@@ -53,8 +43,7 @@ export const uploads = new Hono<AdminEnv>()
   // 409 while a row still points at the file.
   .delete(KEY, async (c) => {
     const key = c.req.param("key")
-    const inUse = await c.env.DB.prepare(KEY_IN_USE).bind(key).first("in_use")
-    if (inUse === 1) return apiError(c, 409, "conflict")
+    if (await keyInUse(c.env.DB, key)) return apiError(c, 409, "conflict")
     if (!(await c.env.MEDIA.head(key))) return apiError(c, 404, "not_found")
     await c.env.MEDIA.delete(key)
     return c.body(null, 204)
