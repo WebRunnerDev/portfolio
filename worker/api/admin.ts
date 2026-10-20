@@ -23,6 +23,7 @@ import {
   rejectInvalidFields,
   validationFailed,
 } from "./errors"
+import { removeUnusedFiles } from "./media-keys"
 
 // /api/admin/<entity> (worker/README.md › Admin API): the same routes for
 // every entity, built from its `Entity` and its schemas in
@@ -94,9 +95,21 @@ export function crudRoutes(entity: Entity, schemas: Schemas) {
       await update(c.env.DB, entity, current, patch)
       return c.json(await find(c.env.DB, entity, id))
     })
+    // The row first: a file goes only once nothing names it. A failure in
+    // between leaves a file without a row, never a row without its file.
     .delete(ID, async (c) => {
-      const removed = await remove(c.env.DB, entity, Number(c.req.param("id")))
-      return removed ? c.body(null, 204) : apiError(c, 404, "not_found")
+      const id = Number(c.req.param("id"))
+      const row = entity.files && (await find(c.env.DB, entity, id))
+      if (!(await remove(c.env.DB, entity, id))) {
+        return apiError(c, 404, "not_found")
+      }
+      if (row) {
+        await removeUnusedFiles(
+          c.env,
+          entity.files!.map((field) => row[field])
+        )
+      }
+      return c.body(null, 204)
     })
     .all("/", methodNotAllowed("GET, HEAD, POST"))
     .all(ID, methodNotAllowed("GET, HEAD, PATCH, DELETE"))

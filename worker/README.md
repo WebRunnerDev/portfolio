@@ -148,7 +148,7 @@ After the rate limit, every `/api/*` request goes through `checkOrigin` (`worker
 | `POST /<entity>` | 201 with the row. A translated entity takes `translations: { en: {…}, ru?: {…} }`; new rows go last |
 | `GET /<entity>/:id` | 200 with the row and all its Translations |
 | `PATCH /<entity>/:id` | 200; any subset of the untranslated fields. Link lists (`technologyIds`, `tagIds`) are replaced whole |
-| `DELETE /<entity>/:id` | 204; Translations and links go with it |
+| `DELETE /<entity>/:id` | 204; Translations and links go with it, and its files (Files below). An album with photos answers 409 |
 | `PUT /<entity>/:id/translations/:lang` | 200; writes the whole Translation on that Lang |
 | `DELETE /<entity>/:id/translations/:lang` | 204; EN answers 409 (except photos) |
 | `PUT /<entity>/order` | 204; `{ "ids": [3, 1, 2] }` sets `position` by index. Entities with `position`: all but posts and tags |
@@ -157,7 +157,7 @@ After the rate limit, every `/api/*` request goes through `checkOrigin` (`worker
 
 - **Links:** `technologyIds` of experience and projects keep their order; `tagIds` of a post are sorted by id. An unknown id answers 422 on that field.
 - **Posts:** publishing without `publishedAt` sets it to now; going back to draft keeps it.
-- **Photos and tracks:** deleting one leaves its file in R2; delete it with `DELETE /uploads/<key>` (Media below).
+- **Files:** deleting a project, post, album, photo or track deletes the R2 objects its `*Key` fields name (`files` of its `Entity`), after the row and only those no other row names (`worker/api/media-keys.ts`, the same check as `DELETE /uploads/<key>`). A failure in between leaves a file without a row, never the other way round.
 
 The routes come from `crudRoutes()` (`worker/api/admin.ts`) and the SQL from `worker/api/admin-store.ts`, both driven by one `Entity` per table in `worker/api/routes/admin/content.ts` (the Profile in `profile.ts`). A write that touches several tables (a row with its Translations and links) is one `db.batch()`, which D1 runs as a transaction. A new entity: its schemas in `contracts/api/admin.ts`, an `Entity` and a `.route()` in `content.ts`.
 

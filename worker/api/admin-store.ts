@@ -25,6 +25,9 @@ export type Entity = {
   fields: readonly string[]
   // Fields stored as INTEGER 0/1.
   booleans?: readonly string[]
+  // Fields that hold an R2 key: deleting the row deletes the file, unless
+  // another row names it too.
+  files?: readonly string[]
   // Fields that hold the id of a row in another table: `albumId` → `album`.
   refs?: Readonly<Record<string, string>>
   links?: readonly Link[]

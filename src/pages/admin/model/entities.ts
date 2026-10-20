@@ -82,6 +82,9 @@ export type EntityConfig = {
   ordered: boolean
   // Rows are listed and ordered within one row of another entity.
   scope?: { field: string; entity: string; label: string }
+  // The path of a scoped entity whose rows the editor lists under the row,
+  // filled by uploading many files at once: an album's photos.
+  gallery?: string
   // A single record without an id in the path (the Profile).
   single?: boolean
   // The row's name in lists and headings: the first of these fields that is
@@ -428,6 +431,7 @@ export const ENTITIES: EntityConfig[] = [
     schemas: AlbumAdmin,
     translated: true,
     ordered: true,
+    gallery: "photos",
     titleFields: ["title", "slug"],
     columns: [
       { label: "Cover", field: "coverKey", kind: "image" },

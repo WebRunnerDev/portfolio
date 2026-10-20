@@ -685,6 +685,41 @@ describe("deleting", () => {
     expect((await call("DELETE", `/albums/${albumId}`)).status).toBe(204)
   })
 
+  it("deletes the R2 object of a deleted photo", async () => {
+    await env.MEDIA.put("image/gone.jpg", "x")
+    const photo = await json(
+      await call("POST", "/photos", {
+        albumId: 900,
+        r2Key: "image/gone.jpg",
+        width: 1,
+        height: 1,
+      }),
+      201
+    )
+    expect((await call("DELETE", `/photos/${photo.id}`)).status).toBe(204)
+    expect(await env.MEDIA.head("image/gone.jpg")).toBeNull()
+  })
+
+  it("keeps an object another row still names", async () => {
+    await env.MEDIA.put("image/shared.jpg", "x")
+    const photo = await json(
+      await call("POST", "/photos", {
+        albumId: 900,
+        r2Key: "image/shared.jpg",
+        width: 1,
+        height: 1,
+      }),
+      201
+    )
+    await json(
+      await call("PATCH", "/albums/900", { coverKey: "image/shared.jpg" }),
+      200
+    )
+    expect((await call("DELETE", `/photos/${photo.id}`)).status).toBe(204)
+    expect(await env.MEDIA.head("image/shared.jpg")).not.toBeNull()
+    await json(await call("PATCH", "/albums/900", { coverKey: null }), 200)
+  })
+
   it("drops links to a deleted technology", async () => {
     const { id: techId } = await json(
       await call("POST", "/technologies", {
