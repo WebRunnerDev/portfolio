@@ -191,3 +191,126 @@ test("admin generates and uploads the CV PDF by Lang", async ({ page }) => {
   })
   await expect(kk.getByRole("link", { name: "/kk/cv.pdf" })).toBeVisible()
 })
+
+// Issue #84: many photos into an album at once.
+test("admin uploads 50+ photos into an album", async ({ page }) => {
+  const photos: Record<string, unknown>[] = []
+  let inFlight = 0
+  let maxInFlight = 0
+  let refuseBad = true
+
+  await page.route("**/api/admin/**", async (route) => {
+    const request = route.request()
+    const { pathname, searchParams } = new URL(request.url())
+    const path = pathname.replace("/api/admin", "")
+    const method = request.method()
+
+    if (path === "/me") {
+      return route.fulfill({ json: { email: "owner@example.com" } })
+    }
+    if (path === "/albums/1") {
+      return route.fulfill({
+        json: {
+          id: 1,
+          slug: "trips",
+          coverKey: null,
+          translations: { en: { title: "Trips" } },
+        },
+      })
+    }
+    // The file says the size the Worker would read from it: `640x480`.
+    if (path === "/uploads" && method === "POST") {
+      const body = request.postDataBuffer()!.toString()
+      inFlight++
+      maxInFlight = Math.max(maxInFlight, inFlight)
+      await new Promise((resolve) => setTimeout(resolve, 30))
+      inFlight--
+      if (body === "bad" && refuseBad) {
+        return route.fulfill({
+          status: 415,
+          json: { error: "unsupported_media_type" },
+        })
+      }
+      const [width, height] = body === "bad" ? [1, 1] : body.split("x")
+      return route.fulfill({
+        status: 201,
+        json: {
+          key: `image/${crypto.randomUUID()}.jpg`,
+          contentType: "image/jpeg",
+          size: body.length,
+          width: Number(width),
+          height: Number(height),
+        },
+      })
+    }
+    if (path === "/photos" && method === "GET") {
+      expect(searchParams.get("albumId")).toBe("1")
+      return route.fulfill({ json: photos })
+    }
+    if (path === "/photos" && method === "POST") {
+      const row = {
+        id: photos.length + 1,
+        translations: {},
+        ...request.postDataJSON(),
+      }
+      photos.push(row)
+      return route.fulfill({ status: 201, json: row })
+    }
+    return route.fulfill({ status: 404, json: { error: "not_found" } })
+  })
+
+  await page.goto("/admin/albums/1")
+  const section = page.getByRole("region", { name: "Photos" })
+  await expect(section.getByText("No photos yet.")).toBeVisible()
+
+  const files = Array.from({ length: 52 }, (_, index) => ({
+    name: `photo-${index}.jpg`,
+    mimeType: "image/jpeg",
+    buffer: Buffer.from(`${100 + index}x${200 + index}`),
+  }))
+  files.splice(10, 0, {
+    name: "notes.jpg",
+    mimeType: "image/jpeg",
+    buffer: Buffer.from("bad"),
+  })
+  await section.getByLabel("Add photos").setInputFiles(files)
+
+  const status = section.getByText(/^Uploaded \d+ of \d+\./)
+  await expect(status).toHaveText("Uploaded 52 of 53. Failed: 1.", {
+    timeout: 30_000,
+  })
+  expect(maxInFlight).toBeLessThanOrEqual(3)
+  const failed = section.locator('li[data-status="failed"]')
+  await expect(failed).toContainText("notes.jpg")
+  await expect(failed).toContainText("This file type isn't allowed.")
+
+  // Every photo has its own size, in the order the files were chosen.
+  expect(photos).toHaveLength(52)
+  photos.forEach((photo, index) => {
+    expect(photo).toMatchObject({
+      albumId: 1,
+      width: 100 + index,
+      height: 200 + index,
+    })
+  })
+  await expect(section.getByRole("row")).toHaveCount(53)
+
+  refuseBad = false
+  await failed.getByRole("button", { name: "Retry notes.jpg" }).click()
+  await expect(status).toHaveText("Uploaded 53 of 53.")
+  await expect(section.getByRole("row")).toHaveCount(54)
+
+  await section.getByRole("button", { name: "Clear finished" }).click()
+  await expect(section.getByRole("list", { name: "Uploads" })).toHaveCount(0)
+
+  // Dropped files go the same way.
+  // A string: e2e/ is type-checked without the DOM lib.
+  const dataTransfer = await page.evaluateHandle(`(() => {
+    const data = new DataTransfer()
+    data.items.add(new File(["300x400"], "dropped.jpg", { type: "image/jpeg" }))
+    return data
+  })()`)
+  await section.getByTestId("drop-zone").dispatchEvent("drop", { dataTransfer })
+  await expect(status).toHaveText("Uploaded 1 of 1.")
+  expect(photos.at(-1)).toMatchObject({ width: 300, height: 400 })
+})
