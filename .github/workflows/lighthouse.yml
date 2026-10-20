@@ -44,6 +44,7 @@ jobs:
           npx --yes @lhci/cli@0.15.1 autorun
           --collect.url=${{ steps.preview.outputs.url }}/en
           --collect.url=${{ steps.preview.outputs.url }}/en/cv
+          --collect.url=${{ steps.preview.outputs.url }}/en/projects
       - if: steps.preview.outputs.url
         run: node .github/scripts/lighthouse-summary.mjs
         env:

@@ -1,5 +1,6 @@
 import { getRouteApi } from "@tanstack/react-router"
 
+import { ProjectStatus } from "@/entities/project"
 import { FallbackNotice, fallbackLang } from "@/shared/ui/fallback-notice"
 import { PageStub } from "@/shared/ui/page-stub"
 
@@ -11,7 +12,8 @@ export function ProjectPage() {
 
   return (
     <PageStub title={project.title}>
-      <FallbackNotice fallback={project.fallback} />
+      <ProjectStatus status={project.status} />
+      <FallbackNotice fallback={project.fallback} className="mt-zsd-md" />
       <p lang={fallbackLang(project)} className="mt-zsd-xs">
         {project.description}
       </p>

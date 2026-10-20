@@ -47,6 +47,13 @@ export const de: Messages = {
   "cv.tech.backend_cloud": "Backend & Cloud",
   "cv.tech.qa_testing": "QA & Testing",
   "cv.tech.tools_design": "Tools & Design",
+  "project.status.in_progress": "In Arbeit",
+  "project.status.completed": "Abgeschlossen",
+  "project.status.archived": "Archiviert",
+  "project.demo": "Demo",
+  "projects.empty.title": "Noch keine Projekte",
+  "projects.empty.text":
+    "Hier erscheinen die Pet-Projekte: was gebaut wurde und wie.",
   "langSwitcher.label": "Sprache",
   "themeSwitcher.label": "Farbschema",
   "themeSwitcher.light": "Hell",

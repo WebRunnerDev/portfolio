@@ -48,6 +48,13 @@ export const es: Messages = {
   "cv.tech.backend_cloud": "Back-end y nube",
   "cv.tech.qa_testing": "QA y pruebas",
   "cv.tech.tools_design": "Herramientas y diseño",
+  "project.status.in_progress": "En curso",
+  "project.status.completed": "Terminado",
+  "project.status.archived": "Archivado",
+  "project.demo": "Demo",
+  "projects.empty.title": "Aún no hay proyectos",
+  "projects.empty.text":
+    "Aquí aparecerán los proyectos personales: qué se hizo y cómo.",
   "langSwitcher.label": "Idioma",
   "themeSwitcher.label": "Tema",
   "themeSwitcher.light": "Claro",
