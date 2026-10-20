@@ -68,6 +68,15 @@ Public pages read `/api/public/:lang/*` (`worker/README.md` › Public API) thro
 - **Fallback:** next to an entity with `fallback: true` render `<FallbackNotice fallback={x.fallback} />` (`@/shared/ui/fallback-notice`), and put `lang={fallbackLang(x)}` on the element with its text, not on the notice.
 - **E2E:** `e2e/public-data.spec.ts` mocks `/api/public/*`: the D1 behind `vite preview` is empty.
 
+## Project card
+
+`ProjectCard` (`@/entities/project`) is the card of a Project on `/{lang}/projects` and, from stage 6, of the Featured ones on the home page. `ProjectStatus` is its status badge; the Case Study page shows it too.
+
+- **Link:** with a Case Study the whole card is one link to `/{lang}/projects/:slug`, named by the title (a stretched `::after`); GitHub and the demo sit above it with `relative z-10`. Without one only those links remain and the card doesn't react to hover.
+- **Cover:** `coverKey` through Cloudflare Images (`imageUrl`), a `srcset` up to 1280w and `sizes` for the 1/2/3-column grid. `priority` (the first card) loads it at once with `fetchpriority="high"`; the others are `loading="lazy"`. No cover: the logo tiles.
+- **Status:** `in_progress` is `badge-success`, the others neutral; each with its icon and the `project.status.*` text.
+- **E2E:** `e2e/projects.spec.ts`.
+
 ## Admin
 
 `/admin` ([ADR-0004](../adr/0004-cloudflare-access-for-admin.md)) sits outside `/$lang`: its own layout, EN only, `<html dir="ltr">`, `noindex`. Routes are in `src/app/routes/admin/`, everything else in one page slice, `src/pages/admin/`.
