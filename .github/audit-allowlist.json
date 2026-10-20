@@ -4,5 +4,23 @@
     "package": "braces",
     "reason": "No patched version. Reached only through build-time CLIs (steiger, shadcn) that expand our own glob patterns; nothing of it ships to the browser or the Worker.",
     "expires": "2027-01-15"
+  },
+  {
+    "id": "GHSA-jmr9-qjv8-65gv",
+    "package": "extract-zip",
+    "reason": "No patched version. Pinned by @puppeteer/browsers, the Node Chrome downloader of @cloudflare/puppeteer; the Workers entry (puppeteer-cloudflare.js) never imports it, so it is not in the Worker bundle and nothing runs it.",
+    "expires": "2027-01-15"
+  },
+  {
+    "id": "GHSA-7pqw-9j4j-h8q3",
+    "package": "extract-zip",
+    "reason": "No patched version. Pinned by @puppeteer/browsers, the Node Chrome downloader of @cloudflare/puppeteer; the Workers entry (puppeteer-cloudflare.js) never imports it, so it is not in the Worker bundle and nothing runs it.",
+    "expires": "2027-01-15"
+  },
+  {
+    "id": "GHSA-c475-qrg2-pj4r",
+    "package": "basic-ftp",
+    "reason": "The fix is in 6.x, but get-uri (via proxy-agent of @puppeteer/browsers) pins ^5. Only the Node Chrome downloader of @cloudflare/puppeteer reaches it; the Workers entry never imports it.",
+    "expires": "2027-01-15"
   }
 ]

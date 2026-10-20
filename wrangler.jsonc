@@ -51,6 +51,10 @@
       "preview_bucket_name": "webrunner-media-preview",
     },
   ],
+  // ADR-0003: headless Chromium that prints the Print CV to the CV PDF
+  // (worker/cv-pdf/, worker/README.md › CV PDF). Locally it is a Chrome that
+  // wrangler downloads on first use.
+  "browser": { "binding": "BROWSER" },
   // Rate limits on /api/* (worker/api/rate-limit.ts, worker/README.md › Rate
   // limits). `period` is 10 or 60 seconds; RATE_LIMIT_PERIOD must match it.
   // `namespace_id` is any number unique within the account.
@@ -72,6 +76,12 @@
       "name": "UPLOAD_RATE_LIMIT",
       "namespace_id": "1003",
       "simple": { "limit": 20, "period": 60 },
+    },
+    // POST /api/admin/cv-pdf/:lang, per IP: each one starts a browser.
+    {
+      "name": "CV_PDF_RATE_LIMIT",
+      "namespace_id": "1004",
+      "simple": { "limit": 6, "period": 60 },
     },
   ],
   // Workers Builds runs `wrangler preview` for non-main branches, which needs
