@@ -25,7 +25,7 @@ export const SECTION_HEADINGS: Record<CvSection["type"], MessageKey> = {
   languages: "cv.languages",
 }
 
-const CATEGORIES: Record<Technology["category"], MessageKey> = {
+export const CATEGORIES: Record<Technology["category"], MessageKey> = {
   frontend: "cv.tech.frontend",
   backend_cloud: "cv.tech.backend_cloud",
   qa_testing: "cv.tech.qa_testing",
@@ -34,7 +34,7 @@ const CATEGORIES: Record<Technology["category"], MessageKey> = {
 
 const MONO = "font-zsd-label-mono text-zsd-label-mono uppercase rtl:normal-case"
 const TITLE = "font-heading text-zsd-headline-sm text-zsd-on-surface"
-const EXTERNAL = { target: "_blank", rel: "noreferrer" } as const
+export const EXTERNAL = { target: "_blank", rel: "noreferrer" } as const
 
 // From `md` the date column stands beside each entry (DESIGN.md › Responsive
 // behavior); entries without a date start in the second column.
@@ -59,13 +59,13 @@ function Entry({
   )
 }
 
-function Month({ value }: { value: string }) {
+export function Month({ value }: { value: string }) {
   const lang = useLang()
   return <time dateTime={value}>{formatMonth(value, lang)}</time>
 }
 
 // `end` null is "present".
-function Period({ start, end }: { start: string; end: string | null }) {
+export function Period({ start, end }: { start: string; end: string | null }) {
   const t = useT()
   return (
     <p>
