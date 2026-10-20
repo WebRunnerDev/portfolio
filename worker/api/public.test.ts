@@ -407,10 +407,33 @@ describe("albums", () => {
         fallback: false,
         slug: "trips",
         title: "Поездки",
-        coverKey: null,
+        coverKey: "photos/1.jpg",
       },
-      { id: 2, fallback: true, slug: "cats", title: "Cats", coverKey: null },
+      {
+        id: 2,
+        fallback: true,
+        slug: "cats",
+        title: "Cats",
+        coverKey: "photos/4.jpg",
+      },
     ])
+  })
+
+  it("shows the chosen cover, else the first photo in order", async () => {
+    await env.DB.prepare(
+      "UPDATE album SET cover_key = 'photos/3.jpg' WHERE id = 1"
+    ).run()
+    expect((await get("/en/albums/trips", AlbumDetailSchema)).coverKey).toBe(
+      "photos/3.jpg"
+    )
+    await env.DB.batch([
+      env.DB.prepare("UPDATE album SET cover_key = NULL WHERE id = 1"),
+      env.DB.prepare("UPDATE photo SET position = -1 WHERE id = 2"),
+    ])
+    expect((await get("/en/albums/trips", AlbumDetailSchema)).coverKey).toBe(
+      "photos/2.jpg"
+    )
+    await env.DB.prepare("UPDATE photo SET position = 1 WHERE id = 2").run()
   })
 
   it("answers an album by slug with its photos and captions", async () => {

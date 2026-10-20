@@ -56,6 +56,14 @@ async function invalid(response: Response) {
   return body.fields
 }
 
+// The public API, as a visitor gets it after an admin change.
+async function publicJson(path: string) {
+  return json(
+    await api.request(`http://localhost/api/public${path}`, {}, env),
+    200
+  )
+}
+
 async function expectError(response: Response, status: number, code: string) {
   expect(await json(response, status)).toEqual({ error: code })
 }
@@ -181,7 +189,7 @@ const CASES: Case[] = [
     table: "album",
     schemas: AlbumAdmin,
     create: { slug: "trips", translations: { en: { title: "Trips" } } },
-    patch: { coverKey: "photos/cover.jpg" },
+    patch: { slug: "trips-2" },
     translation: { title: "Поездки" },
   },
   {
@@ -484,6 +492,37 @@ describe("Translations", () => {
     ).toBe(204)
   })
 
+  it("stores no caption row for an empty caption", async () => {
+    const captions = async (id: unknown) =>
+      await env.DB.prepare(
+        "SELECT count(*) AS n FROM photo_translation WHERE photo_id = ?"
+      )
+        .bind(id)
+        .first<number>("n")
+    const photo = {
+      albumId: 900,
+      r2Key: "photos/empty-caption.jpg",
+      width: 1,
+      height: 1,
+    }
+    expect(
+      await invalid(
+        await call("POST", "/photos", {
+          ...photo,
+          translations: { en: { caption: "  " } },
+        })
+      )
+    ).toHaveProperty(["translations.en.caption"])
+
+    const { id } = await json(await call("POST", "/photos", photo), 201)
+    expect(await captions(id)).toBe(0)
+    for (const body of [{ caption: "" }, { caption: " " }, {}]) {
+      const response = await call("PUT", `/photos/${id}/translations/ru`, body)
+      expect(response.status).toBe(422)
+    }
+    expect(await captions(id)).toBe(0)
+  })
+
   it("writes a record with its Translations atomically", async () => {
     const album: Entity = {
       table: "album",
@@ -649,11 +688,175 @@ describe("order", () => {
     )
   })
 
+  it("refuses photos of two albums in one order", async () => {
+    const { id: albumId } = await json(
+      await call("POST", "/albums", {
+        slug: "other-order",
+        translations: { en: { title: "Other" } },
+      }),
+      201
+    )
+    const ids: unknown[] = []
+    for (const [index, id] of [albumId, 900].entries()) {
+      const photo = await json(
+        await call("POST", "/photos", {
+          albumId: id,
+          r2Key: `mixed/${index}.jpg`,
+          width: 1,
+          height: 1,
+        }),
+        201
+      )
+      ids.push(photo.id)
+    }
+    expect(await invalid(await call("PUT", "/photos/order", { ids }))).toEqual({
+      ids: ["Ids must share one albumId"],
+    })
+  })
+
+  it("shows a new order of photos and albums in the public API at once", async () => {
+    const albumIds: number[] = []
+    for (const slug of ["public-a", "public-b"]) {
+      const album = await json(
+        await call("POST", "/albums", {
+          slug,
+          translations: { en: { title: slug } },
+        }),
+        201
+      )
+      albumIds.push(album.id as number)
+    }
+    const photoIds: number[] = []
+    for (const name of ["1", "2", "3"]) {
+      const photo = await json(
+        await call("POST", "/photos", {
+          albumId: albumIds[0],
+          r2Key: `public/${name}.jpg`,
+          width: 1,
+          height: 1,
+        }),
+        201
+      )
+      photoIds.push(photo.id as number)
+    }
+    const reversed = [...photoIds].reverse()
+    expect((await call("PUT", "/photos/order", { ids: reversed })).status).toBe(
+      204
+    )
+    const album = await publicJson("/en/albums/public-a")
+    expect((album.photos as Body[]).map((photo) => photo.id)).toEqual(reversed)
+    // No cover chosen: the first photo of the new order.
+    expect(album.coverKey).toBe("public/3.jpg")
+
+    const all = (await json(
+      await call("GET", "/albums"),
+      200
+    )) as unknown as Body[]
+    const ids = all.map((row) => row.id as number)
+    const moved = [albumIds[1], ...ids.filter((id) => id !== albumIds[1])]
+    expect((await call("PUT", "/albums/order", { ids: moved })).status).toBe(
+      204
+    )
+    const list = (await publicJson("/en/albums")) as unknown as Body[]
+    expect(list[0].slug).toBe("public-b")
+  })
+
   it("is only there for ordered entities", async () => {
     await expectError(
       await call("PUT", "/tags/order", { ids: [900] }),
       404,
       "not_found"
+    )
+  })
+})
+
+describe("album cover", () => {
+  async function albumWithPhotos(slug: string, count: number) {
+    const album = await json(
+      await call("POST", "/albums", {
+        slug,
+        translations: { en: { title: slug } },
+      }),
+      201
+    )
+    const photos: Body[] = []
+    for (let n = 1; n <= count; n++) {
+      photos.push(
+        await json(
+          await call("POST", "/photos", {
+            albumId: album.id,
+            r2Key: `${slug}/${n}.jpg`,
+            width: 1,
+            height: 1,
+          }),
+          201
+        )
+      )
+    }
+    return { id: album.id as number, photos }
+  }
+
+  it("is not set when an album is created", async () => {
+    expect(
+      await invalid(
+        await call("POST", "/albums", {
+          slug: "new-cover",
+          coverKey: "x.jpg",
+          translations: { en: { title: "N" } },
+        })
+      )
+    ).toHaveProperty(["coverKey"])
+  })
+
+  it("is one of the album's own photos", async () => {
+    const album = await albumWithPhotos("cover-own", 2)
+    const other = await albumWithPhotos("cover-other", 1)
+    expect(
+      await invalid(
+        await call("PATCH", `/albums/${album.id}`, {
+          coverKey: other.photos[0].r2Key,
+        })
+      )
+    ).toEqual({ coverKey: ["Not a photo of this album"] })
+    const changed = await json(
+      await call("PATCH", `/albums/${album.id}`, {
+        coverKey: album.photos[1].r2Key,
+      }),
+      200
+    )
+    expect(changed.coverKey).toBe("cover-own/2.jpg")
+    expect((await publicJson("/en/albums/cover-own")).coverKey).toBe(
+      "cover-own/2.jpg"
+    )
+  })
+
+  it("goes back to the first photo when its photo is deleted or moved", async () => {
+    const album = await albumWithPhotos("cover-gone", 3)
+    const other = await albumWithPhotos("cover-target", 0)
+    const [first, second, third] = album.photos
+    const cover = async () =>
+      (await json(await call("GET", `/albums/${album.id}`), 200)).coverKey
+    const setCover = async (photo: Body) =>
+      json(
+        await call("PATCH", `/albums/${album.id}`, { coverKey: photo.r2Key }),
+        200
+      )
+
+    await setCover(third)
+    expect((await call("DELETE", `/photos/${third.id}`)).status).toBe(204)
+    expect(await cover()).toBeNull()
+
+    await setCover(second)
+    // A PATCH that keeps the album and the file keeps the cover.
+    await json(await call("PATCH", `/photos/${second.id}`, { width: 2 }), 200)
+    expect(await cover()).toBe(second.r2Key)
+    await json(
+      await call("PATCH", `/photos/${second.id}`, { albumId: other.id }),
+      200
+    )
+    expect(await cover()).toBeNull()
+    expect((await publicJson("/en/albums/cover-gone")).coverKey).toBe(
+      first.r2Key
     )
   })
 })
@@ -711,13 +914,22 @@ describe("deleting", () => {
       }),
       201
     )
+    const project = await json(
+      await call("POST", "/projects", {
+        slug: "shared-cover",
+        translations: { en: { title: "Shared", description: "S" } },
+      }),
+      201
+    )
     await json(
-      await call("PATCH", "/albums/900", { coverKey: "image/shared.jpg" }),
+      await call("PATCH", `/projects/${project.id}`, {
+        coverKey: "image/shared.jpg",
+      }),
       200
     )
     expect((await call("DELETE", `/photos/${photo.id}`)).status).toBe(204)
     expect(await env.MEDIA.head("image/shared.jpg")).not.toBeNull()
-    await json(await call("PATCH", "/albums/900", { coverKey: null }), 200)
+    expect((await call("DELETE", `/projects/${project.id}`)).status).toBe(204)
   })
 
   it("drops links to a deleted technology", async () => {
