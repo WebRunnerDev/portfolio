@@ -1,6 +1,7 @@
 export {
   PublicApiError,
   getCertifications,
+  getCvPdf,
   getCvSections,
   getEducation,
   getExperience,

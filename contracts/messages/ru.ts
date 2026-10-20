@@ -41,6 +41,8 @@ export const ru: Messages = {
   "cv.gpa": "Средний балл",
   "cv.credential": "Сертификат",
   "cv.demo": "Демо",
+  "cv.downloadPdf": "Скачать PDF",
+  "cv.downloadPdfEn": "Скачать PDF (на английском)",
   "cv.tech.frontend": "Фронтенд",
   "cv.tech.backend_cloud": "Бэкенд и облако",
   "cv.tech.qa_testing": "Тестирование",

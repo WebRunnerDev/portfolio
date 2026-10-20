@@ -41,6 +41,8 @@ export const de: Messages = {
   "cv.gpa": "Notendurchschnitt",
   "cv.credential": "Nachweis",
   "cv.demo": "Demo",
+  "cv.downloadPdf": "PDF herunterladen",
+  "cv.downloadPdfEn": "PDF herunterladen (Englisch)",
   "cv.tech.frontend": "Frontend",
   "cv.tech.backend_cloud": "Backend & Cloud",
   "cv.tech.qa_testing": "QA & Testing",

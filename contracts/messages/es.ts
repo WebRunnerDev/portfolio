@@ -42,6 +42,8 @@ export const es: Messages = {
   "cv.gpa": "Nota media",
   "cv.credential": "Credencial",
   "cv.demo": "Demo",
+  "cv.downloadPdf": "Descargar PDF",
+  "cv.downloadPdfEn": "Descargar PDF (en inglés)",
   "cv.tech.frontend": "Front-end",
   "cv.tech.backend_cloud": "Back-end y nube",
   "cv.tech.qa_testing": "QA y pruebas",
