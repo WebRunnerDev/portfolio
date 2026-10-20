@@ -253,11 +253,20 @@ export const PostAdmin = translatedEntity(
 // /api/admin/tags
 export const TagAdmin = plainEntity({ slug: Slug, name: Text })
 
-// /api/admin/albums. Deleting one that still has photos answers 409.
-export const AlbumAdmin = translatedEntity(
-  { slug: Slug, coverKey: v.optional(v.nullable(Key), null) },
-  v.strictObject({ title: Text })
-)
+// /api/admin/albums. Deleting one that still has photos answers 409. The
+// cover is the `r2Key` of one of its photos, so a new album has none; null
+// shows the first photo (worker/README.md › Admin API).
+const albumFields = { slug: Slug, coverKey: v.optional(v.nullable(Key), null) }
+
+const AlbumTranslationSchema = v.strictObject({ title: Text })
+
+export const AlbumAdmin = {
+  ...translatedEntity(albumFields, AlbumTranslationSchema),
+  create: v.strictObject({
+    slug: Slug,
+    translations: translationsWithEn(AlbumTranslationSchema),
+  }),
+}
 
 // /api/admin/photos?albumId=<id>. The caption is optional, so a photo needs
 // no Translation, EN included.

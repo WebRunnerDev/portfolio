@@ -11,8 +11,13 @@ type AlbumRow = {
   cover_key: string | null
 }
 
+// The cover chosen in the admin, else the first photo. Picked here rather
+// than stored, so a new order or a deleted photo shows at once.
 const SELECT_ALBUM = `SELECT a.id, t.lang <> ?1 AS fallback, a.slug, t.title,
-    a.cover_key
+    coalesce(a.cover_key, (
+      SELECT r2_key FROM photo WHERE album_id = a.id
+      ORDER BY position, id LIMIT 1
+    )) AS cover_key
   FROM album a JOIN ${translationOf("album", "a")}`
 
 function toAlbum(row: AlbumRow): Album {
