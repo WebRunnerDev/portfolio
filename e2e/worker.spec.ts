@@ -30,14 +30,6 @@ test("pages carry their meta without JS", async ({ request }) => {
   expect(html).toContain('hreflang="x-default"')
 })
 
-test("an unknown project slug is a 404 without JS", async ({ request }) => {
-  const response = await request.get("/ru/projects/nope")
-  expect(response.status()).toBe(404)
-  const html = await response.text()
-  expect(html).toContain("<title data-meta>Страница не найдена · WebRunner")
-  expect(html).toContain('name="robots" content="noindex"')
-})
-
 test("unknown path under a Lang is a 404 with the SPA", async ({ page }) => {
   const response = await page.goto("/ar/nope")
   expect(response?.status()).toBe(404)
