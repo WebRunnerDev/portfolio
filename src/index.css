@@ -153,6 +153,30 @@
   }
 }
 
+/* Print CV (ADR-0003): one A4 page with these margins. The sheet keeps the
+ * type and spacing tokens and scales them all by --print-zoom, the print
+ * density. On screen it shows the page as it prints; in print @page gives
+ * the margins. */
+@page cv {
+  size: A4;
+  margin: 8mm 12mm;
+}
+
+@utility print-sheet {
+  --print-zoom: 0.85;
+  page: cv;
+  zoom: var(--print-zoom);
+  width: 100%;
+  max-width: calc(210mm / var(--print-zoom));
+  min-height: calc(297mm / var(--print-zoom));
+  padding: calc(8mm / var(--print-zoom)) calc(12mm / var(--print-zoom));
+  @media print {
+    max-width: none;
+    min-height: 0;
+    padding: 0;
+  }
+}
+
 @layer base {
   /* Native controls and scrollbars follow the theme class, not the OS. */
   :root {

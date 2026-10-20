@@ -3,7 +3,15 @@ import { expect, test, type Page } from "@playwright/test"
 // Issue #37: security headers and the Report-Only CSP with a nonce, against
 // the production build.
 const LANGS = ["en", "ru", "kk", "es", "de", "ar"]
-const PAGES = ["", "/cv", "/projects", "/gallery", "/blog", "/design"]
+const PAGES = [
+  "",
+  "/cv",
+  "/cv/print",
+  "/projects",
+  "/gallery",
+  "/blog",
+  "/design",
+]
 
 const POLICY = "content-security-policy-report-only"
 

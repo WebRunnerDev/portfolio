@@ -4,14 +4,17 @@
     <meta charset="UTF-8" />
     <!-- Sets the theme class before the first paint, so a dark reload doesn't
          flash light. Key and values match src/shared/lib/theme/theme-storage.ts;
-         ThemeProvider takes over once the app loads. -->
+         ThemeProvider takes over once the app loads. The Print CV is always
+         light, like `staticData.theme` on its route. -->
     <script>
       ;(function () {
         var theme = null
         try {
           theme = localStorage.getItem("theme")
         } catch (e) {}
-        if (theme !== "light" && theme !== "dark") {
+        if (/^\/[^/]+\/cv\/print\/?$/.test(location.pathname)) {
+          theme = "light"
+        } else if (theme !== "light" && theme !== "dark") {
           theme = matchMedia("(prefers-color-scheme: dark)").matches
             ? "dark"
             : "light"

@@ -1,5 +1,5 @@
 import type { Lang } from "@contracts/lang"
-import { cvMeta, pageMeta, type PageMeta } from "@contracts/meta"
+import { cvMeta, pageMeta, printCvMeta, type PageMeta } from "@contracts/meta"
 import { readProfile } from "../api/routes/public/profile"
 
 // A page whose meta comes from D1, such as `cv` or `projects/:slug`.
@@ -15,19 +15,26 @@ export type DataPage = {
   ) => Promise<PageMeta | null>
 }
 
+// The page must not fail with D1: without the Profile it keeps the section
+// meta.
+async function profileOrNull(env: Env, lang: Lang) {
+  try {
+    return await readProfile(env.DB, lang)
+  } catch (error) {
+    console.error("cv meta: no Profile from D1", error)
+    return null
+  }
+}
+
 export const DATA_PAGES: readonly DataPage[] = [
   {
     pattern: /^cv$/,
-    // The page must not fail with D1: without the Profile it keeps the
-    // section meta.
-    meta: async (env, lang) => {
-      try {
-        return cvMeta(lang, await readProfile(env.DB, lang))
-      } catch (error) {
-        console.error("cv meta: no Profile from D1", error)
-        return cvMeta(lang, null)
-      }
-    },
+    meta: async (env, lang) => cvMeta(lang, await profileOrNull(env, lang)),
+  },
+  {
+    pattern: /^cv\/print$/,
+    meta: async (env, lang) =>
+      printCvMeta(lang, await profileOrNull(env, lang)),
   },
 ]
 

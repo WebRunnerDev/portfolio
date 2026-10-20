@@ -9,6 +9,7 @@ import {
   ProjectDetailSchema,
   ProjectSchema,
   TechnologySchema,
+  type CvForm,
 } from "@contracts/api/public"
 import { ApiErrorSchema, type ApiErrorCode } from "@contracts/api/errors"
 import type { Lang } from "@contracts/lang"
@@ -71,8 +72,8 @@ async function get<S extends v.GenericSchema>(
 export const getProfile = (lang: Lang, options?: Options) =>
   get(lang, "profile", ProfileSchema, options)
 
-export const getCvSections = (lang: Lang, options?: Options) =>
-  get(lang, "cv-sections", v.array(CvSectionSchema), options)
+export const getCvSections = (lang: Lang, form: CvForm, options?: Options) =>
+  get(lang, `cv-sections?form=${form}`, v.array(CvSectionSchema), options)
 
 export const getExperience = (lang: Lang, options?: Options) =>
   get(lang, "experience", v.array(ExperienceSchema), options)

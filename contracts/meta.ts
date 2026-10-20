@@ -79,6 +79,14 @@ export function cvMeta(
   }
 }
 
+// The Print CV (`cv/print`) is the source of the CV PDF, not a page to find.
+export function printCvMeta(
+  lang: Lang,
+  profile: { name: string; headline: string } | null
+): PageMeta {
+  return { ...cvMeta(lang, profile), noindex: true }
+}
+
 export function notFoundMeta(lang: Lang): PageMeta {
   return {
     title: withBrand(t(lang, "notFound.title")),

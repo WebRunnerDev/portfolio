@@ -41,8 +41,16 @@ export const ProfileSchema = v.object({
 
 export type Profile = v.InferOutput<typeof ProfileSchema>
 
-// GET /api/public/:lang/cv-sections — the sections shown on the Web CV, in
-// order.
+// GET /api/public/:lang/cv-sections?form=web|print — the sections shown on
+// that form of the CV (`show_web` or `show_pdf`), in order. Web by default.
+export const CV_FORMS = ["web", "print"] as const
+
+export type CvForm = (typeof CV_FORMS)[number]
+
+export const CvSectionsQuerySchema = v.object({
+  form: v.optional(v.picklist(CV_FORMS), "web"),
+})
+
 export const CvSectionSchema = v.object({
   type: v.picklist([
     "experience",

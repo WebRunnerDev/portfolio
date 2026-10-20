@@ -54,7 +54,7 @@ export function CvPage() {
     <div className="mx-auto w-full max-w-(--zsd-x-zsd-layout-content-max) px-zsd-lg py-zsd-section md:px-zsd-xxl lg:py-zsd-section-lg">
       {profile ? (
         // `actions`: the CV PDF download goes here.
-        <CvHeader profile={profile} photo />
+        <CvHeader profile={profile} />
       ) : (
         <h1 className="font-heading text-zsd-headline-md break-words md:text-zsd-headline-lg">
           {t("nav.cv")}

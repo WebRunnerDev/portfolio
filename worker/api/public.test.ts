@@ -28,8 +28,8 @@ INSERT INTO profile_translation (profile_id, lang, name, headline) VALUES
   (1, 'en', 'Aibyn', 'Frontend developer'),
   (1, 'ru', 'Айбын', 'Фронтенд-разработчик');
 
-INSERT INTO cv_section (type, position, show_web) VALUES
-  ('experience', 1, 1), ('projects', 2, 0), ('technologies', 0, 1);
+INSERT INTO cv_section (type, position, show_web, show_pdf) VALUES
+  ('experience', 1, 1, 1), ('projects', 2, 0, 1), ('technologies', 0, 1, 0);
 
 INSERT INTO technology (id, name, category, position) VALUES
   (1, 'React', 'frontend', 0), (2, 'Hono', 'backend_cloud', 0);
@@ -166,6 +166,18 @@ describe("cv-sections", () => {
   it("lists the sections shown on the Web CV, in order", async () => {
     const sections = await get("/kk/cv-sections", v.array(CvSectionSchema))
     expect(sections).toEqual([{ type: "technologies" }, { type: "experience" }])
+  })
+
+  it("lists the sections shown on the Print CV with ?form=print", async () => {
+    const sections = await get(
+      "/kk/cv-sections?form=print",
+      v.array(CvSectionSchema)
+    )
+    expect(sections).toEqual([{ type: "experience" }, { type: "projects" }])
+  })
+
+  it("answers 400 to an unknown form", async () => {
+    await expectError("/en/cv-sections?form=pdf", 400, "invalid_request")
   })
 })
 
