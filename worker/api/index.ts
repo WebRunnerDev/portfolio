@@ -7,7 +7,9 @@ import { createPublicApp } from "./public"
 import { rateLimit } from "./rate-limit"
 import { adminMe } from "./routes/admin-me"
 import { content } from "./routes/admin/content"
+import { cvPdfAdmin } from "./routes/admin/cv-pdf"
 import { cspReport } from "./routes/csp-report"
+import { cvPdf } from "./routes/public/cv-pdf"
 import { profileAdmin } from "./routes/admin/profile"
 import { uploads } from "./routes/admin/uploads"
 import { health } from "./routes/health"
@@ -32,12 +34,14 @@ const admin = new Hono<AdminEnv>()
   .route("/me", adminMe)
   .route("/profile", profileAdmin)
   .route("/uploads", uploads)
+  .route("/cv-pdf", cvPdfAdmin)
   .route("/", content)
 
 // Everything under /api/public/:lang/* checks the Lang first (400 if unknown).
 const publicApi = createPublicApp()
   .route("/profile", profile)
   .route("/cv-sections", cvSections)
+  .route("/cv-pdf", cvPdf)
   .route("/experience", experience)
   .route("/education", education)
   .route("/certifications", certifications)

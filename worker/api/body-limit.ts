@@ -18,8 +18,22 @@ export const MAX_UPLOAD_BODY_BYTES = Math.max(
   ...Object.values(MAX_UPLOAD_BYTES)
 )
 
+// A file as the raw body: POST /api/admin/uploads, or a CV PDF uploaded by
+// hand (PUT /api/admin/cv-pdf/:lang).
 export function isUpload(method: string, path: string) {
-  return method === "POST" && /^\/api\/admin\/uploads\/?$/.test(path)
+  return (
+    (method === "POST" && /^\/api\/admin\/uploads\/?$/.test(path)) ||
+    (method === "PUT" && isCvPdfPath(path))
+  )
+}
+
+// POST starts a browser: it gets a rate limit of its own.
+export function isCvPdfRender(method: string, path: string) {
+  return method === "POST" && isCvPdfPath(path)
+}
+
+function isCvPdfPath(path: string) {
+  return /^\/api\/admin\/cv-pdf\/[^/]+\/?$/.test(path)
 }
 
 export function isCspReport(path: string) {

@@ -14,6 +14,8 @@ export const API_ERROR_CODES = [
   "validation_failed",
   "too_many_requests",
   "internal_error",
+  "render_failed",
+  "browser_unavailable",
 ] as const
 
 export const ApiErrorSchema = v.object({ error: v.picklist(API_ERROR_CODES) })

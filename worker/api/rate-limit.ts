@@ -1,6 +1,6 @@
 import { createMiddleware } from "hono/factory"
 import type { ApiEnv } from "./app"
-import { isUpload } from "./body-limit"
+import { isCvPdfRender, isUpload } from "./body-limit"
 import { apiError } from "./errors"
 import { isLocalRequest } from "./local"
 
@@ -24,6 +24,9 @@ function bucket(env: Env, method: string, path: string, ip: string) {
   }
   if (isUpload(method, path)) {
     return { limiter: env.UPLOAD_RATE_LIMIT, key: ip }
+  }
+  if (isCvPdfRender(method, path)) {
+    return { limiter: env.CV_PDF_RATE_LIMIT, key: ip }
   }
   return { limiter: env.ADMIN_WRITE_RATE_LIMIT, key: ip }
 }

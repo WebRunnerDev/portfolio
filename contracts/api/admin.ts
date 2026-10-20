@@ -305,3 +305,14 @@ export const UploadResponseSchema = v.object({
 })
 
 export type UploadResponse = v.InferOutput<typeof UploadResponseSchema>
+
+// /api/admin/cv-pdf — the CV PDF of each Lang (worker/README.md › CV PDF).
+// GET lists the Langs that have one. POST /:lang prints the Print CV through
+// Browser Rendering; PUT /:lang takes a PDF as the raw body instead (the
+// fallback of ADR-0003). Both replace the Lang's file and answer its row.
+export const CvPdfSchema = v.object({
+  lang: v.picklist(LANGS),
+  generatedAt: v.pipe(v.string(), v.isoTimestamp()),
+})
+
+export type CvPdf = v.InferOutput<typeof CvPdfSchema>
