@@ -1,20 +1,18 @@
 import { Link } from "@tanstack/react-router"
-import { ExternalLink } from "lucide-react"
 import { cn } from "cn"
 
 import type { Project } from "@contracts/api/public"
 import { IMAGE_WIDTHS, imageUrl } from "@contracts/media"
-import { useLang, useT } from "@/shared/i18n"
+import { useLang } from "@/shared/i18n"
 import { FallbackNotice, fallbackLang } from "@/shared/ui/fallback-notice"
 import { Logo } from "@/shared/ui/logo"
 
+import { ProjectLinks } from "./project-links"
 import { ProjectStatus } from "./project-status"
+import { ProjectTechnologies } from "./project-technologies"
 
 const MOTION_FAST =
   "transition-colors duration-(--zsd-x-zsd-motion-duration-fast) ease-(--zsd-x-zsd-motion-easing-standard) motion-reduce:transition-none"
-
-const LINK =
-  "relative z-10 inline-flex min-h-zsd-control-height items-center gap-zsd-xs text-zsd-body-sm text-zsd-primary-text underline underline-offset-4 outline-offset-2 hover:decoration-2 focus-visible:outline-2 focus-visible:outline-ring"
 
 // One column below `sm`, two from `sm`, three from `lg` in the 1200px content
 // box (DESIGN.md › Responsive behavior).
@@ -79,7 +77,6 @@ export function ProjectCard({
   priority?: boolean
 }) {
   const lang = useLang()
-  const t = useT()
   const linked = project.hasCaseStudy
 
   return (
@@ -131,52 +128,11 @@ export function ProjectCard({
           >
             {project.description}
           </p>
-          {project.technologies.length > 0 && (
-            <ul className="mt-auto flex flex-wrap gap-zsd-xs">
-              {project.technologies.map((tech) => (
-                <li
-                  key={tech.id}
-                  className="border border-zsd-outline-muted bg-zsd-surface px-zsd-sm py-zsd-xs font-zsd-label-mono text-zsd-label-mono text-zsd-on-surface-muted uppercase rtl:normal-case"
-                >
-                  {tech.name}
-                </li>
-              ))}
-            </ul>
-          )}
-          {(project.githubUrl || project.demoUrl) && (
-            <p className="flex flex-wrap gap-x-zsd-lg">
-              {project.githubUrl && (
-                <a
-                  href={project.githubUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={LINK}
-                >
-                  GitHub
-                  <ExternalLink
-                    aria-hidden="true"
-                    strokeWidth={1.5}
-                    className="size-4 rtl:-scale-x-100"
-                  />
-                </a>
-              )}
-              {project.demoUrl && (
-                <a
-                  href={project.demoUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={LINK}
-                >
-                  {t("project.demo")}
-                  <ExternalLink
-                    aria-hidden="true"
-                    strokeWidth={1.5}
-                    className="size-4 rtl:-scale-x-100"
-                  />
-                </a>
-              )}
-            </p>
-          )}
+          <ProjectTechnologies
+            technologies={project.technologies}
+            className="mt-auto"
+          />
+          <ProjectLinks project={project} />
         </div>
       </div>
     </article>
