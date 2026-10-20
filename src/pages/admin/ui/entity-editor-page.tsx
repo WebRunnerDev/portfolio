@@ -56,6 +56,7 @@ import { findEntity, type EntityConfig, type Field } from "../model/entities"
 import { useResource } from "../model/use-resource"
 import { ApiErrorNotice } from "./api-error-notice"
 import { FieldInput } from "./field-input"
+import { GallerySection } from "./gallery-section"
 import { UnknownEntity } from "./unknown-entity"
 import { useSaving } from "./use-saving"
 
@@ -201,6 +202,8 @@ function RowEditor({
     }))
   }
 
+  const gallery = entity.gallery ? findEntity(entity.gallery) : undefined
+
   // EN can go only where the entity doesn't need it (a photo's caption).
   const removable = (lang: Lang) =>
     translationsOf(saved)[lang] !== undefined &&
@@ -293,6 +296,11 @@ function RowEditor({
               </TabsContent>
             ))}
           </Tabs>
+        </Section>
+      )}
+      {gallery && (
+        <Section title={gallery.label}>
+          <GallerySection child={gallery} parentId={String(row.id)} />
         </Section>
       )}
       <AlertDialog

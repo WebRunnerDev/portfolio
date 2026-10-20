@@ -68,8 +68,9 @@ export function DeleteRowButton({
           <AlertDialogDescription>
             {entity.translated
               ? "The row goes with all its Translations and links."
-              : "The row goes with its links."}{" "}
-            Uploaded files stay in R2.
+              : "The row goes with its links."}
+            {entity.fields.some((field) => field.kind === "file") &&
+              " Its files go from R2 too, unless another row names them."}
           </AlertDialogDescription>
         </AlertDialogHeader>
         {failure && (
