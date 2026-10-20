@@ -1,13 +1,15 @@
+import { sValidator } from "@hono/standard-validator"
 import { Hono } from "hono"
-import type {
-  Certification,
-  CvSection,
-  Education,
-  Experience,
-  LanguageSkill,
-  Technology,
+import {
+  CvSectionsQuerySchema,
+  type Certification,
+  type CvSection,
+  type Education,
+  type Experience,
+  type LanguageSkill,
+  type Technology,
 } from "@contracts/api/public"
-import { methodNotAllowed } from "../../errors"
+import { methodNotAllowed, rejectInvalid } from "../../errors"
 import {
   parseJson,
   technologiesOf,
@@ -18,13 +20,22 @@ import {
 // The CV Sections and what goes into them (CONTEXT.md › CV). Projects are in
 // projects.ts.
 
+// The column comes from code: one per form of the CV.
+const SHOW_COLUMN = { web: "show_web", print: "show_pdf" } as const
+
 export const cvSections = new Hono<PublicEnv>()
-  .get("/", async (c) => {
-    const { results } = await c.env.DB.prepare(
-      `SELECT type FROM cv_section WHERE show_web = 1 ORDER BY position, id`
-    ).all<CvSection>()
-    return c.json(results.map(({ type }) => ({ type })) satisfies CvSection[])
-  })
+  .get(
+    "/",
+    sValidator("query", CvSectionsQuerySchema, rejectInvalid),
+    async (c) => {
+      const { form } = c.req.valid("query")
+      const { results } = await c.env.DB.prepare(
+        `SELECT type FROM cv_section WHERE ${SHOW_COLUMN[form]} = 1
+        ORDER BY position, id`
+      ).all<CvSection>()
+      return c.json(results.map(({ type }) => ({ type })) satisfies CvSection[])
+    }
+  )
   .all("/", methodNotAllowed("GET, HEAD"))
 
 type ExperienceRow = {

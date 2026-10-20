@@ -1,5 +1,6 @@
+import type { CvForm } from "@contracts/api/public"
 import type { Lang } from "@contracts/lang"
-import { cvMeta } from "@contracts/meta"
+import { cvMeta, printCvMeta } from "@contracts/meta"
 import {
   getCertifications,
   getCvSections,
@@ -13,8 +14,13 @@ import {
 } from "@/shared/api"
 
 // Everything the CV is built from, in one round of parallel requests. The
-// Profile is null until it has a Translation. `meta` goes to LangHead.
-export async function loadCv(lang: Lang, signal: AbortSignal) {
+// Profile is null until it has a Translation. `form` picks the CV Sections
+// (`show_web` or `show_pdf`) and the meta, which goes to LangHead.
+export async function loadCv(
+  lang: Lang,
+  signal: AbortSignal,
+  form: CvForm = "web"
+) {
   const options = { signal }
   const [
     profile,
@@ -30,7 +36,7 @@ export async function loadCv(lang: Lang, signal: AbortSignal) {
       if (isNotFound(error)) return null
       throw error
     }),
-    getCvSections(lang, options),
+    getCvSections(lang, form, options),
     getExperience(lang, options),
     getProjects(lang, options),
     getTechnologies(lang, options),
@@ -39,7 +45,7 @@ export async function loadCv(lang: Lang, signal: AbortSignal) {
     getLanguages(lang, options),
   ])
   return {
-    meta: cvMeta(lang, profile),
+    meta: form === "print" ? printCvMeta(lang, profile) : cvMeta(lang, profile),
     profile,
     sections,
     experience,
