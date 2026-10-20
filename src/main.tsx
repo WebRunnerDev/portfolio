@@ -4,7 +4,6 @@ import { RouterProvider, createRouter } from "@tanstack/react-router"
 
 import "./index.css"
 import { routeTree } from "./app/routeTree.gen"
-import { ThemeProvider } from "./app/providers"
 
 // ADR-0005: page changes run in a View Transition; without the API they are
 // instant. index.css sets the animation.
@@ -20,12 +19,14 @@ declare module "@tanstack/react-router" {
   interface Register {
     router: typeof router
   }
+  // `theme` forces one on a route and its children (the root route reads it).
+  interface StaticDataRouteOption {
+    theme?: "light"
+  }
 }
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <ThemeProvider>
-      <RouterProvider router={router} />
-    </ThemeProvider>
+    <RouterProvider router={router} />
   </StrictMode>
 )

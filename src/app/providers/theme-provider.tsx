@@ -12,6 +12,8 @@ type ResolvedTheme = "dark" | "light"
 
 type ThemeProviderProps = {
   children: React.ReactNode
+  // Wins over the chosen theme without changing it, e.g. the Print CV.
+  forcedTheme?: ResolvedTheme
   defaultTheme?: Theme
   storageKey?: string
   disableTransitionOnChange?: boolean
@@ -78,6 +80,7 @@ function isEditableTarget(target: EventTarget | null) {
 
 export function ThemeProvider({
   children,
+  forcedTheme,
   defaultTheme = "system",
   storageKey = THEME_STORAGE_KEY,
   disableTransitionOnChange = true,
@@ -130,6 +133,11 @@ export function ThemeProvider({
   )
 
   React.useEffect(() => {
+    if (forcedTheme) {
+      applyTheme(forcedTheme)
+      return undefined
+    }
+
     applyTheme(theme)
 
     if (theme !== "system") {
@@ -146,7 +154,7 @@ export function ThemeProvider({
     return () => {
       mediaQuery.removeEventListener("change", handleChange)
     }
-  }, [theme, applyTheme])
+  }, [theme, forcedTheme, applyTheme])
 
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
