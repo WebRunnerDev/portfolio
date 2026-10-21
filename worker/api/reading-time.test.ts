@@ -48,11 +48,12 @@ describe("readingMinutes", () => {
       "",
       "[a link](https://example.com/some/long/path) ![a photo](/media/x.jpg)",
       "<span>html</span> <<b>> https://bare.example.com/url",
+      "line<br>break",
       "",
       "[ref]: https://example.com",
     ].join("\n")
-    // Title bold italic gone quote one two a b a link a photo html
-    expect(readingMinutes(`${markup}\n\n${words(186)}`)).toBe(1)
-    expect(readingMinutes(`${markup}\n\n${words(187)}`)).toBe(2)
+    // Title bold italic gone quote one two a b a link a photo html line break
+    expect(readingMinutes(`${markup}\n\n${words(184)}`)).toBe(1)
+    expect(readingMinutes(`${markup}\n\n${words(185)}`)).toBe(2)
   })
 })
