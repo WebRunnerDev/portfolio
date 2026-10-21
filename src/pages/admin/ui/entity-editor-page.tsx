@@ -53,8 +53,13 @@ import {
   type FormValue,
   type FormValues,
 } from "../lib/form"
-import { rowTitle } from "../lib/row"
-import { findEntity, type EntityConfig, type Field } from "../model/entities"
+import { cellText, rowTitle } from "../lib/row"
+import {
+  findEntity,
+  type Column,
+  type EntityConfig,
+  type Field,
+} from "../model/entities"
 import { useResource } from "../model/use-resource"
 import { ApiErrorNotice } from "./api-error-notice"
 import type { Gallery } from "./cover-input"
@@ -248,6 +253,14 @@ function RowEditor({
     }))
   }
 
+  // Publishes what is saved: the button waits while anything is unsaved, so
+  // the fields can take the answer as they are.
+  async function publish(status: "draft" | "published") {
+    const next = await patchRow(path, entity.schemas.entity, { status })
+    setSaved(next)
+    setValues(initialValues(plain, next))
+  }
+
   // EN can go only where the entity doesn't need it (a photo's caption).
   const removable = (lang: Lang) =>
     translationsOf(saved)[lang] !== undefined &&
@@ -258,6 +271,9 @@ function RowEditor({
       <h1 className="font-heading text-zsd-headline-md break-words">
         {rowTitle(entity, saved)}
       </h1>
+      {entity.publishable && (
+        <PublishBar row={saved} dirty={dirty} onPublish={publish} />
+      )}
       {plain.length > 0 && (
         <Section title="Fields">
           <EditorForm
@@ -490,6 +506,54 @@ function EditorForm({
         </p>
       </div>
     </form>
+  )
+}
+
+const PUBLISHED_AT: Column = { label: "", field: "publishedAt", kind: "date" }
+
+// The status of a publishable row and the button that changes it.
+function PublishBar({
+  row,
+  dirty,
+  onPublish,
+}: {
+  row: AdminRow
+  dirty: boolean
+  onPublish: (status: "draft" | "published") => Promise<void>
+}) {
+  const saving = useSaving()
+  const published = row.status === "published"
+  const date = cellText(row, PUBLISHED_AT)
+
+  return (
+    <div className="flex flex-wrap items-center gap-zsd-sm">
+      <p data-testid="publish-status" className="text-zsd-body-md">
+        {published ? "Published" : "Draft"}
+        {published && date && `, ${date}`}
+      </p>
+      <Button
+        type="button"
+        variant={published ? "outline" : "default"}
+        disabled={dirty || saving.pending}
+        onClick={() =>
+          void saving.save({}, () =>
+            onPublish(published ? "draft" : "published")
+          )
+        }
+      >
+        {saving.pending ? "Saving…" : published ? "Unpublish" : "Publish"}
+      </Button>
+      {dirty && (
+        <p className="text-zsd-body-sm text-muted-foreground">
+          Save the changes first.
+        </p>
+      )}
+      {saving.failure && (
+        <p role="alert" className="text-zsd-body-sm text-zsd-error">
+          {saving.failure}
+        </p>
+      )}
+    </div>
   )
 }
 

@@ -90,6 +90,9 @@ export type EntityConfig = {
   gallery?: string
   // A single record without an id in the path (the Profile).
   single?: boolean
+  // Rows are drafts until published (`status`): the editor publishes and
+  // unpublishes them with a button. The first publish dates `publishedAt`.
+  publishable?: boolean
   // The row's name in lists and headings: the first of these fields that is
   // set, EN Translation first.
   titleFields: string[]
@@ -364,6 +367,7 @@ export const ENTITIES: EntityConfig[] = [
     schemas: PostAdmin,
     translated: true,
     ordered: false,
+    publishable: true,
     titleFields: ["title", "slug"],
     columns: [
       { label: "Slug", field: "slug", kind: "text" },
@@ -374,13 +378,6 @@ export const ENTITIES: EntityConfig[] = [
       { name: "title", label: "Title", translated: true, kind: "text" },
       { name: "slug", label: "Slug", kind: "slug" },
       { name: "excerpt", label: "Excerpt", translated: true, kind: "textarea" },
-      {
-        name: "status",
-        label: "Status",
-        kind: "select",
-        options: ["draft", "published"],
-        initial: "draft",
-      },
       {
         name: "publishedAt",
         label: "Published at",
