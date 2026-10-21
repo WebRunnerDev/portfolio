@@ -21,9 +21,10 @@ ADR-0001: crawlers don't run JS, so `worker/meta/serve-page.ts` rewrites `index.
 - **404:** a path no page has answers 404 with the same SPA, the Not Found title and `noindex`.
 - **Previews** (`*.workers.dev`) get `X-Robots-Tag: noindex` and `<meta name="robots" content="noindex">`.
 - **Caching:** the HTML loses the `ETag` of `index.html`, which is the same for every page.
-- **Pages with data from D1** (`cv`, `projects/:slug`, `blog/:slug`): add a `DataPage` to `DATA_PAGES` in `worker/meta/pages.ts` — a pattern on the path after the Lang and a `meta(env, lang, match)` that reads D1 and answers null for an unknown slug (404). It goes before the static meta of the same path. Build the meta with a function in `contracts/meta.ts` (`cvMeta`) and return it as `meta` from the page's loader too: `LangHead` takes it from there. Static sections go in `PAGES` in `contracts/meta.ts`.
+- **Pages with data from D1** (`cv`, `projects/:slug`, `gallery/:slug`, `blog/:slug`): add a `DataPage` to `DATA_PAGES` in `worker/meta/pages.ts` — a pattern on the path after the Lang and a `meta(env, lang, match)` that reads D1 and answers null for an unknown slug (404). It goes before the static meta of the same path. Build the meta with a function in `contracts/meta.ts` (`cvMeta`) and return it as `meta` from the page's loader too: `LangHead` takes it from there. Static sections go in `PAGES` in `contracts/meta.ts`.
 - **CV:** the title and description come from the Profile on the Lang (EN when it has none); without a Profile, the section meta. `cv/print` (the Print CV) gets the same meta and `noindex`.
 - **Project** (`projects/:slug`, `projectMeta`): the title and description of the Project on the Lang (EN when it has none), its cover through Cloudflare Images at 1200px as `og:image` (`/og-default.png` without one). Without a Case Study, or for an unknown slug, a 404. When D1 fails, the Projects section meta with 200: the page may well be there.
+- **Album** (`gallery/:slug`, `albumMeta`): the title of the Album on the Lang (EN when it has none), described as a photo album (`meta.album`), its cover (the chosen photo, else the first) through Cloudflare Images at 1200px as `og:image` (`/og-default.png` without photos). An unknown slug is a 404. When D1 fails, the Gallery section meta with 200.
 
 ## Security headers
 
