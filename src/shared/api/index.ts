@@ -1,5 +1,6 @@
 export {
   PublicApiError,
+  getAlbums,
   getCertifications,
   getCvPdf,
   getCvSections,

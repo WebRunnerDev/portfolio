@@ -52,6 +52,15 @@ export const en = {
   "projects.empty.title": "No projects yet",
   "projects.empty.text":
     "Pet projects with case studies appear here: what was built and how.",
+  "gallery.empty.title": "No albums yet",
+  "gallery.empty.text":
+    "Photo albums appear here: trips, events and everyday shots.",
+  "album.photos.zero": "{count} photos",
+  "album.photos.one": "{count} photo",
+  "album.photos.two": "{count} photos",
+  "album.photos.few": "{count} photos",
+  "album.photos.many": "{count} photos",
+  "album.photos.other": "{count} photos",
   "langSwitcher.label": "Language",
   "themeSwitcher.label": "Theme",
   "themeSwitcher.light": "Light",

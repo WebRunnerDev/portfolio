@@ -54,6 +54,15 @@ export const de: Messages = {
   "projects.empty.title": "Noch keine Projekte",
   "projects.empty.text":
     "Hier erscheinen die Pet-Projekte: was gebaut wurde und wie.",
+  "gallery.empty.title": "Noch keine Alben",
+  "gallery.empty.text":
+    "Hier erscheinen die Fotoalben: Reisen, Ereignisse und Alltag.",
+  "album.photos.zero": "{count} Fotos",
+  "album.photos.one": "{count} Foto",
+  "album.photos.two": "{count} Fotos",
+  "album.photos.few": "{count} Fotos",
+  "album.photos.many": "{count} Fotos",
+  "album.photos.other": "{count} Fotos",
   "langSwitcher.label": "Sprache",
   "themeSwitcher.label": "Farbschema",
   "themeSwitcher.light": "Hell",
