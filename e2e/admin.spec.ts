@@ -314,3 +314,98 @@ test("admin uploads 50+ photos into an album", async ({ page }) => {
   await expect(status).toHaveText("Uploaded 1 of 1.")
   expect(photos.at(-1)).toMatchObject({ width: 300, height: 400 })
 })
+
+// Issue #85: the order of an album's photos by dragging, and its cover.
+test("admin reorders an album's photos and picks its cover", async ({
+  page,
+}) => {
+  const photos = [1, 2, 3].map((id) => ({
+    id,
+    albumId: 1,
+    r2Key: `image/${id}.jpg`,
+    width: 10,
+    height: 10,
+    translations: { en: { caption: `Photo ${id}` } },
+  }))
+  const album = {
+    id: 1,
+    slug: "trips",
+    coverKey: null as string | null,
+    translations: { en: { title: "Trips" } },
+  }
+  const orders: number[][] = []
+
+  await page.route("**/api/admin/**", async (route) => {
+    const request = route.request()
+    const path = new URL(request.url()).pathname.replace("/api/admin", "")
+    const method = request.method()
+    if (path === "/me") {
+      return route.fulfill({ json: { email: "owner@example.com" } })
+    }
+    if (path === "/albums/1" && method === "PATCH") {
+      Object.assign(album, request.postDataJSON())
+    }
+    if (path === "/albums/1") return route.fulfill({ json: album })
+    if (path === "/photos/order" && method === "PUT") {
+      const { ids } = request.postDataJSON() as { ids: number[] }
+      orders.push(ids)
+      photos.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id))
+      return route.fulfill({ status: 204 })
+    }
+    if (path === "/photos") return route.fulfill({ json: photos })
+    return route.fulfill({ status: 404, json: { error: "not_found" } })
+  })
+
+  // Tall enough for no scrolling: a keyboard move near an edge scrolls the
+  // page first.
+  await page.setViewportSize({ width: 1280, height: 2000 })
+  await page.goto("/admin/albums/1")
+  const section = page.getByRole("region", { name: "Photos" })
+  const titles = section.getByRole("row").getByRole("link")
+  await expect(titles).toHaveText(["Photo 1", "Photo 2", "Photo 3"])
+
+  // Keyboard: Space picks up, an arrow moves, Space drops.
+  await section.getByRole("button", { name: "Move Photo 1" }).focus()
+  const live = page.locator("[aria-live]", { hasText: "Photo 1" })
+  await page.keyboard.press("Space")
+  await expect(live).toHaveText(/position 1 of 3/)
+  // The rows are measured a moment after the pick-up; an arrow before that
+  // does nothing.
+  await expect(async () => {
+    await page.keyboard.press("ArrowDown")
+    await expect(live).toHaveText(/Photo 1 is now at position 2 of 3/, {
+      timeout: 250,
+    })
+  }).toPass()
+  await page.keyboard.press("Space")
+  await expect(titles).toHaveText(["Photo 2", "Photo 1", "Photo 3"])
+  expect(orders.at(-1)).toEqual([2, 1, 3])
+
+  // Mouse: Photo 3 dragged to the top.
+  const handle = section.getByRole("button", { name: "Move Photo 3" })
+  const target = section.getByRole("button", { name: "Move Photo 2" })
+  const from = (await handle.boundingBox())!
+  const to = (await target.boundingBox())!
+  const x = from.x + from.width / 2
+  await page.mouse.move(x, from.y + from.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(x, from.y, { steps: 5 })
+  const dragged = page.locator("[aria-live]", { hasText: "Photo 3" })
+  await expect(dragged).toHaveText(/position 3 of 3/)
+  await expect(async () => {
+    await page.mouse.move(x, to.y, { steps: 5 })
+    await expect(dragged).toHaveText(/position 1 of 3/, { timeout: 250 })
+  }).toPass()
+  await page.mouse.up()
+  await expect(titles).toHaveText(["Photo 3", "Photo 2", "Photo 1"])
+  expect(orders.at(-1)).toEqual([3, 2, 1])
+
+  // The cover: one of the album's photos; none chosen means the first.
+  const fields = page.getByRole("region", { name: "Fields" })
+  const cover = fields.getByRole("group", { name: "Cover" })
+  await expect(cover.getByText("None chosen: the first photo")).toBeVisible()
+  await cover.getByRole("radio", { name: "Photo 2" }).click()
+  await fields.getByRole("button", { name: "Save fields" }).click()
+  await expect(fields.getByText("Saved")).toBeVisible()
+  expect(album.coverKey).toBe("image/2.jpg")
+})

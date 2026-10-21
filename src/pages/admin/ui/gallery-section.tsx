@@ -9,8 +9,8 @@ import {
   AdminApiError,
   createRow,
   deleteUpload,
-  listRows,
   uploadFile,
+  type AdminRow,
 } from "../api/admin-api"
 import type { EntityConfig, Field } from "../model/entities"
 import {
@@ -18,7 +18,7 @@ import {
   type UploadItem,
   type UploadSnapshot,
 } from "../model/upload-queue"
-import { useResource } from "../model/use-resource"
+import type { Resource } from "../model/use-resource"
 import { ApiErrorNotice, errorMessage } from "./api-error-notice"
 import { EntityTable } from "./entity-table"
 
@@ -37,21 +37,21 @@ const STATUS_TEXT: Record<UploadItem["status"], string> = {
 
 // The rows of `child` (an album's photos) under the editor of their parent
 // row, and a drop zone that uploads many files at once: each file goes to
-// R2, then becomes a row at the end of the list, in the order chosen.
+// R2, then becomes a row at the end of the list, in the order chosen. The
+// editor loads `rows`: its cover field picks from them too.
 export function GallerySection({
   child,
   parentId,
+  rows,
 }: {
   child: EntityConfig
   parentId: string
+  rows: Resource<AdminRow[]>
 }) {
   const scope = child.scope!
   const file = child.fields.find(
     (field): field is Extract<Field, { kind: "file" }> => field.kind === "file"
   )!
-  const rows = useResource(`${child.path}?${parentId}`, () =>
-    listRows(child.path, child.schemas.entity, { [scope.field]: parentId })
-  )
   const [snapshot, setSnapshot] = useState<UploadSnapshot>({
     items: [],
     paused: false,

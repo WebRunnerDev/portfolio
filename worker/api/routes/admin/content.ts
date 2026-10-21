@@ -133,12 +133,21 @@ const tag: Entity = {
   orderBy: "name",
 }
 
+// The cover is a photo's file, which the photo owns: no `files` here.
+// Triggers clear it when that photo goes (migrations/0002).
 const album: Entity = {
   table: "album",
   fields: ["slug", "coverKey"],
-  files: ["coverKey"],
   translation: { fields: ["title"], enRequired: true },
   ordered: true,
+  checkPatch: async (db, id, patch) => {
+    if (patch.coverKey == null) return undefined
+    const photo = await db
+      .prepare("SELECT 1 FROM photo WHERE album_id = ? AND r2_key = ?")
+      .bind(id, patch.coverKey)
+      .first()
+    return photo ? undefined : { coverKey: ["Not a photo of this album"] }
+  },
 }
 
 const photo: Entity = {

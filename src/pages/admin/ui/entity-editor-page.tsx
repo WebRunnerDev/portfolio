@@ -30,6 +30,7 @@ import {
   deleteTranslation,
   deleteUpload,
   getRow,
+  listRows,
   patchRow,
   putTranslation,
   type AdminRow,
@@ -55,6 +56,7 @@ import { rowTitle } from "../lib/row"
 import { findEntity, type EntityConfig, type Field } from "../model/entities"
 import { useResource } from "../model/use-resource"
 import { ApiErrorNotice } from "./api-error-notice"
+import type { Gallery } from "./cover-input"
 import { FieldInput } from "./field-input"
 import { GallerySection } from "./gallery-section"
 import { UnknownEntity } from "./unknown-entity"
@@ -129,6 +131,22 @@ function RowEditor({
   // Files uploaded since the last save of the fields; those the row doesn't
   // name by then are removed from R2.
   const uploads = useRef<string[]>([])
+  // The gallery's rows (an album's photos): listed under the editor, and
+  // what a `cover` field picks from.
+  const gallery = entity.gallery ? findEntity(entity.gallery) : undefined
+  const galleryRows = useResource(
+    gallery ? `${gallery.path}?${row.id}` : "",
+    async () =>
+      gallery
+        ? listRows(gallery.path, gallery.schemas.entity, {
+            [gallery.scope!.field]: String(row.id),
+          })
+        : []
+  )
+  const coverChoices: Gallery | undefined = gallery && {
+    entity: gallery,
+    rows: galleryRows.data,
+  }
 
   const savedTranslations = langValues(translated, saved)
   const fieldsDirty = !sameValues(values, initialValues(plain, saved))
@@ -161,8 +179,23 @@ function RowEditor({
     }))
   }
 
-  async function saveFields() {
+  // PATCH body of the fields. A cover whose photo is gone by now the API has
+  // cleared (migrations/0002): it goes as null rather than answering 422.
+  function fieldsBody() {
     const body = patchBody(entity, values)
+    const file = gallery?.fields.find((field) => field.kind === "file")
+    const keys =
+      file && galleryRows.data?.map((galleryRow) => galleryRow[file.name])
+    for (const field of plain) {
+      if (field.kind === "cover" && keys && !keys.includes(body[field.name])) {
+        body[field.name] = null
+      }
+    }
+    return body
+  }
+
+  async function saveFields() {
+    const body = fieldsBody()
     const next = await patchRow(path, entity.schemas.entity, body)
     // Files replaced or removed: the row named them, now nothing does. One
     // that another row still names answers 409 and stays.
@@ -179,7 +212,19 @@ function RowEditor({
     setValues(initialValues(plain, next))
   }
 
+  // An entity that needs no Translation at all (a photo's caption) has an
+  // emptied one removed rather than refused: an empty caption is no caption.
+  const emptied = (lang: Lang) =>
+    !isRequired(entity.schemas.create, "translations.en") &&
+    Object.keys(translationBody(entity, translations[lang])).length === 0
+
   async function saveTranslation(lang: Lang) {
+    if (emptied(lang)) {
+      if (translationsOf(saved)[lang] !== undefined) {
+        await removeTranslation(lang)
+      }
+      return
+    }
     const body = translationBody(entity, translations[lang])
     const next = await putTranslation(path, lang, entity.schemas.entity, body)
     setSaved(next)
@@ -201,8 +246,6 @@ function RowEditor({
       [lang]: initialValues(translated),
     }))
   }
-
-  const gallery = entity.gallery ? findEntity(entity.gallery) : undefined
 
   // EN can go only where the entity doesn't need it (a photo's caption).
   const removable = (lang: Lang) =>
@@ -226,7 +269,8 @@ function RowEditor({
               setValues((current) => ({ ...current, [name]: value }))
             }
             onUploaded={onUploaded}
-            validate={() => validatePatch(entity, patchBody(entity, values))}
+            gallery={coverChoices}
+            validate={() => validatePatch(entity, fieldsBody())}
             send={saveFields}
           />
         </Section>
@@ -278,10 +322,12 @@ function RowEditor({
                   }
                   onUploaded={onUploaded}
                   validate={() =>
-                    validateTranslation(
-                      entity,
-                      translationBody(entity, translations[lang])
-                    )
+                    emptied(lang)
+                      ? {}
+                      : validateTranslation(
+                          entity,
+                          translationBody(entity, translations[lang])
+                        )
                   }
                   send={() => saveTranslation(lang)}
                   actions={
@@ -300,7 +346,11 @@ function RowEditor({
       )}
       {gallery && (
         <Section title={gallery.label}>
-          <GallerySection child={gallery} parentId={String(row.id)} />
+          <GallerySection
+            child={gallery}
+            parentId={String(row.id)}
+            rows={galleryRows}
+          />
         </Section>
       )}
       <AlertDialog
@@ -359,6 +409,7 @@ function EditorForm({
   required,
   onChange,
   onUploaded,
+  gallery,
   validate,
   send,
   actions,
@@ -371,6 +422,7 @@ function EditorForm({
   required: (field: Field) => boolean
   onChange: (name: string, value: FormValue) => void
   onUploaded: (key: string, filled: Values) => void
+  gallery?: Gallery
   validate: () => FieldErrors
   send: () => Promise<void>
   actions?: ReactNode
@@ -396,6 +448,7 @@ function EditorForm({
           dir={lang && langDirection(lang)}
           onChange={(value) => onChange(field.name, value)}
           onUploaded={onUploaded}
+          gallery={gallery}
         />
       ))}
       {(saving.failure || leftover.length > 0) && (

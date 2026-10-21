@@ -52,12 +52,8 @@ export function crudRoutes(entity: Entity, schemas: Schemas) {
   if (entity.ordered) {
     app
       .put("/order", body(ReorderSchema), async (c) => {
-        const missing = await reorder(c.env.DB, entity, c.req.valid("json").ids)
-        if (missing.length > 0) {
-          return validationFailed(c, {
-            ids: [`Unknown id: ${missing.join(", ")}`],
-          })
-        }
+        const failed = await reorder(c.env.DB, entity, c.req.valid("json").ids)
+        if (failed) return validationFailed(c, { ids: [failed] })
         return c.body(null, 204)
       })
       .all("/order", methodNotAllowed("PUT"))
@@ -90,8 +86,10 @@ export function crudRoutes(entity: Entity, schemas: Schemas) {
       const current = await find(c.env.DB, entity, id)
       if (!current) return apiError(c, 404, "not_found")
       const patch = c.req.valid("json") as Values
-      const missing = await missingRefs(c.env.DB, entity, patch)
-      if (missing) return validationFailed(c, missing)
+      const invalid =
+        (await missingRefs(c.env.DB, entity, patch)) ??
+        (await entity.checkPatch?.(c.env.DB, id, patch))
+      if (invalid) return validationFailed(c, invalid)
       await update(c.env.DB, entity, current, patch)
       return c.json(await find(c.env.DB, entity, id))
     })

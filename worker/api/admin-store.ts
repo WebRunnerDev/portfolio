@@ -49,6 +49,13 @@ export type Entity = {
   touch?: boolean
   // Fills derived fields of the full row before it is written.
   normalize?: (row: Values) => Values
+  // Checks of a PATCH to the row `id` that need D1, as validation messages by
+  // field (an album's cover must be one of its photos).
+  checkPatch?: (
+    db: D1Database,
+    id: number,
+    patch: Values
+  ) => Promise<Record<string, string[]> | undefined>
 }
 
 const NOW = `strftime('%Y-%m-%dT%H:%M:%fZ', 'now')`
@@ -398,18 +405,24 @@ export async function removeTranslation(
   return meta.changes > 0
 }
 
-// Sets `position` to the index in `ids`; returns the ids that don't exist
-// (and writes nothing then).
+// Sets `position` to the index in `ids`, in one batch. Writes nothing and
+// returns a message when an id doesn't exist or, with `scope`, the ids
+// belong to more than one scope (photos of two albums).
 export async function reorder(db: D1Database, entity: Entity, ids: number[]) {
+  const scope = entity.scope ? column(entity.scope) : "NULL"
   const { results } = await db
     .prepare(
-      `SELECT id FROM ${entity.table} WHERE id IN (${ids.map(() => "?").join()})`
+      `SELECT id, ${scope} AS scope FROM ${entity.table}
+      WHERE id IN (${ids.map(() => "?").join()})`
     )
     .bind(...ids)
-    .all<{ id: number }>()
+    .all<{ id: number; scope: unknown }>()
   const known = new Set(results.map((row) => row.id))
   const missing = ids.filter((id) => !known.has(id))
-  if (missing.length > 0) return missing
+  if (missing.length > 0) return `Unknown id: ${missing.join(", ")}`
+  if (new Set(results.map((row) => row.scope)).size > 1) {
+    return `Ids must share one ${entity.scope}`
+  }
   await db.batch(
     ids.map((id, position) =>
       db
@@ -417,5 +430,5 @@ export async function reorder(db: D1Database, entity: Entity, ids: number[]) {
         .bind(position, id)
     )
   )
-  return []
+  return undefined
 }

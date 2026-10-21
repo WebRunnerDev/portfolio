@@ -125,7 +125,7 @@ After the rate limit, every `/api/*` request goes through `checkOrigin` (`worker
 | `certifications`, `technologies`, `tracks` | Untranslated lists; technologies by category |
 | `projects`, `projects/:slug` | List without `caseStudy` (`hasCaseStudy` instead); by slug with it |
 | `posts?tag=<slug>`, `posts/:slug` | Published only, newest first, list without `body`; drafts answer 404 |
-| `albums`, `albums/:slug` | List; by slug with its photos |
+| `albums`, `albums/:slug` | List; by slug with its photos. `coverKey` is the chosen cover, else the first photo in order (null for an empty album) |
 
 **Fallback** (CONTEXT.md): each translated entity comes with its Translation on the Lang, or its EN one and `fallback: true` when there is none. An entity translated on neither is left out (404 by slug). The SQL is `translationOf()` in `worker/api/public.ts`: one join that picks the Lang's row, else EN, so fields never mix two Translations. A photo's caption is optional: a photo without any caption has `caption: null` and `fallback: false`.
 
@@ -151,13 +151,14 @@ After the rate limit, every `/api/*` request goes through `checkOrigin` (`worker
 | `DELETE /<entity>/:id` | 204; Translations and links go with it, and its files (Files below). An album with photos answers 409 |
 | `PUT /<entity>/:id/translations/:lang` | 200; writes the whole Translation on that Lang |
 | `DELETE /<entity>/:id/translations/:lang` | 204; EN answers 409 (except photos) |
-| `PUT /<entity>/order` | 204; `{ "ids": [3, 1, 2] }` sets `position` by index. Entities with `position`: all but posts and tags |
+| `PUT /<entity>/order` | 204; `{ "ids": [3, 1, 2] }` sets `position` by index, in one batch. Entities with `position`: all but posts and tags. Photos of more than one album answer 422 |
 
 `/profile`: `GET` (404 until created), `PUT` with the `create` body creates it or overwrites its fields, keeping Translations it doesn't mention; `PATCH`, and `/profile/translations/:lang` as above. No delete.
 
 - **Links:** `technologyIds` of experience and projects keep their order; `tagIds` of a post are sorted by id. An unknown id answers 422 on that field.
 - **Posts:** publishing without `publishedAt` sets it to now; going back to draft keeps it.
-- **Files:** deleting a project, post, album, photo or track deletes the R2 objects its `*Key` fields name (`files` of its `Entity`), after the row and only those no other row names (`worker/api/media-keys.ts`, the same check as `DELETE /uploads/<key>`). A failure in between leaves a file without a row, never the other way round.
+- **Album cover:** `coverKey` is the `r2Key` of one of the album's photos (`PATCH`; any other key answers 422, and `POST` takes none), or null for the first photo. The public API picks the first photo when it answers, so a new order shows at once. Triggers (`migrations/0002`) set it back to null when that photo is deleted, moved to another album or gets another file. The file is the photo's: deleting the album deletes nothing.
+- **Files:** deleting a project, post, photo or track deletes the R2 objects its `*Key` fields name (`files` of its `Entity`), after the row and only those no other row names (`worker/api/media-keys.ts`, the same check as `DELETE /uploads/<key>`). A failure in between leaves a file without a row, never the other way round.
 
 The routes come from `crudRoutes()` (`worker/api/admin.ts`) and the SQL from `worker/api/admin-store.ts`, both driven by one `Entity` per table in `worker/api/routes/admin/content.ts` (the Profile in `profile.ts`). A write that touches several tables (a row with its Translations and links) is one `db.batch()`, which D1 runs as a transaction. A new entity: its schemas in `contracts/api/admin.ts`, an `Entity` and a `.route()` in `content.ts`.
 

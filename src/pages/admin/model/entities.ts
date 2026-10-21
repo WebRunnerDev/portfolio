@@ -42,6 +42,8 @@ export type Field = {
   | { kind: "ref"; entity: string }
   // Ids of rows of another entity: a project's technologies.
   | { kind: "refs"; entity: string }
+  // The file of one of the row's `gallery` rows: an album's cover photo.
+  | { kind: "cover" }
   // An R2 key, filled by an upload. `fills` derives more fields from the file.
   | {
       kind: "file"
@@ -440,7 +442,13 @@ export const ENTITIES: EntityConfig[] = [
     fields: [
       { name: "title", label: "Title", translated: true, kind: "text" },
       { name: "slug", label: "Slug", kind: "slug" },
-      image("coverKey", "Cover"),
+      {
+        name: "coverKey",
+        label: "Cover",
+        kind: "cover",
+        create: false,
+        hint: "None chosen: the first photo",
+      },
     ],
   }),
   entity({
