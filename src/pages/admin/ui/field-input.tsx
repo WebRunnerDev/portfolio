@@ -80,6 +80,7 @@ export function FieldInput({
           </legend>
           <RefsInput
             entityPath={field.entity}
+            addable={field.addable}
             value={Array.isArray(value) ? value : []}
             onChange={onChange}
           />

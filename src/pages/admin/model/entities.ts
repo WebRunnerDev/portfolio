@@ -40,8 +40,9 @@ export type Field = {
   | { kind: "select"; options: readonly string[]; initial?: string }
   // The id of a row of another entity: a photo's album.
   | { kind: "ref"; entity: string }
-  // Ids of rows of another entity: a project's technologies.
-  | { kind: "refs"; entity: string }
+  // Ids of rows of another entity: a project's technologies. `addable`: a
+  // new row of it can be created right there (a post's tags).
+  | { kind: "refs"; entity: string; addable?: true }
   // The file of one of the row's `gallery` rows: an album's cover photo.
   | { kind: "cover" }
   // An R2 key, filled by an upload. `fills` derives more fields from the file.
@@ -393,6 +394,7 @@ export const ENTITIES: EntityConfig[] = [
         label: "Tags",
         kind: "refs",
         entity: "tags",
+        addable: true,
         create: false,
       },
       {
