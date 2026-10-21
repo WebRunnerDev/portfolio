@@ -407,14 +407,16 @@ describe("albums", () => {
         fallback: false,
         slug: "trips",
         title: "Поездки",
-        coverKey: "photos/1.jpg",
+        cover: { key: "photos/1.jpg", width: 1200, height: 800 },
+        photoCount: 3,
       },
       {
         id: 2,
         fallback: true,
         slug: "cats",
         title: "Cats",
-        coverKey: "photos/4.jpg",
+        cover: { key: "photos/4.jpg", width: 1000, height: 1000 },
+        photoCount: 1,
       },
     ])
   })
@@ -423,17 +425,38 @@ describe("albums", () => {
     await env.DB.prepare(
       "UPDATE album SET cover_key = 'photos/3.jpg' WHERE id = 1"
     ).run()
-    expect((await get("/en/albums/trips", AlbumDetailSchema)).coverKey).toBe(
-      "photos/3.jpg"
-    )
+    expect((await get("/en/albums/trips", AlbumDetailSchema)).cover).toEqual({
+      key: "photos/3.jpg",
+      width: 1000,
+      height: 1000,
+    })
     await env.DB.batch([
       env.DB.prepare("UPDATE album SET cover_key = NULL WHERE id = 1"),
       env.DB.prepare("UPDATE photo SET position = -1 WHERE id = 2"),
     ])
-    expect((await get("/en/albums/trips", AlbumDetailSchema)).coverKey).toBe(
-      "photos/2.jpg"
-    )
+    expect((await get("/en/albums/trips", AlbumDetailSchema)).cover).toEqual({
+      key: "photos/2.jpg",
+      width: 800,
+      height: 1200,
+    })
     await env.DB.prepare("UPDATE photo SET position = 1 WHERE id = 2").run()
+  })
+
+  it("lists an album without photos with no cover and a zero count", async () => {
+    await env.DB.batch([
+      env.DB.prepare(
+        "INSERT INTO album (id, slug, position) VALUES (3, 'empty', 2)"
+      ),
+      env.DB.prepare(
+        "INSERT INTO album_translation (album_id, lang, title) VALUES (3, 'en', 'Empty')"
+      ),
+    ])
+    const list = await get("/en/albums", v.array(AlbumSchema))
+    expect(list.find((album) => album.slug === "empty")).toMatchObject({
+      cover: null,
+      photoCount: 0,
+    })
+    await env.DB.prepare("DELETE FROM album WHERE id = 3").run()
   })
 
   it("answers an album by slug with its photos and captions", async () => {

@@ -746,7 +746,7 @@ describe("order", () => {
     const album = await publicJson("/en/albums/public-a")
     expect((album.photos as Body[]).map((photo) => photo.id)).toEqual(reversed)
     // No cover chosen: the first photo of the new order.
-    expect(album.coverKey).toBe("public/3.jpg")
+    expect((album.cover as Body).key).toBe("public/3.jpg")
 
     const all = (await json(
       await call("GET", "/albums"),
@@ -825,7 +825,7 @@ describe("album cover", () => {
       200
     )
     expect(changed.coverKey).toBe("cover-own/2.jpg")
-    expect((await publicJson("/en/albums/cover-own")).coverKey).toBe(
+    expect(((await publicJson("/en/albums/cover-own")).cover as Body).key).toBe(
       "cover-own/2.jpg"
     )
   })
@@ -855,9 +855,9 @@ describe("album cover", () => {
       200
     )
     expect(await cover()).toBeNull()
-    expect((await publicJson("/en/albums/cover-gone")).coverKey).toBe(
-      first.r2Key
-    )
+    expect(
+      ((await publicJson("/en/albums/cover-gone")).cover as Body).key
+    ).toBe(first.r2Key)
   })
 })
 
