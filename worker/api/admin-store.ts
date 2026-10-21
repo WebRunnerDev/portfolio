@@ -37,6 +37,9 @@ export type Entity = {
     json?: readonly string[]
     // EN can't be removed (a photo caption can).
     enRequired: boolean
+    // Fills derived fields of a Translation before it is written: a post's
+    // reading time from its body.
+    normalize?: (values: Values) => Values
   }
   // The table has `position`: new rows go last, PUT /order sets it. With
   // `scope`, positions count within the rows sharing that field (an album's
@@ -240,9 +243,10 @@ export function translationStatement(
   ownerSql: string,
   ownerParams: unknown[],
   lang: Lang,
-  values: Values
+  input: Values
 ) {
-  const fields = entity.translation!.fields
+  const { fields, normalize } = entity.translation!
+  const values = normalize ? normalize(input) : input
   const columns = fields.map(column)
   return db
     .prepare(
