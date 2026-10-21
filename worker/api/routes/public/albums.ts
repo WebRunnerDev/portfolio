@@ -8,17 +8,23 @@ type AlbumRow = {
   fallback: number
   slug: string
   title: string
+  // The cover photo's, all three null without one.
   cover_key: string | null
+  cover_width: number
+  cover_height: number
+  photo_count: number
 }
 
 // The cover chosen in the admin, else the first photo. Picked here rather
 // than stored, so a new order or a deleted photo shows at once.
 const SELECT_ALBUM = `SELECT a.id, t.lang <> ?1 AS fallback, a.slug, t.title,
-    coalesce(a.cover_key, (
-      SELECT r2_key FROM photo WHERE album_id = a.id
-      ORDER BY position, id LIMIT 1
-    )) AS cover_key
-  FROM album a JOIN ${translationOf("album", "a")}`
+    c.r2_key AS cover_key, c.width AS cover_width, c.height AS cover_height,
+    (SELECT count(*) FROM photo WHERE album_id = a.id) AS photo_count
+  FROM album a JOIN ${translationOf("album", "a")}
+  LEFT JOIN photo c ON c.id = coalesce(
+    (SELECT id FROM photo WHERE album_id = a.id AND r2_key = a.cover_key),
+    (SELECT id FROM photo WHERE album_id = a.id ORDER BY position, id LIMIT 1)
+  )`
 
 function toAlbum(row: AlbumRow): Album {
   return {
@@ -26,7 +32,15 @@ function toAlbum(row: AlbumRow): Album {
     fallback: row.fallback === 1,
     slug: row.slug,
     title: row.title,
-    coverKey: row.cover_key,
+    cover:
+      row.cover_key === null
+        ? null
+        : {
+            key: row.cover_key,
+            width: row.cover_width,
+            height: row.cover_height,
+          },
+    photoCount: row.photo_count,
   }
 }
 

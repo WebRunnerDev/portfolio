@@ -87,6 +87,15 @@ Public pages read `/api/public/:lang/*` (`worker/README.md` › Public API) thro
 - **Fallback:** `lang={fallbackLang(project)}` on the title, the description and the `Markdown`.
 - **Unit:** `markdown.test.tsx` renders to static HTML; **E2E:** `e2e/projects.spec.ts`.
 
+## Gallery
+
+`/{lang}/gallery` (`GalleryPage` in `src/pages/gallery/`): the Albums as a card grid, from `albums` (`loadAlbums`). `AlbumCard` stays in the page slice until a second slice needs it (Steiger's `insignificant-slice`).
+
+- **Cover:** `cover` (`key`, `width`, `height`) through `imageSrcSet`, with `sizes` for the 1/2/3-column grid and the photo's `width`/`height` against CLS, cropped to 4:3. The first card's at `fetchpriority="high"`, the others `loading="lazy"`; no photos, the logo tiles.
+- **Count:** `photoCount` through `useTPlural()` (`@/shared/i18n`): a plural message has a key per `Intl.PluralRules` category (`album.photos.zero` … `.other`) in every dictionary, `{count}` formatted for the Lang.
+- **Fallback:** `FallbackNotice` under an EN title, `lang="en"` on the title.
+- **E2E:** `e2e/gallery.spec.ts`.
+
 ## Admin
 
 `/admin` ([ADR-0004](../adr/0004-cloudflare-access-for-admin.md)) sits outside `/$lang`: its own layout, EN only, `<html dir="ltr">`, `noindex`. Routes are in `src/app/routes/admin/`, everything else in one page slice, `src/pages/admin/`.

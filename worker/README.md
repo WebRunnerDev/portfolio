@@ -125,7 +125,7 @@ After the rate limit, every `/api/*` request goes through `checkOrigin` (`worker
 | `certifications`, `technologies`, `tracks` | Untranslated lists; technologies by category |
 | `projects`, `projects/:slug` | List without `caseStudy` (`hasCaseStudy` instead); by slug with it |
 | `posts?tag=<slug>`, `posts/:slug` | Published only, newest first, list without `body`; drafts answer 404 |
-| `albums`, `albums/:slug` | List; by slug with its photos. `coverKey` is the chosen cover, else the first photo in order (null for an empty album) |
+| `albums`, `albums/:slug` | List with `photoCount`; by slug with its photos. `cover` (`key`, `width`, `height`) is the chosen photo, else the first one in order (null for an empty album) |
 
 **Fallback** (CONTEXT.md): each translated entity comes with its Translation on the Lang, or its EN one and `fallback: true` when there is none. An entity translated on neither is left out (404 by slug). The SQL is `translationOf()` in `worker/api/public.ts`: one join that picks the Lang's row, else EN, so fields never mix two Translations. A photo's caption is optional: a photo without any caption has `caption: null` and `fallback: false`.
 

@@ -1,5 +1,6 @@
 import * as v from "valibot"
 import {
+  AlbumSchema,
   CertificationSchema,
   CvPdfLinkSchema,
   CvSectionSchema,
@@ -106,3 +107,6 @@ export const getProject = (lang: Lang, slug: string, options?: Options) =>
     ProjectDetailSchema,
     options
   )
+
+export const getAlbums = (lang: Lang, options?: Options) =>
+  get(lang, "albums", v.array(AlbumSchema), options)

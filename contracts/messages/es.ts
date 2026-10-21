@@ -55,6 +55,15 @@ export const es: Messages = {
   "projects.empty.title": "Aún no hay proyectos",
   "projects.empty.text":
     "Aquí aparecerán los proyectos personales: qué se hizo y cómo.",
+  "gallery.empty.title": "Aún no hay álbumes",
+  "gallery.empty.text":
+    "Aquí aparecerán los álbumes de fotos: viajes, eventos y el día a día.",
+  "album.photos.zero": "{count} fotos",
+  "album.photos.one": "{count} foto",
+  "album.photos.two": "{count} fotos",
+  "album.photos.few": "{count} fotos",
+  "album.photos.many": "{count} fotos",
+  "album.photos.other": "{count} fotos",
   "langSwitcher.label": "Idioma",
   "themeSwitcher.label": "Tema",
   "themeSwitcher.light": "Claro",
