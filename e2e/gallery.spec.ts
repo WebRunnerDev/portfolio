@@ -286,3 +286,199 @@ test("the masonry mirrors on /ar and fits 360px", async ({ page }) => {
     .evaluate((el) => el.scrollWidth - el.clientWidth)
   expect(overflow).toBe(0)
 })
+
+// #88: the Lightbox over an Album, its photo in `?photo=<id>`.
+const lightbox = (page: Page) => page.getByRole("dialog")
+const counter = (page: Page) => page.getByTestId("lightbox-counter")
+
+// A finger across the photo, `dx` px to the right, as the pointer events
+// a touch screen sends.
+async function swipe(page: Page, dx: number) {
+  const stage = page.getByTestId("lightbox-stage")
+  const box = (await stage.boundingBox())!
+  const x = box.x + box.width / 2
+  const y = box.y + box.height / 2
+  const pointer = (step: number) => ({
+    pointerId: 7,
+    pointerType: "touch",
+    isPrimary: true,
+    clientX: x + (dx * step) / 4,
+    clientY: y,
+  })
+  await stage.dispatchEvent("pointerdown", pointer(0))
+  for (const step of [1, 2, 3, 4]) {
+    await stage.dispatchEvent("pointermove", pointer(step))
+  }
+  await stage.dispatchEvent("pointerup", pointer(4))
+}
+
+test("the Lightbox opens a photo, pages with the arrows and closes on Esc", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await mockPublicApi(page)
+  await page.goto("/en/gallery/trips")
+  const thumbnails = photoItems(page).locator("a")
+  await expect(thumbnails).toHaveCount(6)
+  await thumbnails.nth(1).click()
+  await expect(page).toHaveURL(/\/en\/gallery\/trips\?photo=2$/)
+  await expect(lightbox(page)).toBeVisible()
+  await expect(lightbox(page)).toHaveAccessibleName("Trips")
+  await expect(counter(page)).toHaveText("Photo 2 of 6")
+  await expect(lightbox(page).locator("figcaption")).toHaveText(
+    "Harbour at dawn"
+  )
+  const image = lightbox(page).getByRole("img")
+  await expect(image).toHaveAttribute("alt", "Harbour at dawn")
+  await expect(image).toHaveAttribute("srcset", / 1200w$/)
+  await expect(image).toHaveAttribute("sizes", "min(100vw, 120vh)")
+
+  await page.keyboard.press("ArrowRight")
+  await expect(counter(page)).toHaveText("Photo 3 of 6")
+  await expect(page).toHaveURL(/\?photo=3$/)
+  await page.keyboard.press("ArrowLeft")
+  await page.keyboard.press("ArrowLeft")
+  await page.keyboard.press("ArrowLeft")
+  // Round the start to the last photo.
+  await expect(counter(page)).toHaveText("Photo 6 of 6")
+  await expect(page).toHaveURL(/\?photo=6$/)
+
+  // The focus stays in the Lightbox.
+  for (let i = 0; i < 5; i++) await page.keyboard.press("Tab")
+  expect(
+    await lightbox(page).evaluate((el) =>
+      el.contains(el.ownerDocument.activeElement)
+    )
+  ).toBe(true)
+
+  await page.keyboard.press("Escape")
+  await expect(lightbox(page)).toHaveCount(0)
+  await expect(page).toHaveURL(/\/en\/gallery\/trips$/)
+  // The focus returns to the thumbnail of the photo shown last.
+  await expect(thumbnails.nth(5)).toBeFocused()
+})
+
+test("the Lightbox buttons have names and page round the ends", async ({
+  page,
+}) => {
+  await mockPublicApi(page)
+  await page.goto("/en/gallery/trips")
+  await photoItems(page).locator("a").nth(5).click()
+  await page.getByRole("button", { name: "Next photo" }).click()
+  await expect(counter(page)).toHaveText("Photo 1 of 6")
+  await page.getByRole("button", { name: "Previous photo" }).click()
+  await expect(counter(page)).toHaveText("Photo 6 of 6")
+  await page.getByRole("button", { name: "Close photo" }).click()
+  await expect(lightbox(page)).toHaveCount(0)
+  await expect(page).toHaveURL(/\/en\/gallery\/trips$/)
+  await expect(photoItems(page).locator("a").nth(5)).toBeFocused()
+})
+
+test("Back closes the Lightbox and keeps the scroll", async ({ page }) => {
+  await page.setViewportSize({ width: 800, height: 600 })
+  await mockPublicApi(page)
+  await page.goto("/en/gallery/trips")
+  await photoItems(page).locator("a").nth(4).scrollIntoViewIfNeeded()
+  const scrollTop = () => page.locator("html").evaluate((el) => el.scrollTop)
+  const scrollY = await scrollTop()
+  expect(scrollY).toBeGreaterThan(0)
+
+  await photoItems(page).locator("a").nth(4).click()
+  await expect(counter(page)).toHaveText("Photo 5 of 6")
+  await page.keyboard.press("ArrowRight")
+  await expect(counter(page)).toHaveText("Photo 6 of 6")
+  await page.goBack()
+  await expect(lightbox(page)).toHaveCount(0)
+  await expect(page).toHaveURL(/\/en\/gallery\/trips$/)
+  await expect.poll(scrollTop).toBeGreaterThan(scrollY - 50)
+})
+
+test("a shared link opens its photo; closing drops it from the URL", async ({
+  page,
+}) => {
+  await mockPublicApi(page)
+  await page.goto("/ru/gallery/trips?photo=4")
+  await expect(lightbox(page)).toBeVisible()
+  await expect(counter(page)).toHaveText("Фото 4 из 6")
+  await expect(
+    page.getByRole("button", { name: "Следующее фото" })
+  ).toBeVisible()
+  await page.getByRole("button", { name: "Закрыть фото" }).click()
+  await expect(lightbox(page)).toHaveCount(0)
+  await expect(page).toHaveURL(/\/ru\/gallery\/trips$/)
+  await expect(photoItems(page).locator("a").nth(3)).toBeFocused()
+
+  // An unknown photo leaves the Album as it is.
+  await page.goto("/en/gallery/trips?photo=99")
+  await expect(photoItems(page).locator("img")).toHaveCount(6)
+  await expect(lightbox(page)).toHaveCount(0)
+})
+
+test("the Lightbox preloads the photos on both sides", async ({ page }) => {
+  await mockPublicApi(page)
+  const requested: string[] = []
+  page.on("request", (request) => requested.push(request.url()))
+  await page.goto("/en/gallery/trips?photo=1")
+  await expect(counter(page)).toHaveText("Photo 1 of 6")
+  await expect
+    .poll(() => requested.filter((url) => url.includes("/trips-2.jpg")).length)
+    .toBeGreaterThan(0)
+  await expect
+    .poll(() => requested.filter((url) => url.includes("/trips-6.jpg")).length)
+    .toBeGreaterThan(0)
+})
+
+test("on /ar the arrows and swipes follow the reading direction", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await mockPublicApi(page)
+  await page.goto("/ar/gallery/trips?photo=3")
+  await expect(counter(page)).toHaveText("Photo 3 of 6")
+
+  // ← goes forward in RTL, → back.
+  await page.keyboard.press("ArrowLeft")
+  await expect(counter(page)).toHaveText("Photo 4 of 6")
+  await page.keyboard.press("ArrowRight")
+  await expect(counter(page)).toHaveText("Photo 3 of 6")
+
+  // A swipe to the right brings the next photo in RTL, to the left the
+  // previous one; a short one does nothing.
+  await swipe(page, 120)
+  await expect(counter(page)).toHaveText("Photo 4 of 6")
+  await expect(page).toHaveURL(/\?photo=4$/)
+  await swipe(page, -120)
+  await expect(counter(page)).toHaveText("Photo 3 of 6")
+  await swipe(page, 20)
+  await expect(counter(page)).toHaveText("Photo 3 of 6")
+
+  // Previous sits on the right, its chevron turned; the photo isn't mirrored.
+  const previous = await page
+    .getByRole("button", { name: "Previous photo" })
+    .boundingBox()
+  const next = await page
+    .getByRole("button", { name: "Next photo" })
+    .boundingBox()
+  expect(previous!.x).toBeGreaterThan(next!.x)
+  await expect(lightbox(page).getByRole("img")).toHaveCSS("transform", "none")
+})
+
+test("a swipe on /en goes forward to the left", async ({ page }) => {
+  await mockPublicApi(page)
+  await page.goto("/en/gallery/trips?photo=3")
+  await swipe(page, -120)
+  await expect(counter(page)).toHaveText("Photo 4 of 6")
+  await swipe(page, 120)
+  await expect(counter(page)).toHaveText("Photo 3 of 6")
+})
+
+test("under reduced motion the Lightbox doesn't animate", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" })
+  await mockPublicApi(page)
+  await page.goto("/en/gallery/trips?photo=1")
+  await expect(lightbox(page)).toHaveCSS("animation-name", "none")
+  await page.keyboard.press("ArrowRight")
+  const image = lightbox(page).getByRole("img")
+  await expect(image).toHaveCSS("animation-name", "none")
+  await expect(image).toHaveCSS("transition-property", "none")
+})

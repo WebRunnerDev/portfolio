@@ -9,10 +9,13 @@ import { routeTree } from "./app/routeTree.gen"
 // instant. index.css sets the animation.
 // Loader data stays fresh as long as the Public API's `max-age`: going back to
 // a page within a minute doesn't ask again. A new Lang is a new cache entry.
+// Back puts the scroll where it was: closing the Lightbox with Back leaves
+// the Album where the reader left it.
 const router = createRouter({
   routeTree,
   defaultViewTransition: true,
   defaultStaleTime: 60_000,
+  scrollRestoration: true,
 })
 
 declare module "@tanstack/react-router" {
@@ -22,6 +25,10 @@ declare module "@tanstack/react-router" {
   // `theme` forces one on a route and its children (the root route reads it).
   interface StaticDataRouteOption {
     theme?: "light"
+  }
+  // The Album page opened the Lightbox in this entry: closing it goes Back.
+  interface HistoryState {
+    lightbox?: true
   }
 }
 

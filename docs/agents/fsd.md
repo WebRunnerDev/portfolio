@@ -44,6 +44,7 @@ The `/$lang` route renders the layout: `SiteHeader` (`@/widgets/header`), `<main
 - **CSP** (`worker/README.md` › Security headers): the Worker puts a nonce on every `<script>` in `index.html`; scripts the app loads need none. No inline handlers (`onclick="…"`), `javascript:` URLs, `eval`, `data:` images or third-party origins: each is a violation. A new origin goes into the policy in `worker/security/headers.ts`.
 - **404:** an unknown path under a Lang renders `NotFoundPage` (`notFoundComponent` of `/$lang`) inside the layout.
 - **Page transitions:** `defaultViewTransition` in `src/main.tsx`; the animation is in `src/index.css`, instant under reduced motion.
+- **Scroll:** `scrollRestoration` in `src/main.tsx`: Back returns to where the page was scrolled. A navigation that only changes the search (the Lightbox) passes `resetScroll: false`.
 - **360px:** below `lg` the Lang and theme switchers live in the menu, not the header. `e2e/layout.spec.ts` checks every page in every Lang for horizontal scroll.
 
 ## Print CV
@@ -103,6 +104,8 @@ Public pages read `/api/public/:lang/*` (`worker/README.md` › Public API) thro
 - **Masonry:** CSS grid, no layout script. A grid row is 1/50 of a column's width (`--row`, from `100cqi` of the `@container`), so a photo spans `round(50 × height / width)` rows plus the gap's 3. Auto-placement keeps D1's order row by row, each photo in the shortest column. Two columns, three from `sm`, four from `lg`. Change the numbers in `ROWS_PER_WIDTH`/`GAP_ROWS` and in the grid's classes together.
 - **Images:** `imageSrcSet` with `sizes` for the columns, `width`/`height` of the photo. The first row (4) loads at once, the first at `fetchpriority="high"`; the rest `loading="lazy"`; all `decoding="async"`.
 - **Alt:** the caption (`lang="en"` when it is the Fallback), else `album.photo` (“Photo 2 of 6”).
+- **Lightbox** (`ui/lightbox.tsx`, loaded lazily): each photo is a link to `?photo=<id>` (`parsePhotoSearch` on the route), so a photo can be shared. Opening pushes an entry with `state.lightbox`; paging replaces it; closing goes Back, or (opened from a shared link) drops `photo` from the URL. Radix traps the focus and closes on Esc; the thumbnail of the photo shown last takes the focus back.
+- **Paging:** buttons, ←/→ and touch swipes, round the ends. Arrows and swipes go through `flipX`: in RTL ← and a swipe to the right go forward. The photo is never mirrored. Its neighbours preload in the size the Lightbox `sizes` picks (`lib/lightbox-image.ts`).
 - **E2E:** `e2e/gallery.spec.ts`; **Meta:** `worker/meta/serve-page.test.ts`.
 
 ## Admin
