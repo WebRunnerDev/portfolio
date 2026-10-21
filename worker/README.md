@@ -157,7 +157,7 @@ After the rate limit, every `/api/*` request goes through `checkOrigin` (`worker
 `/profile`: `GET` (404 until created), `PUT` with the `create` body creates it or overwrites its fields, keeping Translations it doesn't mention; `PATCH`, and `/profile/translations/:lang` as above. No delete.
 
 - **Links:** `technologyIds` of experience and projects keep their order; `tagIds` of a post are sorted by id. An unknown id answers 422 on that field.
-- **Posts:** publishing without `publishedAt` sets it to now; going back to draft keeps it.
+- **Posts:** publishing without `publishedAt` sets it to now; going back to draft keeps it. `readingMinutes` is counted from `body` whenever a Translation is written (`worker/api/reading-time.ts`: words without markup, code or URLs, 200 a minute, 1 at least); a body that sends it answers 422.
 - **Album cover:** `coverKey` is the `r2Key` of one of the album's photos (`PATCH`; any other key answers 422, and `POST` takes none), or null for the first photo. The public API picks the first photo when it answers, so a new order shows at once. Triggers (`migrations/0002`) set it back to null when that photo is deleted, moved to another album or gets another file. The file is the photo's: deleting the album deletes nothing.
 - **Files:** deleting a project, post, photo or track deletes the R2 objects its `*Key` fields name (`files` of its `Entity`), after the row and only those no other row names (`worker/api/media-keys.ts`, the same check as `DELETE /uploads/<key>`). A failure in between leaves a file without a row, never the other way round.
 
