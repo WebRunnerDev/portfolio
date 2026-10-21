@@ -182,13 +182,25 @@ export const PostDetailSchema = v.object({
 
 export type PostDetail = v.InferOutput<typeof PostDetailSchema>
 
-// GET /api/public/:lang/albums
+// The photo an album shows on its card, with its size for `srcset` and
+// against layout shift.
+export const AlbumCoverSchema = v.object({
+  key: v.string(),
+  width: v.number(),
+  height: v.number(),
+})
+
+export type AlbumCover = v.InferOutput<typeof AlbumCoverSchema>
+
+// GET /api/public/:lang/albums. `cover` is the chosen photo, else the first
+// one in order; null for an album without photos.
 export const AlbumSchema = v.object({
   ...Fallback,
   id: v.number(),
   slug: v.string(),
   title: v.string(),
-  coverKey: v.nullable(v.string()),
+  cover: v.nullable(AlbumCoverSchema),
+  photoCount: v.number(),
 })
 
 export type Album = v.InferOutput<typeof AlbumSchema>
