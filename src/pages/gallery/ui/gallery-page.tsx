@@ -3,7 +3,7 @@ import { getRouteApi } from "@tanstack/react-router"
 import { AlbumCard } from "./album-card"
 import { useT } from "@/shared/i18n"
 
-const route = getRouteApi("/$lang/gallery")
+const route = getRouteApi("/$lang/gallery/")
 
 // The Albums in D1's order: one column, two from `sm`, three from `lg`
 // (DESIGN.md › Responsive behavior). An empty list says what appears there.
