@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest"
 import { LANGS } from "./lang"
 import {
   PAGE_PATHS,
+  albumMeta,
   alternates,
   cvMeta,
   notFoundMeta,
@@ -125,5 +126,29 @@ describe("alternates", () => {
     expect(alternates("https://webrunner.dev", "")[1].href).toBe(
       "https://webrunner.dev/ru"
     )
+  })
+})
+
+describe("albumMeta", () => {
+  const album = { title: "Trips", cover: { key: "photos/a b.jpg" } }
+
+  it("titles the page with the Album and its cover as OG image", () => {
+    expect(albumMeta("en", album)).toEqual({
+      title: "Trips · WebRunner",
+      description: "Photo album “Trips”.",
+      image:
+        "/cdn-cgi/image/width=1200,fit=scale-down,format=auto/media/photos/a%20b.jpg",
+    })
+    expect(albumMeta("ru", album)?.description).toBe("Фотоальбом «Trips».")
+  })
+
+  it("keeps the default OG image without photos", () => {
+    expect(albumMeta("en", { ...album, cover: null })).not.toHaveProperty(
+      "image"
+    )
+  })
+
+  it("is null without an Album", () => {
+    expect(albumMeta("en", null)).toBeNull()
   })
 })
