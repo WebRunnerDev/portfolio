@@ -1,11 +1,13 @@
 import type { Lang } from "@contracts/lang"
 import {
+  albumMeta,
   cvMeta,
   pageMeta,
   printCvMeta,
   projectMeta,
   type PageMeta,
 } from "@contracts/meta"
+import { readAlbum } from "../api/routes/public/albums"
 import { readProfile } from "../api/routes/public/profile"
 import { readProject } from "../api/routes/public/projects"
 
@@ -54,6 +56,19 @@ export const DATA_PAGES: readonly DataPage[] = [
         // Not a 404 when D1 fails: the page may well be there.
         console.error("project meta: no Project from D1", error)
         return pageMeta(lang, "projects")
+      }
+    },
+  },
+  {
+    pattern: /^gallery\/([^/]+)$/,
+    meta: async (env, lang, [, encoded]) => {
+      const slug = decodeSlug(encoded)
+      if (slug === null) return null
+      try {
+        return albumMeta(lang, await readAlbum(env.DB, lang, slug))
+      } catch (error) {
+        console.error("album meta: no Album from D1", error)
+        return pageMeta(lang, "gallery")
       }
     },
   },

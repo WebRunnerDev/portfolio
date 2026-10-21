@@ -17,6 +17,7 @@ export const es: Messages = {
   "meta.projects":
     "Proyectos personales con casos de estudio: qué se hizo y cómo.",
   "meta.gallery": "Álbumes de fotos.",
+  "meta.album": "Álbum de fotos «{title}».",
   "meta.blog": "Publicaciones sobre desarrollo web.",
   "footer.contacts": "Contacto",
   "footer.copyEmail": "Copiar correo",
@@ -64,6 +65,7 @@ export const es: Messages = {
   "album.photos.few": "{count} fotos",
   "album.photos.many": "{count} fotos",
   "album.photos.other": "{count} fotos",
+  "album.photo": "Foto {n} de {total}",
   "langSwitcher.label": "Idioma",
   "themeSwitcher.label": "Tema",
   "themeSwitcher.light": "Claro",
