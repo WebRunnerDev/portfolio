@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react"
 import { getRouteApi, Link, useBlocker } from "@tanstack/react-router"
+import { cn } from "cn"
 import { LANGS, langDirection, type Lang } from "@contracts/lang"
 
 import {
@@ -276,7 +277,10 @@ function RowEditor({
         </Section>
       )}
       {entity.translated && (
-        <Section title="Translations">
+        <Section
+          title="Translations"
+          wide={translated.some((field) => field.kind === "markdown")}
+        >
           <Tabs value={tab} onValueChange={(next) => setTab(next as Lang)}>
             <TabsList className="h-auto flex-wrap">
               {LANGS.map((lang) => {
@@ -384,12 +388,24 @@ function RowEditor({
   )
 }
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+// `wide`: room for a Markdown field's text and preview side by side.
+function Section({
+  title,
+  wide,
+  children,
+}: {
+  title: string
+  wide?: boolean
+  children: ReactNode
+}) {
   const id = useId()
   return (
     <section
       aria-labelledby={id}
-      className="flex max-w-2xl flex-col gap-zsd-md"
+      className={cn(
+        "flex flex-col gap-zsd-md",
+        wide ? "max-w-6xl" : "max-w-2xl"
+      )}
     >
       <h2 id={id} className="font-heading text-zsd-headline-sm">
         {title}
@@ -440,6 +456,8 @@ function EditorForm({
       {fields.map((field) => (
         <FieldInput
           key={field.name}
+          // In a wide section only a Markdown field takes the whole width.
+          className={field.kind === "markdown" ? undefined : "max-w-2xl"}
           field={field}
           value={values[field.name] ?? ""}
           required={required(field)}
