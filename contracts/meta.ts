@@ -105,6 +105,21 @@ export function projectMeta(
   }
 }
 
+// An Album's page (`gallery/:slug`), titled by the Album on that Lang (EN as
+// its Fallback), with its cover as the OG image. Null for no Album: the page
+// is a 404.
+export function albumMeta(
+  lang: Lang,
+  album: { title: string; cover: { key: string } | null } | null
+): PageMeta | null {
+  if (!album) return null
+  return {
+    title: withBrand(album.title),
+    description: t(lang, "meta.album").replace("{title}", album.title),
+    ...(album.cover && { image: imageUrl(album.cover.key, OG_IMAGE_WIDTH) }),
+  }
+}
+
 // The Print CV (`cv/print`) is the source of the CV PDF, not a page to find.
 export function printCvMeta(
   lang: Lang,

@@ -187,6 +187,78 @@ describe("servePage", () => {
     )
   })
 
+  it("titles an Album's page from the Album on the Lang, EN where it has none", async () => {
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO album (id, slug) VALUES (1, 'trips'), (2, 'cats')`
+      ),
+      env.DB.prepare(
+        `INSERT INTO album_translation (album_id, lang, title)
+        VALUES (1, 'en', 'Trips'), (1, 'ru', 'Поездки'), (2, 'en', 'Cats')`
+      ),
+      env.DB.prepare(
+        `INSERT INTO photo (id, album_id, r2_key, width, height, position)
+        VALUES (1, 1, 'photos/a.jpg', 800, 600, 0),
+          (2, 1, 'photos/b.jpg', 800, 600, 1)`
+      ),
+      env.DB.prepare(
+        `UPDATE album SET cover_key = 'photos/b.jpg' WHERE id = 1`
+      ),
+    ])
+    try {
+      const ru = await page("https://webrunner.dev/ru/gallery/trips")
+      expect(ru.response.status).toBe(200)
+      expect(ru.attr(/<title data-meta>([^<]*)</)).toBe("Поездки · WebRunner")
+      expect(ru.attr(content("og:title"))).toBe("Поездки · WebRunner")
+      expect(ru.attr(content("description"))).toBe("Фотоальбом «Поездки».")
+      expect(ru.attr(content("og:image"))).toBe(
+        "https://webrunner.dev/cdn-cgi/image/width=1200,fit=scale-down,format=auto/media/photos/b.jpg"
+      )
+      expect(ru.attr(/rel="canonical" href="([^"]+)"/)).toBe(
+        "https://webrunner.dev/ru/gallery/trips"
+      )
+      expect(ru.attr(content("robots"))).toBeUndefined()
+
+      // No RU Translation: EN; no photos: the default OG image.
+      const cats = await page("https://webrunner.dev/ru/gallery/cats")
+      expect(cats.response.status).toBe(200)
+      expect(cats.attr(/<title data-meta>([^<]*)</)).toBe("Cats · WebRunner")
+      expect(cats.attr(content("og:image"))).toBe(
+        "https://webrunner.dev/og-default.png"
+      )
+
+      // An unknown or a broken slug: 404.
+      for (const slug of ["nope", "%E0"]) {
+        const { response, attr } = await page(
+          `https://webrunner.dev/ru/gallery/${slug}`
+        )
+        expect(response.status).toBe(404)
+        expect(attr(content("robots"))).toBe("noindex")
+      }
+    } finally {
+      await env.DB.batch([
+        env.DB.prepare(`UPDATE album SET cover_key = NULL`),
+        env.DB.prepare(`DELETE FROM photo`),
+        env.DB.prepare(`DELETE FROM album_translation`),
+        env.DB.prepare(`DELETE FROM album`),
+      ])
+    }
+  })
+
+  it("keeps an Album's page when D1 fails", async () => {
+    const broken = {
+      ...testEnv,
+      DB: {
+        prepare: () => {
+          throw new Error("no such table: album")
+        },
+      },
+    } as unknown as Env
+    expect(await resolveMeta(broken, "ru", "gallery/trips")).toEqual(
+      pageMeta("ru", "gallery")
+    )
+  })
+
   it("serves the Print CV with noindex", async () => {
     const { response, attr } = await page("https://webrunner.dev/en/cv/print")
     expect(response.status).toBe(200)

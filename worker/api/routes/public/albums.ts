@@ -1,5 +1,6 @@
 import { Hono } from "hono"
 import type { Album, AlbumDetail, Photo } from "@contracts/api/public"
+import type { Lang } from "@contracts/lang"
 import { apiError, methodNotAllowed } from "../../errors"
 import { translationOf, type PublicEnv } from "../../public"
 
@@ -53,6 +54,20 @@ type PhotoRow = {
   caption: string | null
 }
 
+// The Album at `slug` on a Lang, without its photos; null for an unknown
+// slug. Meta Injection of its page reads it too.
+export async function readAlbum(
+  db: D1Database,
+  lang: Lang,
+  slug: string
+): Promise<Album | null> {
+  const row = await db
+    .prepare(`${SELECT_ALBUM} WHERE a.slug = ?2`)
+    .bind(lang, slug)
+    .first<AlbumRow>()
+  return row && toAlbum(row)
+}
+
 export const albums = new Hono<PublicEnv>()
   .get("/", async (c) => {
     const { results } = await c.env.DB.prepare(
@@ -64,9 +79,7 @@ export const albums = new Hono<PublicEnv>()
   })
   .get("/:slug", async (c) => {
     const { lang } = c.var
-    const album = await c.env.DB.prepare(`${SELECT_ALBUM} WHERE a.slug = ?2`)
-      .bind(lang, c.req.param("slug"))
-      .first<AlbumRow>()
+    const album = await readAlbum(c.env.DB, lang, c.req.param("slug"))
     if (!album) return apiError(c, 404, "not_found")
     // The caption is optional, hence the left join: no caption on either Lang
     // is not a fallback.
@@ -80,7 +93,7 @@ export const albums = new Hono<PublicEnv>()
       .bind(lang, album.id)
       .all<PhotoRow>()
     return c.json({
-      ...toAlbum(album),
+      ...album,
       photos: results.map((row): Photo => ({
         id: row.id,
         fallback: row.fallback === 1,

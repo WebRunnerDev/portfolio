@@ -1,5 +1,6 @@
 import * as v from "valibot"
 import {
+  AlbumDetailSchema,
   AlbumSchema,
   CertificationSchema,
   CvPdfLinkSchema,
@@ -110,3 +111,7 @@ export const getProject = (lang: Lang, slug: string, options?: Options) =>
 
 export const getAlbums = (lang: Lang, options?: Options) =>
   get(lang, "albums", v.array(AlbumSchema), options)
+
+// 404 for an unknown slug.
+export const getAlbum = (lang: Lang, slug: string, options?: Options) =>
+  get(lang, `albums/${encodeURIComponent(slug)}`, AlbumDetailSchema, options)

@@ -89,12 +89,21 @@ Public pages read `/api/public/:lang/*` (`worker/README.md` › Public API) thro
 
 ## Gallery
 
-`/{lang}/gallery` (`GalleryPage` in `src/pages/gallery/`): the Albums as a card grid, from `albums` (`loadAlbums`). `AlbumCard` stays in the page slice until a second slice needs it (Steiger's `insignificant-slice`).
+`/{lang}/gallery` (`GalleryPage` in `src/pages/gallery/`): the Albums as a card grid, from `albums` (`loadAlbums`). `AlbumCard` stays in the page slice until a second slice needs it (Steiger's `insignificant-slice`). The whole card is one link to the Album, as a Project card.
 
 - **Cover:** `cover` (`key`, `width`, `height`) through `imageSrcSet`, with `sizes` for the 1/2/3-column grid and the photo's `width`/`height` against CLS, cropped to 4:3. The first card's at `fetchpriority="high"`, the others `loading="lazy"`; no photos, the logo tiles.
 - **Count:** `photoCount` through `useTPlural()` (`@/shared/i18n`): a plural message has a key per `Intl.PluralRules` category (`album.photos.zero` … `.other`) in every dictionary, `{count}` formatted for the Lang.
 - **Fallback:** `FallbackNotice` under an EN title, `lang="en"` on the title.
 - **E2E:** `e2e/gallery.spec.ts`.
+
+## Album
+
+`/{lang}/gallery/:slug` (`AlbumPage` in `src/pages/album/`): the title, the photo count and the photos of an Album from `albums/:slug` (`loadAlbum`). An unknown slug throws `notFound()`; its `meta` comes from `albumMeta` (`contracts/meta.ts`), the same the Worker injects.
+
+- **Masonry:** CSS grid, no layout script. A grid row is 1/50 of a column's width (`--row`, from `100cqi` of the `@container`), so a photo spans `round(50 × height / width)` rows plus the gap's 3. Auto-placement keeps D1's order row by row, each photo in the shortest column. Two columns, three from `sm`, four from `lg`. Change the numbers in `ROWS_PER_WIDTH`/`GAP_ROWS` and in the grid's classes together.
+- **Images:** `imageSrcSet` with `sizes` for the columns, `width`/`height` of the photo. The first row (4) loads at once, the first at `fetchpriority="high"`; the rest `loading="lazy"`; all `decoding="async"`.
+- **Alt:** the caption (`lang="en"` when it is the Fallback), else `album.photo` (“Photo 2 of 6”).
+- **E2E:** `e2e/gallery.spec.ts`; **Meta:** `worker/meta/serve-page.test.ts`.
 
 ## Admin
 
