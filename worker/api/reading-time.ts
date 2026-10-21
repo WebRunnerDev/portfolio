@@ -16,7 +16,10 @@ function plainText(markdown: string) {
       // Indented blocks after a blank line.
       .replace(/(^|\n\s*\n)(?:(?: {4}|\t)[^\n]*(?:\n|$))+/g, "$1")
       .replace(/`+[^`\n]*`+/g, "")
+      // Tags, then any stray bracket they leave ("<<b>>"): only words
+      // are counted, nothing here is ever rendered.
       .replace(/<[^>]*>/g, "")
+      .replace(/[<>]/g, "")
       // ![alt](url) and [text](url) keep their text; reference definitions go.
       .replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1")
       .replace(/^ {0,3}\[[^\]]+\]:.*$/gm, "")

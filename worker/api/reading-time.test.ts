@@ -47,7 +47,7 @@ describe("readingMinutes", () => {
       "| --- | --- |",
       "",
       "[a link](https://example.com/some/long/path) ![a photo](/media/x.jpg)",
-      "<span>html</span> https://bare.example.com/url",
+      "<span>html</span> <<b>> https://bare.example.com/url",
       "",
       "[ref]: https://example.com",
     ].join("\n")
