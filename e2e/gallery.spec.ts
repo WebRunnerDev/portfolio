@@ -1,8 +1,9 @@
 import { expect, test, type Page } from "@playwright/test"
 
-// Issue #86: the Gallery page as a grid of Album cards, against an in-memory
-// /api/public/* (the D1 behind `vite preview` is empty). On RU, Cats only has
-// its EN Translation; Drafts has no photos yet.
+// Issue #86: the Gallery page as a grid of Album cards; #87: an Album's page
+// with its photos as masonry. Against an in-memory /api/public/* (the D1
+// behind `vite preview` is empty). On RU, Cats only has its EN Translation;
+// Drafts has no photos yet.
 const LANGS = ["en", "ru", "kk", "es", "de", "ar"]
 
 function albums(lang: string) {
@@ -35,6 +36,27 @@ function albums(lang: string) {
   ]
 }
 
+// Trips' photos in D1's order: tall and wide ones, the second with a caption
+// on EN only.
+function photos(lang: string) {
+  const sizes = [
+    [600, 900],
+    [1200, 800],
+    [800, 800],
+    [900, 1200],
+    [1600, 900],
+    [700, 1000],
+  ]
+  return sizes.map(([width, height], i) => ({
+    fallback: i === 1 && lang !== "en",
+    id: i + 1,
+    key: `photos/trips-${i + 1}.jpg`,
+    width,
+    height,
+    caption: i === 1 ? "Harbour at dawn" : null,
+  }))
+}
+
 async function mockPublicApi(page: Page, { empty = false } = {}) {
   // Cloudflare Images only runs on the zone.
   await page.route("**/cdn-cgi/image/**", (route) =>
@@ -44,8 +66,15 @@ async function mockPublicApi(page: Page, { empty = false } = {}) {
     const [, , , lang, entity, slug] = new URL(
       route.request().url()
     ).pathname.split("/")
-    if (entity !== "albums" || slug) {
+    const album = albums(lang).find((album) => album.slug === slug)
+    if (entity !== "albums" || (slug && !album)) {
       return route.fulfill({ status: 404, json: { error: "not_found" } })
+    }
+    if (album) {
+      const list = album.slug === "trips" ? photos(lang) : []
+      return route.fulfill({
+        json: { ...album, photoCount: list.length, photos: list },
+      })
     }
     return route.fulfill({ json: empty ? [] : albums(lang) })
   })
@@ -130,6 +159,128 @@ test("the grid mirrors on /ar and fits 360px", async ({ page }) => {
 
   await page.setViewportSize({ width: 360, height: 800 })
   await expect(cards(page)).toHaveCount(3)
+  const overflow = await page
+    .locator("html")
+    .evaluate((el) => el.scrollWidth - el.clientWidth)
+  expect(overflow).toBe(0)
+})
+
+const photoItems = (page: Page) =>
+  page.getByTestId("album-photos").locator("li")
+
+test("a card opens its Album", async ({ page }) => {
+  await mockPublicApi(page)
+  await page.goto("/en/gallery")
+  await cards(page).nth(0).click()
+  await expect(page).toHaveURL(/\/en\/gallery\/trips$/)
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Trips")
+  await expect(page).toHaveTitle("Trips · WebRunner")
+  await expect(page.getByText("6 photos")).toBeVisible()
+  await page.getByRole("link", { name: "Gallery" }).last().click()
+  await expect(page).toHaveURL(/\/en\/gallery$/)
+})
+
+test("photos keep their order, size and a srcset, lazily after the first row", async ({
+  page,
+}) => {
+  await mockPublicApi(page)
+  await page.goto("/en/gallery/trips")
+  const images = photoItems(page).locator("img")
+  await expect(images).toHaveCount(6)
+  await expect(images.nth(0)).toHaveAttribute("alt", "Photo 1 of 6")
+  await expect(images.nth(1)).toHaveAttribute("alt", "Harbour at dawn")
+  await expect(images.nth(5)).toHaveAttribute("alt", "Photo 6 of 6")
+
+  const first = images.nth(0)
+  await expect(first).toHaveAttribute("width", "600")
+  await expect(first).toHaveAttribute("height", "900")
+  await expect(first).toHaveAttribute("sizes", /280px/)
+  const srcset = await first.getAttribute("srcset")
+  expect(srcset).toContain(
+    "/cdn-cgi/image/width=320,fit=scale-down,format=auto/media/photos/trips-1.jpg 320w"
+  )
+  expect(srcset).toMatch(/ 600w$/)
+  await expect(first).toHaveAttribute("fetchpriority", "high")
+  for (const i of [0, 1, 2, 3]) {
+    await expect(images.nth(i)).not.toHaveAttribute("loading", "lazy")
+    await expect(images.nth(i)).toHaveAttribute("decoding", "async")
+  }
+  await expect(images.nth(1)).not.toHaveAttribute("fetchpriority", "high")
+  await expect(images.nth(4)).toHaveAttribute("loading", "lazy")
+  await expect(images.nth(5)).toHaveAttribute("loading", "lazy")
+})
+
+test("masonry reads row by row and keeps each photo's aspect ratio", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await mockPublicApi(page)
+  // Cloudflare Images is mocked away: the boxes alone must hold their size.
+  await page.goto("/en/gallery/trips")
+  const images = photoItems(page).locator("img")
+  await expect(images).toHaveCount(6)
+
+  const boxes = await Promise.all(
+    [0, 1, 2, 3, 4].map((i) => images.nth(i).boundingBox())
+  )
+  // Four columns: the first four photos side by side, in order.
+  for (const i of [1, 2, 3]) {
+    expect(boxes[i]!.x).toBeGreaterThan(boxes[i - 1]!.x)
+    expect(Math.abs(boxes[i]!.y - boxes[0]!.y)).toBeLessThan(1)
+  }
+  // The fifth goes under the shortest column: the wide second photo's.
+  expect(Math.abs(boxes[4]!.x - boxes[1]!.x)).toBeLessThan(1)
+  expect(boxes[4]!.y).toBeGreaterThan(boxes[1]!.y + boxes[1]!.height)
+  // Height from width/height, give or take the rounding to a grid row.
+  for (const [i, [w, h]] of [
+    [600, 900],
+    [1200, 800],
+    [800, 800],
+    [900, 1200],
+  ].entries()) {
+    const box = boxes[i]!
+    expect(Math.abs(box.height - (box.width * h) / w)).toBeLessThan(4)
+  }
+})
+
+test("an Album on /ru marks the Fallback of its title and captions", async ({
+  page,
+}) => {
+  await mockPublicApi(page)
+  await page.goto("/ru/gallery/cats")
+  await expect(page.locator('h1[lang="en"]')).toHaveText("Cats")
+  await expect(page.getByTestId("fallback-notice")).toBeVisible()
+  await expect(page.getByText("0 фотографий")).toBeVisible()
+  await expect(page.getByTestId("album-photos")).toHaveCount(0)
+
+  await page.goto("/ru/gallery/trips")
+  await expect(page.locator("h1")).toHaveText("Поездки")
+  const images = photoItems(page).locator("img")
+  await expect(images.nth(0)).toHaveAttribute("alt", "Фото 1 из 6")
+  await expect(images.nth(1)).toHaveAttribute("lang", "en")
+  await expect(images.nth(0)).not.toHaveAttribute("lang")
+})
+
+test("an unknown Album is a 404", async ({ page }) => {
+  await mockPublicApi(page)
+  await page.goto("/en/gallery/nope")
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Page not found" })
+  ).toBeVisible()
+})
+
+test("the masonry mirrors on /ar and fits 360px", async ({ page }) => {
+  await page.setViewportSize({ width: 800, height: 800 })
+  await mockPublicApi(page)
+  await page.goto("/ar/gallery/trips")
+  await expect(page.locator("html")).toHaveAttribute("dir", "rtl")
+  const images = photoItems(page).locator("img")
+  const first = await images.nth(0).boundingBox()
+  const second = await images.nth(1).boundingBox()
+  expect(first!.x).toBeGreaterThan(second!.x)
+
+  await page.setViewportSize({ width: 360, height: 800 })
+  await expect(images).toHaveCount(6)
   const overflow = await page
     .locator("html")
     .evaluate((el) => el.scrollWidth - el.clientWidth)
