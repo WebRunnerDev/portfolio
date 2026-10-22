@@ -84,9 +84,10 @@ Public pages read `/api/public/:lang/*` (`worker/README.md` › Public API) thro
 
 - **404:** `loadProject` throws `notFound()` for an unknown slug and for a Project whose `caseStudy` is null; its `meta` comes from `projectMeta` (`contracts/meta.ts`), the same the Worker injects.
 - **Markdown:** `Markdown` (`@/shared/ui/markdown`, react-markdown + GFM) renders Markdown from D1. Raw HTML is dropped, `javascript:` and `data:` URLs are emptied; headings go one level down (the page title is the only h1). Links to `http(s)` open in a new tab with `rel="noopener noreferrer"`. Images on `/media/<key>` go through Cloudflare Images; any other image is its alt text (CSP `img-src 'self'`).
-- **Code:** fenced blocks render through `CodeBlock` (`code-block.tsx`): `dir="ltr"`, their own scroll region, the language in `data-language`. Shiki (stage 5) goes in there; inline code is `dir="ltr"` too.
+- **Code:** fenced blocks render through `CodeBlock` (`code-block.tsx`): `dir="ltr"`, their own scroll region, the language in `data-language`; inline code is `dir="ltr"` too.
+- **Highlighting:** a block in a language of `languages.ts` (ts/tsx/js/jsx/json/css/html/bash/sql/yaml/diff/md and aliases) is highlighted by Shiki once its chunk loads (`highlighter.ts`: core, JS RegExp engine, both themes; each language a chunk of its own); until then, and for any other language, it is the plain text. Each token carries both colours as `--shiki-light`/`--shiki-dark`, and the `shiki-token` utility picks one by the `.dark` class, so a theme switch only repaints. `highlighter.test.ts` checks every colour against the block's background at AA; a failing one goes into `COLOR_REPLACEMENTS`. A new language needs an entry in `languages.ts` and a sample in that test.
 - **Fallback:** `lang={fallbackLang(project)}` on the title, the description and the `Markdown`.
-- **Unit:** `markdown.test.tsx` renders to static HTML; **E2E:** `e2e/projects.spec.ts`.
+- **Unit:** `markdown.test.tsx` renders to static HTML (the code still plain), `highlighter.test.ts` highlights a sample of each language; **E2E:** `e2e/projects.spec.ts` (highlighting in both themes, no Shiki on a page without code).
 
 ## Gallery
 
