@@ -1,3 +1,5 @@
+export { loadPost } from "./api/load-post"
 export { loadPosts } from "./api/load-posts"
 export { parseTagSearch } from "./model/tag-search"
 export { BlogPage } from "./ui/blog-page"
+export { PostPage } from "./ui/post-page"

@@ -158,22 +158,25 @@ const COMPONENTS: Components = {
   ),
 }
 
-// Markdown from D1 (Case Studies, later Posts) as React elements, with GFM
+// Markdown from D1 (Case Studies, Posts) as React elements, with GFM
 // tables, task lists and autolinks. Raw HTML is dropped and URLs other than
 // http(s), mailto and relative ones are emptied, so the Markdown can't inject
 // markup or scripts.
 export function Markdown({
   children,
   lang,
+  dir,
   className,
 }: {
   children: string
   lang?: string
+  dir?: "ltr" | "rtl"
   className?: string
 }) {
   return (
     <div
       lang={lang}
+      dir={dir}
       className={cn(
         "text-zsd-body-md break-words text-zsd-on-surface",
         className

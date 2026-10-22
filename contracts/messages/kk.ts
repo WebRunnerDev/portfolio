@@ -79,6 +79,8 @@ export const kk: Messages = {
   "blog.emptyTag.title": "Бұл тегі бар жазбалар жоқ",
   "blog.emptyTag.text":
     "«{tag}» тегімен белгіленген жазба жоқ. Қалғандары барлық жазбаларда.",
+  "post.fallback": "Бұл жазба ағылшын тілінде қолжетімді.",
+  "post.share": "LinkedIn-де бөлісу",
   "lightbox.previous": "Алдыңғы фото",
   "lightbox.next": "Келесі фото",
   "lightbox.close": "Фотоны жабу",

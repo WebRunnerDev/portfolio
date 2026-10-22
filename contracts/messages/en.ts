@@ -77,6 +77,8 @@ export const en = {
   "blog.emptyTag.title": "No posts with this tag",
   "blog.emptyTag.text":
     "No post is tagged “{tag}”. The rest are under all posts.",
+  "post.fallback": "This post is available in English.",
+  "post.share": "Share on LinkedIn",
   "lightbox.previous": "Previous photo",
   "lightbox.next": "Next photo",
   "lightbox.close": "Close photo",

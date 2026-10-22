@@ -80,6 +80,8 @@ export const es: Messages = {
   "blog.emptyTag.title": "No hay publicaciones con esta etiqueta",
   "blog.emptyTag.text":
     "Ninguna publicación lleva la etiqueta «{tag}». Las demás están en todas las publicaciones.",
+  "post.fallback": "Esta publicación está disponible en inglés.",
+  "post.share": "Compartir en LinkedIn",
   "lightbox.previous": "Foto anterior",
   "lightbox.next": "Foto siguiente",
   "lightbox.close": "Cerrar foto",

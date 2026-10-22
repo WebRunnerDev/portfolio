@@ -1,9 +1,16 @@
+import { Link } from "@tanstack/react-router"
+import { cn } from "cn"
+
 import type { Post } from "@contracts/api/public"
 import { IMAGE_WIDTHS, imageUrl } from "@contracts/media"
-import { formatDate, useLang, useTPlural } from "@/shared/i18n"
+import { useLang } from "@/shared/i18n"
 import { FallbackNotice, fallbackLang } from "@/shared/ui/fallback-notice"
 
+import { PostDate } from "./post-date"
 import { PostTags } from "./post-tags"
+
+const MOTION_FAST =
+  "transition-colors duration-(--zsd-x-zsd-motion-duration-fast) ease-(--zsd-x-zsd-motion-easing-standard) motion-reduce:transition-none"
 
 // One column below `sm`, two from `sm`, three from `lg` in the 1200px content
 // box (DESIGN.md › Responsive behavior), as the Projects grid.
@@ -41,8 +48,9 @@ function Cover({
 
 // A Post's card (CONTEXT.md › Post) on the Blog page: its cover if it has
 // one, date and reading time, title, excerpt and Tags, which filter the list.
-// `priority` loads the cover at once: the first card's is the LCP. The post's
-// own page (#99) makes the card a link.
+// The whole card is one link to the post, named by its title (DESIGN.md ›
+// Card); the Tags sit above it. `priority` loads the cover at once: the first
+// card's is the LCP.
 export function PostCard({
   post,
   activeTag,
@@ -53,28 +61,35 @@ export function PostCard({
   priority?: boolean
 }) {
   const lang = useLang()
-  const tp = useTPlural()
 
   return (
-    <article data-testid="post-card" className="h-full">
+    <article
+      data-testid="post-card"
+      className="group/card relative h-full hover:elevation-accent has-[a.card-link:focus-visible]:outline-2 has-[a.card-link:focus-visible]:outline-offset-2 has-[a.card-link:focus-visible]:outline-ring has-[a.card-link:focus-visible]:elevation-accent"
+    >
       {/* DESIGN.md › Shapes: the outer layer draws the chamfered border. */}
-      <div className="h-full bg-zsd-outline-muted p-px chamfer-md">
+      <div
+        className={cn(
+          "h-full bg-zsd-outline-muted p-px chamfer-md group-hover/card:bg-zsd-primary",
+          MOTION_FAST
+        )}
+      >
         <div className="flex h-full flex-col gap-zsd-md bg-zsd-surface-raised p-zsd-xl chamfer-md">
           {post.coverKey && (
             <Cover coverKey={post.coverKey} priority={priority} />
           )}
-          <p className="flex flex-wrap gap-x-zsd-sm font-zsd-label-mono text-zsd-label-mono text-zsd-on-surface-muted uppercase rtl:normal-case">
-            <time dateTime={post.publishedAt}>
-              {formatDate(new Date(post.publishedAt), lang)}
-            </time>
-            <span aria-hidden="true">·</span>
-            <span>{tp("blog.readingTime", post.readingMinutes)}</span>
-          </p>
+          <PostDate post={post} />
           <h2
             lang={fallbackLang(post)}
             className="min-w-0 font-heading text-zsd-headline-sm break-words text-zsd-on-surface"
           >
-            {post.title}
+            <Link
+              to="/$lang/blog/$slug"
+              params={{ lang, slug: post.slug }}
+              className="card-link outline-none after:absolute after:inset-0"
+            >
+              {post.title}
+            </Link>
           </h2>
           <FallbackNotice fallback={post.fallback} />
           {post.excerpt && (

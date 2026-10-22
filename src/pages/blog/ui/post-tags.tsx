@@ -7,8 +7,9 @@ import { useLang, useT } from "@/shared/i18n"
 const MOTION_FAST =
   "transition-colors duration-(--zsd-x-zsd-motion-duration-fast) ease-(--zsd-x-zsd-motion-easing-standard) motion-reduce:transition-none"
 
-// DESIGN.md › Badge, as links that filter the list by their Tag. The one the
-// list is filtered by is `primary`; the router marks it `aria-current`.
+// DESIGN.md › Badge, as links that filter the list by their Tag, lifted above
+// the stretched link of a card by `relative z-10`. The one the list is
+// filtered by is `primary`; the router marks it `aria-current`.
 export function PostTags({
   tags,
   activeTag,
@@ -36,7 +37,7 @@ export function PostTags({
               params={{ lang }}
               search={{ tag: tag.slug }}
               className={cn(
-                "inline-flex min-h-zsd-control-height items-center border bg-zsd-surface px-zsd-sm font-zsd-label-mono text-zsd-label-mono uppercase outline-offset-2 hover:border-zsd-primary hover:text-zsd-primary-text focus-visible:outline-2 focus-visible:outline-ring rtl:normal-case",
+                "relative z-10 inline-flex min-h-zsd-control-height items-center border bg-zsd-surface px-zsd-sm font-zsd-label-mono text-zsd-label-mono uppercase outline-offset-2 hover:border-zsd-primary hover:text-zsd-primary-text focus-visible:outline-2 focus-visible:outline-ring rtl:normal-case",
                 active
                   ? "border-zsd-primary text-zsd-primary-text"
                   : "border-zsd-outline-muted text-zsd-on-surface-muted",
