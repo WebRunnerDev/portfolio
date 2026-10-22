@@ -1,8 +1,9 @@
 import { expect, test, type Page } from "@playwright/test"
 
-// Issue #98: the Blog page as Post cards, newest first, filtered by Tag with
-// `?tag=<slug>`. Against an in-memory /api/public/* (the D1 behind
-// `vite preview` is empty). On RU, Edge caching only has its EN Translation.
+// Issues #98 and #99: the Blog page as Post cards, newest first, filtered by
+// Tag with `?tag=<slug>`, and the page of a Post. Against an in-memory
+// /api/public/* (the D1 behind `vite preview` is empty). On RU, Edge caching
+// only has its EN Translation; on AR, its page too.
 const LANGS = ["en", "ru", "kk", "es", "de", "ar"]
 
 const workers = { slug: "workers", name: "Workers" }
@@ -46,6 +47,16 @@ function posts(lang: string) {
   ]
 }
 
+const BODY = [
+  "# Keys",
+  "",
+  "A Worker keeps a response under its URL.",
+  "",
+  "```ts",
+  "const hit = await caches.default.match(request)",
+  "```",
+].join("\n")
+
 async function mockPublicApi(page: Page, { empty = false } = {}) {
   // Cloudflare Images only runs on the zone.
   await page.route("**/cdn-cgi/image/**", (route) =>
@@ -53,12 +64,22 @@ async function mockPublicApi(page: Page, { empty = false } = {}) {
   )
   await page.route("**/api/public/**", (route) => {
     const url = new URL(route.request().url())
-    const [, , , lang, entity] = url.pathname.split("/")
+    const [, , , lang, entity, slug] = url.pathname.split("/")
     if (entity !== "posts") {
       return route.fulfill({ status: 404, json: { error: "not_found" } })
     }
     const tag = url.searchParams.get("tag")
     const list = empty ? [] : posts(lang)
+    if (slug) {
+      // A draft is never in the list, so it answers 404 as the API does.
+      const found = list.find((post) => post.slug === slug)
+      if (!found) {
+        return route.fulfill({ status: 404, json: { error: "not_found" } })
+      }
+      const fallback =
+        found.fallback || (lang === "ar" && slug === "edge-caching")
+      return route.fulfill({ json: { ...found, fallback, body: BODY } })
+    }
     return route.fulfill({
       json: tag
         ? list.filter((post) => post.tags.some((t) => t.slug === tag))
@@ -89,7 +110,11 @@ test("cards on /en show the date, reading time, excerpt and Tags", async ({
   )
   await expect(first).toContainText("5 min read")
   await expect(first).toContainText("What a Worker keeps and for how long.")
-  await expect(first.getByRole("link")).toHaveText(["Cloudflare", "Workers"])
+  await expect(first.getByRole("link")).toHaveText([
+    "Edge caching",
+    "Cloudflare",
+    "Workers",
+  ])
   await expect(cards(page).nth(1)).toContainText("1 min read")
   await expect(page.getByTestId("fallback-notice")).toHaveCount(0)
   await expect(page.getByTestId("blog-filter")).toHaveCount(0)
@@ -210,4 +235,132 @@ test("/ar keeps Western digits, mirrors the grid and fits 360px", async ({
     .locator("html")
     .evaluate((el) => el.scrollWidth - el.clientWidth)
   expect(overflow).toBe(0)
+})
+
+const shareUrl = (url: string) =>
+  `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`
+
+test("a card links to its post", async ({ page }) => {
+  await mockPublicApi(page)
+  await page.goto("/en/blog")
+  await expect(
+    page.getByRole("main").getByRole("link", { name: "Edge caching" })
+  ).toHaveAttribute("href", "/en/blog/edge-caching")
+  // The Tags stay their own links above the card's.
+  await cards(page).nth(0).getByRole("link", { name: "Workers" }).click()
+  await expect(page).toHaveURL(/\/en\/blog\?tag=workers$/)
+
+  // The whole card is the link: a click in its middle lands on the post.
+  await cards(page).nth(1).click()
+  await expect(page).toHaveURL(/\/en\/blog\/rtl-tests$/)
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("RTL tests")
+})
+
+test("the post page shows the header, the body and the share link", async ({
+  page,
+}) => {
+  await mockPublicApi(page)
+  await page.goto("/en/blog/edge-caching")
+  const main = page.getByRole("main")
+
+  await expect(main.getByRole("heading", { level: 1 })).toHaveText(
+    "Edge caching"
+  )
+  await expect(page.locator("h1")).toHaveCount(1)
+  await expect(page).toHaveTitle("Edge caching · WebRunner")
+  await expect(main.locator("time")).toHaveText("October 20, 2026")
+  await expect(main).toContainText("5 min read")
+  await expect(main.getByRole("link", { name: "Workers" })).toHaveAttribute(
+    "href",
+    "/en/blog?tag=workers"
+  )
+  const cover = main.locator("header img")
+  await expect(cover).toHaveAttribute("fetchpriority", "high")
+  await expect(cover).toHaveAttribute("alt", "")
+
+  // The body through Markdown: its headings sit below the title.
+  await expect(main.getByRole("heading", { level: 2 })).toHaveText("Keys")
+  await expect(main.locator("pre")).toHaveAttribute("data-language", "ts")
+  await expect(page.getByTestId("fallback-notice")).toHaveCount(0)
+
+  const share = main.getByRole("link", { name: "Share on LinkedIn" })
+  const origin = new URL(page.url()).origin
+  await expect(share).toHaveAttribute(
+    "href",
+    shareUrl(`${origin}/en/blog/edge-caching`)
+  )
+  await expect(share).toHaveAttribute("target", "_blank")
+  await expect(share).toHaveAttribute("rel", "noopener noreferrer")
+
+  await main.getByRole("link", { name: "All posts" }).click()
+  await expect(page).toHaveURL(/\/en\/blog$/)
+  await expect(cards(page)).toHaveCount(3)
+})
+
+test("the post page on /ru marks the EN Fallback", async ({ page }) => {
+  await mockPublicApi(page)
+  await page.goto("/ru/blog/edge-caching")
+  const main = page.getByRole("main")
+  await expect(main.getByTestId("fallback-notice")).toHaveText(
+    "Этот пост доступен на английском."
+  )
+  await expect(main.locator('h1[lang="en"]')).toHaveText("Edge caching")
+  await expect(main.locator('div[lang="en"] h2')).toHaveText("Keys")
+  await expect(main.locator("[dir]")).toHaveCount(1) // the code block
+  await expect(
+    main.getByRole("link", { name: "Поделиться в LinkedIn" })
+  ).toHaveAttribute(
+    "href",
+    /share-offsite\/\?url=.+%2Fru%2Fblog%2Fedge-caching$/
+  )
+  await expect(main.getByRole("link", { name: "Все посты" })).toBeVisible()
+
+  // A post with its own Translation has no notice.
+  await page.goto("/ru/blog/rtl-tests")
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Тесты RTL")
+  await expect(page.getByTestId("fallback-notice")).toHaveCount(0)
+})
+
+test("the Fallback on /ar reads left to right, the arrow mirrors", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 360, height: 800 })
+  await mockPublicApi(page)
+  await page.goto("/ar/blog/edge-caching")
+  await expect(page.locator("html")).toHaveAttribute("dir", "rtl")
+  const main = page.getByRole("main")
+  await expect(main.getByTestId("fallback-notice")).toBeVisible()
+  await expect(main.locator('h1[lang="en"]')).toHaveAttribute("dir", "ltr")
+  const body = main.locator('div[lang="en"]')
+  await expect(body).toHaveAttribute("dir", "ltr")
+  await expect(body.locator("h2")).toHaveCSS("direction", "ltr")
+
+  const arrow = main.getByRole("link", { name: "All posts" }).locator("svg")
+  await expect(arrow).toHaveCSS("rotate", "180deg")
+
+  const overflow = await page
+    .locator("html")
+    .evaluate((el) => el.scrollWidth - el.clientWidth)
+  expect(overflow).toBe(0)
+})
+
+test("an unknown slug and a draft are a 404", async ({ page }) => {
+  await mockPublicApi(page)
+  for (const slug of ["nope", "draft"]) {
+    await page.goto(`/en/blog/${slug}`)
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Page not found" })
+    ).toBeVisible()
+  }
+})
+
+test("a post loads on every Lang", async ({ page }) => {
+  await mockPublicApi(page)
+  for (const lang of LANGS) {
+    await page.goto(`/${lang}/blog/rtl-tests`)
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+      lang === "ru" ? "Тесты RTL" : "RTL tests"
+    )
+    await expect(page.locator("html")).toHaveAttribute("lang", lang)
+  }
 })
