@@ -385,6 +385,8 @@ describe("posts", () => {
   it("answers a post by slug with its body", async () => {
     const post = await get("/ru/posts/hello", PostDetailSchema)
     expect(post).toMatchObject({ fallback: false, body: "Тело" })
+    expect(post.updatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/)
+    expect([...post.langs].sort()).toEqual(["en", "ru"])
   })
 
   it("falls back to EN by slug", async () => {

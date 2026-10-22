@@ -3,11 +3,13 @@ import {
   albumMeta,
   cvMeta,
   pageMeta,
+  postMeta,
   printCvMeta,
   projectMeta,
   type PageMeta,
 } from "@contracts/meta"
 import { readAlbum } from "../api/routes/public/albums"
+import { readPost } from "../api/routes/public/posts"
 import { readProfile } from "../api/routes/public/profile"
 import { readProject } from "../api/routes/public/projects"
 
@@ -24,13 +26,13 @@ export type DataPage = {
   ) => Promise<PageMeta | null>
 }
 
-// The page must not fail with D1: without the Profile it keeps the section
-// meta.
+// The page must not fail with D1: without the Profile the CV keeps the
+// section meta, a Post goes without its author.
 async function profileOrNull(env: Env, lang: Lang) {
   try {
     return await readProfile(env.DB, lang)
   } catch (error) {
-    console.error("cv meta: no Profile from D1", error)
+    console.error("meta: no Profile from D1", error)
     return null
   }
 }
@@ -69,6 +71,23 @@ export const DATA_PAGES: readonly DataPage[] = [
       } catch (error) {
         console.error("album meta: no Album from D1", error)
         return pageMeta(lang, "gallery")
+      }
+    },
+  },
+  {
+    pattern: /^blog\/([^/]+)$/,
+    meta: async (env, lang, [, encoded]) => {
+      const slug = decodeSlug(encoded)
+      if (slug === null) return null
+      try {
+        const [post, profile] = await Promise.all([
+          readPost(env.DB, lang, slug),
+          profileOrNull(env, lang),
+        ])
+        return postMeta(lang, post, profile?.name ?? null)
+      } catch (error) {
+        console.error("post meta: no Post from D1", error)
+        return pageMeta(lang, "blog")
       }
     },
   },

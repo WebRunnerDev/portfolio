@@ -1,9 +1,9 @@
 import { expect, test, type Page } from "@playwright/test"
 
-// Issues #98 and #99: the Blog page as Post cards, newest first, filtered by
-// Tag with `?tag=<slug>`, and the page of a Post. Against an in-memory
-// /api/public/* (the D1 behind `vite preview` is empty). On RU, Edge caching
-// only has its EN Translation; on AR, its page too.
+// Issues #98, #99 and #100: the Blog page as Post cards, newest first,
+// filtered by Tag with `?tag=<slug>`, and the page of a Post with its JSON-LD.
+// Against an in-memory /api/public/* (the D1 behind `vite preview` is empty).
+// On RU, Edge caching only has its EN Translation; on AR, its page too.
 const LANGS = ["en", "ru", "kk", "es", "de", "ar"]
 
 const workers = { slug: "workers", name: "Workers" }
@@ -78,7 +78,16 @@ async function mockPublicApi(page: Page, { empty = false } = {}) {
       }
       const fallback =
         found.fallback || (lang === "ar" && slug === "edge-caching")
-      return route.fulfill({ json: { ...found, fallback, body: BODY } })
+      const langs = slug === "edge-caching" ? ["en", "kk", "es", "de"] : LANGS
+      return route.fulfill({
+        json: {
+          ...found,
+          fallback,
+          body: BODY,
+          updatedAt: "2026-10-21T08:00:00.000Z",
+          langs,
+        },
+      })
     }
     return route.fulfill({
       json: tag
@@ -295,6 +304,42 @@ test("the post page shows the header, the body and the share link", async ({
   await main.getByRole("link", { name: "All posts" }).click()
   await expect(page).toHaveURL(/\/en\/blog$/)
   await expect(cards(page)).toHaveCount(3)
+})
+
+test("the post page carries its JSON-LD and hreflang where it is translated", async ({
+  page,
+}) => {
+  await mockPublicApi(page)
+  await page.goto("/en/blog/edge-caching")
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Edge caching"
+  )
+  const origin = new URL(page.url()).origin
+
+  const script = page.locator('script[type="application/ld+json"]')
+  await expect(script).toHaveCount(1)
+  expect(JSON.parse((await script.textContent()) ?? "")).toMatchObject({
+    "@type": "BlogPosting",
+    headline: "Edge caching",
+    description: "What a Worker keeps and for how long.",
+    datePublished: "2026-10-20T12:00:00.000Z",
+    dateModified: "2026-10-21T08:00:00.000Z",
+    inLanguage: "en",
+    mainEntityOfPage: `${origin}/en/blog/edge-caching`,
+  })
+  const hreflang = page.locator('head link[rel="alternate"]')
+  await expect(hreflang).toHaveCount(5)
+  expect(
+    await hreflang.evaluateAll((links) =>
+      links.map((link) => link.getAttribute("hreflang"))
+    )
+  ).toEqual(["en", "kk", "es", "de", "x-default"])
+
+  // Gone with the post.
+  await page.getByRole("link", { name: "All posts" }).click()
+  await expect(cards(page)).toHaveCount(3)
+  await expect(script).toHaveCount(0)
+  await expect(hreflang).toHaveCount(LANGS.length + 1)
 })
 
 test("the post page on /ru marks the EN Fallback", async ({ page }) => {

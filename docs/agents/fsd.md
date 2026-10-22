@@ -117,6 +117,7 @@ Public pages read `/api/public/:lang/*` (`worker/README.md` › Public API) thro
 - **Date:** `formatDate` (`@/shared/i18n`), `ar` with Western digits; the reading time through `useTPlural()` (`blog.readingTime.*`).
 - **Tag filter:** `?tag=<slug>` (`parseTagSearch` on the route, `loaderDeps`), so a filtered list can be shared. Each Tag on a card is a link to it; the router marks the current one `aria-current`. The filter names the Tag (from the posts, else the slug) with a link to all posts. An unknown Tag is an empty list: the API answers it with none.
 - **Fallback:** `FallbackNotice` on the card, `lang="en"` on the title and excerpt.
+- **Post meta:** `loadPost` loads the Profile next to the Post, only for the author's name (none if it fails), and returns `postMeta`: hreflang on the Post's `langs` and its `BlogPosting` JSON-LD, which `LangHead` renders in place (`worker/README.md` › Meta Injection).
 - **E2E:** `e2e/blog.spec.ts`.
 
 ## Post

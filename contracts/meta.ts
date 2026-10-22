@@ -16,6 +16,21 @@ export type PageMeta = {
   // A path on the site (`/media/<key>`, `/cdn-cgi/image/…`) or an absolute URL.
   image?: string
   noindex?: boolean
+  // The Langs the page has a Translation on, for hreflang; all of them when
+  // absent.
+  langs?: readonly Lang[]
+  // A Post: `og:type=article` and JSON-LD `BlogPosting` (`blogPosting`).
+  article?: ArticleMeta
+}
+
+export type ArticleMeta = {
+  headline: string
+  publishedTime: string
+  modifiedTime: string
+  // The Lang of its text: EN on the Fallback.
+  lang: Lang
+  // The owner's name from the Profile; none before it is filled in.
+  author: string | null
 }
 
 // `og:locale` wants language_TERRITORY.
@@ -122,16 +137,34 @@ export function albumMeta(
 
 // A Post's page (`blog/:slug`), titled by the Post on that Lang (EN as its
 // Fallback) and described by its excerpt, else as the Blog; its cover as the
-// OG image. Null for no Post (or a draft): the page is a 404.
+// OG image, hreflang on the Langs it is translated on. Null for no Post (or a
+// draft): the page is a 404.
 export function postMeta(
   lang: Lang,
-  post: { title: string; excerpt: string; coverKey: string | null } | null
+  post: {
+    fallback: boolean
+    title: string
+    excerpt: string
+    coverKey: string | null
+    publishedAt: string
+    updatedAt: string
+    langs: readonly Lang[]
+  } | null,
+  author: string | null
 ): PageMeta | null {
   if (!post) return null
   return {
     title: withBrand(post.title),
     description: post.excerpt || t(lang, "meta.blog"),
     ...(post.coverKey && { image: imageUrl(post.coverKey, OG_IMAGE_WIDTH) }),
+    langs: post.langs,
+    article: {
+      headline: post.title,
+      publishedTime: post.publishedAt,
+      modifiedTime: post.updatedAt,
+      lang: post.fallback ? DEFAULT_LANG : lang,
+      author,
+    },
   }
 }
 
@@ -164,16 +197,59 @@ export function pageUrl(origin: string, lang: Lang, path: string): string {
   return `${origin}/${lang}${path ? `/${path}` : ""}`
 }
 
-// The same page in every Lang, plus `x-default` on EN.
+// The same page in every Lang it has (all by default), plus `x-default` on
+// EN when it is one of them.
 export function alternates(
   origin: string,
-  path: string
+  path: string,
+  langs: readonly Lang[] = LANGS
 ): { hrefLang: string; href: string }[] {
+  const listed = LANGS.filter((lang) => langs.includes(lang))
   return [
-    ...LANGS.map((lang) => ({
+    ...listed.map((lang) => ({
       hrefLang: lang,
       href: pageUrl(origin, lang, path),
     })),
-    { hrefLang: "x-default", href: pageUrl(origin, DEFAULT_LANG, path) },
+    ...(listed.includes(DEFAULT_LANG)
+      ? [{ hrefLang: "x-default", href: pageUrl(origin, DEFAULT_LANG, path) }]
+      : []),
   ]
+}
+
+// schema.org `BlogPosting` of a Post's page, null for any other page. The
+// Worker injects it, LangHead renders it again.
+export function blogPosting(
+  origin: string,
+  lang: Lang,
+  path: string,
+  meta: PageMeta
+): Record<string, unknown> | null {
+  const { article } = meta
+  if (!article) return null
+  const url = pageUrl(origin, lang, path)
+  return {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: article.headline,
+    description: meta.description,
+    image: [new URL(meta.image ?? DEFAULT_OG_IMAGE, origin).href],
+    datePublished: article.publishedTime,
+    dateModified: article.modifiedTime,
+    ...(article.author && {
+      author: {
+        "@type": "Person",
+        name: article.author,
+        url: pageUrl(origin, lang, "cv"),
+      },
+    }),
+    inLanguage: article.lang,
+    url,
+    mainEntityOfPage: url,
+  }
+}
+
+// JSON for a `<script type="application/ld+json">`: `<` escaped, so no
+// `</script>` or `<!--` in the text ends the element.
+export function jsonLd(data: Record<string, unknown>): string {
+  return JSON.stringify(data).replaceAll("<", "\\u003c")
 }
