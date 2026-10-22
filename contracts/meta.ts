@@ -120,6 +120,21 @@ export function albumMeta(
   }
 }
 
+// A Post's page (`blog/:slug`), titled by the Post on that Lang (EN as its
+// Fallback) and described by its excerpt, else as the Blog; its cover as the
+// OG image. Null for no Post (or a draft): the page is a 404.
+export function postMeta(
+  lang: Lang,
+  post: { title: string; excerpt: string; coverKey: string | null } | null
+): PageMeta | null {
+  if (!post) return null
+  return {
+    title: withBrand(post.title),
+    description: post.excerpt || t(lang, "meta.blog"),
+    ...(post.coverKey && { image: imageUrl(post.coverKey, OG_IMAGE_WIDTH) }),
+  }
+}
+
 // The Print CV (`cv/print`) is the source of the CV PDF, not a page to find.
 export function printCvMeta(
   lang: Lang,

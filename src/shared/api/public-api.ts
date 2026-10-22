@@ -8,6 +8,7 @@ import {
   EducationSchema,
   ExperienceSchema,
   LanguageSkillSchema,
+  PostDetailSchema,
   PostSchema,
   ProfileSchema,
   ProjectDetailSchema,
@@ -121,6 +122,10 @@ export const getPosts = (
     v.array(PostSchema),
     options
   )
+
+// 404 for an unknown slug and for a draft.
+export const getPost = (lang: Lang, slug: string, options?: Options) =>
+  get(lang, `posts/${encodeURIComponent(slug)}`, PostDetailSchema, options)
 
 export const getAlbums = (lang: Lang, options?: Options) =>
   get(lang, "albums", v.array(AlbumSchema), options)
