@@ -3,6 +3,7 @@ import { useLocation, useMatches } from "@tanstack/react-router"
 
 import {
   alternates,
+  blogFeed,
   blogPosting,
   jsonLd,
   pageMeta,
@@ -29,7 +30,8 @@ function useLoaderMeta(): PageMeta | undefined {
   })
 }
 
-// `<html lang>`, title, description, canonical, hreflang and a Post's JSON-LD
+// `<html lang>`, title, description, canonical, hreflang, the Blog's RSS feed
+// and a Post's JSON-LD
 // of the current page, from the same contracts/meta.ts the Worker injects them
 // with (ADR-0001). React hoists the tags into <head>, the JSON-LD stays in
 // place. A path no page has gets only hreflang: NotFoundPage renders its own
@@ -41,6 +43,7 @@ export function LangHead() {
   const path = parsePagePath(pathname)?.path ?? ""
   const meta = useLoaderMeta() ?? pageMeta(lang, path)
   const posting = meta && blogPosting(origin, lang, path, meta)
+  const feed = meta && blogFeed(lang, path)
 
   useEffect(() => {
     document.documentElement.lang = lang
@@ -66,6 +69,14 @@ export function LangHead() {
       {alternates(origin, path, meta?.langs).map(({ hrefLang, href }) => (
         <link key={hrefLang} rel="alternate" hrefLang={hrefLang} href={href} />
       ))}
+      {feed && (
+        <link
+          rel="alternate"
+          type="application/rss+xml"
+          title={feed.title}
+          href={new URL(feed.path, origin).href}
+        />
+      )}
       {posting && (
         <script
           type="application/ld+json"

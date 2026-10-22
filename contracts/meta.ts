@@ -216,6 +216,21 @@ export function alternates(
   ]
 }
 
+// The Blog's RSS feed on a Lang (worker/README.md › RSS).
+export function feedPath(lang: Lang): string {
+  return `/${lang}/rss.xml`
+}
+
+// The feed the Blog's pages (`blog`, `blog/:slug`) announce with
+// `<link rel="alternate" type="application/rss+xml">`; null on any other page.
+export function blogFeed(
+  lang: Lang,
+  path: string
+): { title: string; path: string } | null {
+  if (path !== "blog" && !/^blog\/[^/]+$/.test(path)) return null
+  return { title: pageMeta(lang, "blog")!.title, path: feedPath(lang) }
+}
+
 // schema.org `BlogPosting` of a Post's page, null for any other page. The
 // Worker injects it, LangHead renders it again.
 export function blogPosting(
