@@ -68,8 +68,9 @@ describe("UploadQueue", () => {
   })
 
   it("saves in the order the files were added", async () => {
-    const { queue, uploads, saved, statuses } = setup()
-    queue.add(["a", "b"].map(file))
+    const { queue, uploads, saved, statuses, snapshot } = setup()
+    const ids = queue.add(["a", "b"].map(file))
+    expect(ids).toEqual(snapshot().items.map((item) => item.id))
     uploads.get("b")!.resolve("key-b")
     await flush()
     expect(saved).toEqual([])

@@ -4,6 +4,11 @@
 // failed file waits for `retry` while the others go on; a rate-limited one
 // pauses the whole queue for `pauseMs` and then goes again by itself.
 
+// Uploads at once; more would only queue up behind the Worker.
+export const UPLOAD_CONCURRENCY = 3
+// The API's Retry-After on a 429 (worker/api/rate-limit.ts).
+export const RATE_LIMIT_PAUSE_MS = 60_000
+
 export type UploadStatus =
   | "queued"
   | "uploading"
@@ -57,7 +62,9 @@ export class UploadQueue<R> {
     this.options = options
   }
 
+  // The ids of the files added, in their order.
   add(files: Iterable<File>) {
+    const ids: number[] = []
     for (const file of files) {
       const entry: Entry<R> = {
         id: this.nextId++,
@@ -68,9 +75,11 @@ export class UploadQueue<R> {
       }
       this.entries.push(entry)
       this.waiting.push(entry)
+      ids.push(entry.id)
     }
     this.emit()
     this.pump()
+    return ids
   }
 
   retry(id: number) {
