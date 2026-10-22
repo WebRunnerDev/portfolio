@@ -6,6 +6,8 @@ import {
   DEFAULT_OG_IMAGE,
   OG_LOCALES,
   alternates,
+  blogPosting,
+  jsonLd,
   notFoundMeta,
   pageUrl,
   parsePagePath,
@@ -48,25 +50,32 @@ export function headTags(
   const image = new URL(meta.image ?? DEFAULT_OG_IMAGE, url.origin).href
   const property = (name: string, content: string) =>
     tag("meta", { property: name, content })
+  const { article, langs = LANGS } = meta
+  const posting = blogPosting(url.origin, lang, path, meta)
 
   return [
     tag("meta", { name: "description", content: meta.description }),
     noindex && tag("meta", { name: "robots", content: "noindex" }),
     tag("link", { rel: "canonical", href }),
-    ...alternates(url.origin, path).map(({ hrefLang, href }) =>
+    ...alternates(url.origin, path, langs).map(({ hrefLang, href }) =>
       tag("link", { rel: "alternate", hreflang: hrefLang, href })
     ),
-    property("og:type", "website"),
+    property("og:type", article ? "article" : "website"),
     property("og:site_name", BRAND),
     property("og:title", meta.title),
     property("og:description", meta.description),
     property("og:image", image),
     property("og:url", href),
     property("og:locale", OG_LOCALES[lang]),
-    ...LANGS.filter((l) => l !== lang).map((l) =>
+    ...LANGS.filter((l) => l !== lang && langs.includes(l)).map((l) =>
       property("og:locale:alternate", OG_LOCALES[l])
     ),
+    article && property("article:published_time", article.publishedTime),
+    article && property("article:modified_time", article.modifiedTime),
     tag("meta", { name: "twitter:card", content: "summary_large_image" }),
+    // Not run as a script: CSP leaves it alone.
+    posting &&
+      `<script ${MARK} type="application/ld+json">${jsonLd(posting)}</script>`,
   ]
     .filter(Boolean)
     .join("")

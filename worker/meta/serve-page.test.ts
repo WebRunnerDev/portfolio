@@ -259,6 +259,116 @@ describe("servePage", () => {
     )
   })
 
+  it("serves a Post's page as an article with its JSON-LD", async () => {
+    await env.DB.batch([
+      env.DB.prepare(`INSERT INTO profile (id) VALUES (1)`),
+      env.DB.prepare(
+        `INSERT INTO profile_translation (profile_id, lang, name, headline)
+        VALUES (1, 'en', 'Aibyn', 'Frontend developer')`
+      ),
+      env.DB.prepare(
+        `INSERT INTO post (id, slug, status, cover_key, published_at, updated_at)
+        VALUES (1, 'edge', 'published', 'image/edge.jpg',
+            '2026-10-20T12:00:00.000Z', '2026-10-21T08:00:00.000Z'),
+          (2, 'draft', 'draft', NULL, NULL, '2026-10-21T08:00:00.000Z')`
+      ),
+      env.DB.prepare(
+        `INSERT INTO post_translation (post_id, lang, title, excerpt)
+        VALUES (1, 'en', 'Edge caching', 'What a Worker keeps.'),
+          (1, 'ru', 'Кэш на краю', 'Что хранит Worker </script>.'),
+          (2, 'en', 'Draft', '')`
+      ),
+    ])
+    try {
+      const ru = await page("https://webrunner.dev/ru/blog/edge")
+      expect(ru.response.status).toBe(200)
+      expect(ru.attr(/<title data-meta>([^<]*)</)).toBe(
+        "Кэш на краю · WebRunner"
+      )
+      expect(ru.attr(content("og:type"))).toBe("article")
+      expect(ru.attr(content("article:published_time"))).toBe(
+        "2026-10-20T12:00:00.000Z"
+      )
+      expect(ru.attr(content("article:modified_time"))).toBe(
+        "2026-10-21T08:00:00.000Z"
+      )
+      expect(ru.attr(content("og:image"))).toBe(
+        "https://webrunner.dev/cdn-cgi/image/width=1200,fit=scale-down,format=auto/media/image/edge.jpg"
+      )
+      // hreflang only where the Post is translated.
+      expect(ru.all(/rel="alternate" hreflang="([^"]+)"/g)).toEqual([
+        "en",
+        "ru",
+        "x-default",
+      ])
+      expect(
+        ru.all(/property="og:locale:alternate" content="([^"]+)"/g)
+      ).toEqual(["en_US"])
+
+      const script = ru.attr(
+        /<script data-meta type="application\/ld\+json">(.*?)<\/script>/
+      )
+      expect(script).not.toContain("<")
+      expect(JSON.parse(script!)).toMatchObject({
+        "@type": "BlogPosting",
+        headline: "Кэш на краю",
+        description: "Что хранит Worker </script>.",
+        datePublished: "2026-10-20T12:00:00.000Z",
+        dateModified: "2026-10-21T08:00:00.000Z",
+        author: { "@type": "Person", name: "Aibyn" },
+        inLanguage: "ru",
+        mainEntityOfPage: "https://webrunner.dev/ru/blog/edge",
+      })
+
+      // The Fallback: EN meta, but the page's own Lang and canonical.
+      const kk = await page("https://webrunner.dev/kk/blog/edge")
+      expect(kk.attr(/<title data-meta>([^<]*)</)).toBe(
+        "Edge caching · WebRunner"
+      )
+      expect(kk.attr(content("og:locale"))).toBe("kk_KZ")
+      expect(kk.attr(/rel="canonical" href="([^"]+)"/)).toBe(
+        "https://webrunner.dev/kk/blog/edge"
+      )
+      expect(kk.all(/rel="alternate" hreflang="([^"]+)"/g)).toEqual([
+        "en",
+        "ru",
+        "x-default",
+      ])
+      expect(kk.html).toContain('"inLanguage":"en"')
+
+      // A draft, an unknown or a broken slug: 404 without JSON-LD.
+      for (const slug of ["draft", "nope", "%E0"]) {
+        const { response, html, attr } = await page(
+          `https://webrunner.dev/ru/blog/${slug}`
+        )
+        expect(response.status).toBe(404)
+        expect(attr(content("robots"))).toBe("noindex")
+        expect(html).not.toContain("application/ld+json")
+      }
+    } finally {
+      await env.DB.batch([
+        env.DB.prepare(`DELETE FROM post_translation`),
+        env.DB.prepare(`DELETE FROM post`),
+        env.DB.prepare(`DELETE FROM profile_translation`),
+        env.DB.prepare(`DELETE FROM profile`),
+      ])
+    }
+  })
+
+  it("keeps a Post's page when D1 fails", async () => {
+    const broken = {
+      ...testEnv,
+      DB: {
+        prepare: () => {
+          throw new Error("no such table: post")
+        },
+      },
+    } as unknown as Env
+    expect(await resolveMeta(broken, "ru", "blog/edge")).toEqual(
+      pageMeta("ru", "blog")
+    )
+  })
+
   it("serves the Print CV with noindex", async () => {
     const { response, attr } = await page("https://webrunner.dev/en/cv/print")
     expect(response.status).toBe(200)
