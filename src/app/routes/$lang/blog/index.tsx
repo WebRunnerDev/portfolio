@@ -4,7 +4,7 @@ import { BlogPage, loadPosts, parseTagSearch } from "@/pages/blog"
 import { PageError, PagePending } from "@/shared/ui/page-state"
 
 // `?tag=<slug>` filters the list; the API answers an unknown Tag with none.
-export const Route = createFileRoute("/$lang/blog")({
+export const Route = createFileRoute("/$lang/blog/")({
   validateSearch: parseTagSearch,
   loaderDeps: ({ search }) => ({ tag: search.tag }),
   loader: ({ params, deps, abortController }) =>

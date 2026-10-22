@@ -9,6 +9,7 @@ import {
   notFoundMeta,
   pageMeta,
   parsePagePath,
+  postMeta,
   projectMeta,
 } from "./meta"
 import { MESSAGES } from "./messages"
@@ -150,5 +151,32 @@ describe("albumMeta", () => {
 
   it("is null without an Album", () => {
     expect(albumMeta("en", null)).toBeNull()
+  })
+})
+
+describe("postMeta", () => {
+  const post = {
+    title: "Edge caching",
+    excerpt: "What a Worker keeps.",
+    coverKey: "image/edge.jpg",
+  }
+
+  it("titles the page with the Post, its excerpt and cover", () => {
+    expect(postMeta("en", post)).toEqual({
+      title: "Edge caching · WebRunner",
+      description: "What a Worker keeps.",
+      image:
+        "/cdn-cgi/image/width=1200,fit=scale-down,format=auto/media/image/edge.jpg",
+    })
+  })
+
+  it("describes a post without an excerpt as the Blog", () => {
+    const meta = postMeta("ru", { ...post, excerpt: "", coverKey: null })
+    expect(meta?.description).toBe(MESSAGES.ru["meta.blog"])
+    expect(meta).not.toHaveProperty("image")
+  })
+
+  it("is null without a Post", () => {
+    expect(postMeta("en", null)).toBeNull()
   })
 })

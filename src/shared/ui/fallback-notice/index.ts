@@ -1,1 +1,1 @@
-export { FallbackNotice, fallbackLang } from "./fallback-notice"
+export { FallbackNotice, fallbackDir, fallbackLang } from "./fallback-notice"

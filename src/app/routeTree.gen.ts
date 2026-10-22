@@ -13,11 +13,12 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as LangRouteRouteImport } from './routes/$lang/route'
 import { Route as AdminRouteRouteImport } from './routes/admin/route'
 import { Route as LangIndexRouteImport } from './routes/$lang/index'
-import { Route as LangBlogRouteImport } from './routes/$lang/blog'
 import { Route as LangCvRouteImport } from './routes/$lang/cv'
 import { Route as LangDesignRouteImport } from './routes/$lang/design'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminCvPdfRouteImport } from './routes/admin/cv-pdf'
+import { Route as LangBlogIndexRouteImport } from './routes/$lang/blog/index'
+import { Route as LangBlogSlugRouteImport } from './routes/$lang/blog/$slug'
 import { Route as LangGalleryIndexRouteImport } from './routes/$lang/gallery/index'
 import { Route as LangGallerySlugRouteImport } from './routes/$lang/gallery/$slug'
 import { Route as LangProjectsIndexRouteImport } from './routes/$lang/projects/index'
@@ -46,11 +47,6 @@ const LangIndexRoute = LangIndexRouteImport.update({
   path: '/',
   getParentRoute: () => LangRouteRoute,
 } as any)
-const LangBlogRoute = LangBlogRouteImport.update({
-  id: '/blog',
-  path: '/blog',
-  getParentRoute: () => LangRouteRoute,
-} as any)
 const LangCvRoute = LangCvRouteImport.update({
   id: '/cv',
   path: '/cv',
@@ -70,6 +66,16 @@ const AdminCvPdfRoute = AdminCvPdfRouteImport.update({
   id: '/cv-pdf',
   path: '/cv-pdf',
   getParentRoute: () => AdminRouteRoute,
+} as any)
+const LangBlogIndexRoute = LangBlogIndexRouteImport.update({
+  id: '/blog/',
+  path: '/blog/',
+  getParentRoute: () => LangRouteRoute,
+} as any)
+const LangBlogSlugRoute = LangBlogSlugRouteImport.update({
+  id: '/blog/$slug',
+  path: '/blog/$slug',
+  getParentRoute: () => LangRouteRoute,
 } as any)
 const LangGalleryIndexRoute = LangGalleryIndexRouteImport.update({
   id: '/gallery/',
@@ -111,32 +117,34 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$lang': typeof LangRouteRouteWithChildren
   '/admin': typeof AdminRouteRouteWithChildren
-  '/$lang/blog': typeof LangBlogRoute
   '/$lang/cv': typeof LangCvRoute
   '/$lang/design': typeof LangDesignRoute
   '/admin/cv-pdf': typeof AdminCvPdfRoute
   '/$lang/': typeof LangIndexRoute
   '/admin/': typeof AdminIndexRoute
+  '/$lang/blog/$slug': typeof LangBlogSlugRoute
   '/$lang/gallery/$slug': typeof LangGallerySlugRoute
   '/$lang/projects/$slug': typeof LangProjectsSlugRoute
   '/$lang/cv/print': typeof LangCvPrintRoute
   '/admin/$entity/$id': typeof AdminEntityIdRoute
+  '/$lang/blog/': typeof LangBlogIndexRoute
   '/$lang/gallery/': typeof LangGalleryIndexRoute
   '/$lang/projects/': typeof LangProjectsIndexRoute
   '/admin/$entity/': typeof AdminEntityIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/$lang/blog': typeof LangBlogRoute
   '/$lang/cv': typeof LangCvRoute
   '/$lang/design': typeof LangDesignRoute
   '/admin/cv-pdf': typeof AdminCvPdfRoute
   '/$lang': typeof LangIndexRoute
   '/admin': typeof AdminIndexRoute
+  '/$lang/blog/$slug': typeof LangBlogSlugRoute
   '/$lang/gallery/$slug': typeof LangGallerySlugRoute
   '/$lang/projects/$slug': typeof LangProjectsSlugRoute
   '/$lang/cv/print': typeof LangCvPrintRoute
   '/admin/$entity/$id': typeof AdminEntityIdRoute
+  '/$lang/blog': typeof LangBlogIndexRoute
   '/$lang/gallery': typeof LangGalleryIndexRoute
   '/$lang/projects': typeof LangProjectsIndexRoute
   '/admin/$entity': typeof AdminEntityIndexRoute
@@ -146,16 +154,17 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/$lang': typeof LangRouteRouteWithChildren
   '/admin': typeof AdminRouteRouteWithChildren
-  '/$lang/blog': typeof LangBlogRoute
   '/$lang/cv': typeof LangCvRoute
   '/$lang/design': typeof LangDesignRoute
   '/admin/cv-pdf': typeof AdminCvPdfRoute
   '/$lang/': typeof LangIndexRoute
   '/admin/': typeof AdminIndexRoute
+  '/$lang/blog/$slug': typeof LangBlogSlugRoute
   '/$lang/gallery/$slug': typeof LangGallerySlugRoute
   '/$lang/projects/$slug': typeof LangProjectsSlugRoute
   '/$lang_/cv/print': typeof LangCvPrintRoute
   '/admin/$entity/$id': typeof AdminEntityIdRoute
+  '/$lang/blog/': typeof LangBlogIndexRoute
   '/$lang/gallery/': typeof LangGalleryIndexRoute
   '/$lang/projects/': typeof LangProjectsIndexRoute
   '/admin/$entity/': typeof AdminEntityIndexRoute
@@ -166,32 +175,34 @@ export interface FileRouteTypes {
     | '/'
     | '/$lang'
     | '/admin'
-    | '/$lang/blog'
     | '/$lang/cv'
     | '/$lang/design'
     | '/admin/cv-pdf'
     | '/$lang/'
     | '/admin/'
+    | '/$lang/blog/$slug'
     | '/$lang/gallery/$slug'
     | '/$lang/projects/$slug'
     | '/$lang/cv/print'
     | '/admin/$entity/$id'
+    | '/$lang/blog/'
     | '/$lang/gallery/'
     | '/$lang/projects/'
     | '/admin/$entity/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/$lang/blog'
     | '/$lang/cv'
     | '/$lang/design'
     | '/admin/cv-pdf'
     | '/$lang'
     | '/admin'
+    | '/$lang/blog/$slug'
     | '/$lang/gallery/$slug'
     | '/$lang/projects/$slug'
     | '/$lang/cv/print'
     | '/admin/$entity/$id'
+    | '/$lang/blog'
     | '/$lang/gallery'
     | '/$lang/projects'
     | '/admin/$entity'
@@ -200,16 +211,17 @@ export interface FileRouteTypes {
     | '/'
     | '/$lang'
     | '/admin'
-    | '/$lang/blog'
     | '/$lang/cv'
     | '/$lang/design'
     | '/admin/cv-pdf'
     | '/$lang/'
     | '/admin/'
+    | '/$lang/blog/$slug'
     | '/$lang/gallery/$slug'
     | '/$lang/projects/$slug'
     | '/$lang_/cv/print'
     | '/admin/$entity/$id'
+    | '/$lang/blog/'
     | '/$lang/gallery/'
     | '/$lang/projects/'
     | '/admin/$entity/'
@@ -252,13 +264,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LangIndexRouteImport
       parentRoute: typeof LangRouteRoute
     }
-    '/$lang/blog': {
-      id: '/$lang/blog'
-      path: '/blog'
-      fullPath: '/$lang/blog'
-      preLoaderRoute: typeof LangBlogRouteImport
-      parentRoute: typeof LangRouteRoute
-    }
     '/$lang/cv': {
       id: '/$lang/cv'
       path: '/cv'
@@ -286,6 +291,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/cv-pdf'
       preLoaderRoute: typeof AdminCvPdfRouteImport
       parentRoute: typeof AdminRouteRoute
+    }
+    '/$lang/blog/': {
+      id: '/$lang/blog/'
+      path: '/blog'
+      fullPath: '/$lang/blog/'
+      preLoaderRoute: typeof LangBlogIndexRouteImport
+      parentRoute: typeof LangRouteRoute
+    }
+    '/$lang/blog/$slug': {
+      id: '/$lang/blog/$slug'
+      path: '/blog/$slug'
+      fullPath: '/$lang/blog/$slug'
+      preLoaderRoute: typeof LangBlogSlugRouteImport
+      parentRoute: typeof LangRouteRoute
     }
     '/$lang/gallery/': {
       id: '/$lang/gallery/'
@@ -340,23 +359,25 @@ declare module '@tanstack/react-router' {
 }
 
 interface LangRouteRouteChildren {
-  LangBlogRoute: typeof LangBlogRoute
   LangCvRoute: typeof LangCvRoute
   LangDesignRoute: typeof LangDesignRoute
   LangIndexRoute: typeof LangIndexRoute
+  LangBlogSlugRoute: typeof LangBlogSlugRoute
   LangGallerySlugRoute: typeof LangGallerySlugRoute
   LangProjectsSlugRoute: typeof LangProjectsSlugRoute
+  LangBlogIndexRoute: typeof LangBlogIndexRoute
   LangGalleryIndexRoute: typeof LangGalleryIndexRoute
   LangProjectsIndexRoute: typeof LangProjectsIndexRoute
 }
 
 const LangRouteRouteChildren: LangRouteRouteChildren = {
-  LangBlogRoute: LangBlogRoute,
   LangCvRoute: LangCvRoute,
   LangDesignRoute: LangDesignRoute,
   LangIndexRoute: LangIndexRoute,
+  LangBlogSlugRoute: LangBlogSlugRoute,
   LangGallerySlugRoute: LangGallerySlugRoute,
   LangProjectsSlugRoute: LangProjectsSlugRoute,
+  LangBlogIndexRoute: LangBlogIndexRoute,
   LangGalleryIndexRoute: LangGalleryIndexRoute,
   LangProjectsIndexRoute: LangProjectsIndexRoute,
 }

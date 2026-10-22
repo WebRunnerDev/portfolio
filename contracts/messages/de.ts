@@ -79,6 +79,8 @@ export const de: Messages = {
   "blog.emptyTag.title": "Keine Beiträge mit diesem Tag",
   "blog.emptyTag.text":
     "Kein Beitrag hat den Tag „{tag}“. Die anderen stehen unter allen Beiträgen.",
+  "post.fallback": "Dieser Beitrag ist auf Englisch verfügbar.",
+  "post.share": "Auf LinkedIn teilen",
   "lightbox.previous": "Vorheriges Foto",
   "lightbox.next": "Nächstes Foto",
   "lightbox.close": "Foto schließen",

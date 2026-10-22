@@ -6,7 +6,7 @@ import { useLang, useT } from "@/shared/i18n"
 
 import { PostCard } from "./post-card"
 
-const route = getRouteApi("/$lang/blog")
+const route = getRouteApi("/$lang/blog/")
 
 const LINK =
   "inline-flex min-h-zsd-control-height items-center gap-zsd-xs text-zsd-body-sm text-zsd-primary-text underline underline-offset-4 outline-offset-2 hover:decoration-2 focus-visible:outline-2 focus-visible:outline-ring"

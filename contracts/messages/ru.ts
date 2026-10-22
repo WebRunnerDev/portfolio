@@ -79,6 +79,8 @@ export const ru: Messages = {
   "blog.emptyTag.title": "Постов с этим тегом нет",
   "blog.emptyTag.text":
     "Ни один пост не помечен тегом «{tag}». Остальные — во всех постах.",
+  "post.fallback": "Этот пост доступен на английском.",
+  "post.share": "Поделиться в LinkedIn",
   "lightbox.previous": "Предыдущее фото",
   "lightbox.next": "Следующее фото",
   "lightbox.close": "Закрыть фото",
