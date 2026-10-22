@@ -113,10 +113,19 @@ Public pages read `/api/public/:lang/*` (`worker/README.md` › Public API) thro
 
 `/{lang}/blog` (`BlogPage` in `src/pages/blog/`): the published Posts, newest first, from `posts` (`loadPosts`), as a card grid like the Projects. `PostCard` stays in the page slice until the home page needs it.
 
-- **Card:** the cover only if the post has one (16:9, `srcset` up to 1280w, the first at `fetchpriority="high"`), then the date and reading time, title, excerpt and Tags. Not a link yet: the post's page (#99) makes it one.
+- **Card:** the cover only if the post has one (16:9, `srcset` up to 1280w, the first at `fetchpriority="high"`), then the date and reading time, title, excerpt and Tags. The whole card is one link to the post, named by the title (a stretched `::after`, as a Project card); the Tags sit above it with `relative z-10`.
 - **Date:** `formatDate` (`@/shared/i18n`), `ar` with Western digits; the reading time through `useTPlural()` (`blog.readingTime.*`).
 - **Tag filter:** `?tag=<slug>` (`parseTagSearch` on the route, `loaderDeps`), so a filtered list can be shared. Each Tag on a card is a link to it; the router marks the current one `aria-current`. The filter names the Tag (from the posts, else the slug) with a link to all posts. An unknown Tag is an empty list: the API answers it with none.
 - **Fallback:** `FallbackNotice` on the card, `lang="en"` on the title and excerpt.
+- **E2E:** `e2e/blog.spec.ts`.
+
+## Post
+
+`/{lang}/blog/:slug` (`PostPage` in `src/pages/blog/`, the same slice as the list: it shares `PostDate` and `PostTags`): the title (the only h1), date and reading time, Tags (links to the filtered list), the cover at `fetchpriority="high"` and the body through `Markdown`, in the 720px prose column. An unknown slug and a draft (both 404 from `posts/:slug`) throw `notFound()` in `loadPost`; its `meta` comes from `postMeta` (`contracts/meta.ts`).
+
+- **Fallback:** `<FallbackNotice text="post.fallback" />` says the post is in English; the title and body get `lang={fallbackLang(post)}` and `dir={fallbackDir(post, lang)}` (`ltr` on `ar`).
+- **Share:** “Share on LinkedIn” (`post.share`) links to `share-offsite/?url=` with the post's canonical URL, in a new tab with `rel="noopener noreferrer"`. LinkedIn takes the preview from the page's OG tags.
+- **Back:** “All posts” to `/{lang}/blog`, its arrow `rtl:rotate-180`.
 - **E2E:** `e2e/blog.spec.ts`.
 
 ## Admin
