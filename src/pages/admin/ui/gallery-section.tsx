@@ -14,6 +14,8 @@ import {
 } from "../api/admin-api"
 import type { EntityConfig, Field } from "../model/entities"
 import {
+  RATE_LIMIT_PAUSE_MS,
+  UPLOAD_CONCURRENCY,
   UploadQueue,
   type UploadItem,
   type UploadSnapshot,
@@ -21,11 +23,6 @@ import {
 import type { Resource } from "../model/use-resource"
 import { ApiErrorNotice, errorMessage } from "./api-error-notice"
 import { EntityTable } from "./entity-table"
-
-// Uploads at once; more would only queue up behind the Worker.
-const CONCURRENCY = 3
-// The API's Retry-After on a 429 (worker/api/rate-limit.ts).
-const RATE_LIMIT_PAUSE_MS = 60_000
 
 const STATUS_TEXT: Record<UploadItem["status"], string> = {
   queued: "Waiting",
@@ -64,7 +61,7 @@ export function GallerySection({
     // has nothing left to do.
     let unlisted = 0
     const current = new UploadQueue<UploadResponse>({
-      concurrency: CONCURRENCY,
+      concurrency: UPLOAD_CONCURRENCY,
       upload: uploadFile,
       save: async (result) => {
         await createRow(child.path, child.schemas.entity, {
