@@ -287,6 +287,44 @@ test("a project without a Case Study and an unknown slug are a 404", async ({
   }
 })
 
+// Issue #97: Shiki, its engine and themes are one chunk, each language another.
+const SHIKI = /\/assets\/(highlighter|typescript)-[\w-]+\.js$/
+
+test("the Case Study highlights its code in both themes", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "light" })
+  const shiki: string[] = []
+  page.on("request", (request) => {
+    if (SHIKI.test(request.url())) shiki.push(request.url())
+  })
+  await mockPublicApi(page)
+  await page.goto("/en/projects/plotops")
+
+  const code = page.getByRole("main").locator("pre")
+  await expect(code).toHaveAttribute("data-highlighted", "")
+  await expect(code).toHaveAttribute("dir", "ltr")
+  await expect(code).toContainText("const plots = await db.select()")
+  const keyword = code.locator(".shiki-token", { hasText: /^const$/ })
+  await expect(keyword).toHaveCSS("color", "rgb(160, 17, 31)")
+
+  // The theme switch repaints the tokens without loading or highlighting again.
+  await page.emulateMedia({ colorScheme: "dark" })
+  await expect(page.locator("html")).toHaveClass(/\bdark\b/)
+  await expect(keyword).toHaveCSS("color", "rgb(255, 123, 114)")
+  expect(shiki).toHaveLength(2)
+})
+
+test("a page without code doesn't load Shiki", async ({ page }) => {
+  const shiki: string[] = []
+  page.on("request", (request) => {
+    if (SHIKI.test(request.url())) shiki.push(request.url())
+  })
+  await mockPublicApi(page)
+  await page.goto("/en/projects")
+  await expect(cards(page)).toHaveCount(3)
+  await page.waitForLoadState("networkidle")
+  expect(shiki).toEqual([])
+})
+
 test("the Case Study on /ru marks the EN Fallback", async ({ page }) => {
   await mockPublicApi(page)
   await page.goto("/ru/projects/plotops")
@@ -308,6 +346,7 @@ test("the Case Study mirrors on /ar but its code doesn't, at 360px", async ({
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl")
 
   const code = page.getByRole("main").locator("pre")
+  await expect(code).toHaveAttribute("data-highlighted", "")
   await expect(code).toHaveAttribute("dir", "ltr")
   await expect(code).toHaveCSS("direction", "ltr")
   // The long line scrolls inside the block, not the page.
