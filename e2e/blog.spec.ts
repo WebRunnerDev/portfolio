@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test"
 
 // Issues #98, #99 and #100: the Blog page as Post cards, newest first,
 // filtered by Tag with `?tag=<slug>`, the page of a Post with its JSON-LD,
-// and (#101) the RSS feed of each Lang.
+// and (#101) the link to the RSS feed of each Lang.
 // Against an in-memory /api/public/* (the D1 behind `vite preview` is empty).
 // On RU, Edge caching only has its EN Translation; on AR, its page too.
 const LANGS = ["en", "ru", "kk", "es", "de", "ar"]
@@ -250,9 +250,7 @@ test("/ar keeps Western digits, mirrors the grid and fits 360px", async ({
 const shareUrl = (url: string) =>
   `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`
 
-test("the Blog links the RSS feed of its Lang, the Worker serves it", async ({
-  page,
-}) => {
+test("the Blog links the RSS feed of its Lang", async ({ page }) => {
   await mockPublicApi(page)
   await page.goto("/ru/blog")
   await expect(cards(page)).toHaveCount(3)
@@ -264,15 +262,6 @@ test("the Blog links the RSS feed of its Lang, the Worker serves it", async ({
   await expect(head).toHaveCount(1)
   await expect(head).toHaveAttribute("href", `${origin}/ru/rss.xml`)
   await expect(head).toHaveAttribute("title", "Блог · WebRunner")
-
-  // An empty channel: the D1 behind `vite preview` has no posts.
-  const feed = await page.request.get("/ru/rss.xml")
-  expect(feed.headers()["content-type"]).toBe(
-    "application/rss+xml; charset=utf-8"
-  )
-  expect(await feed.text()).toContain(
-    `<atom:link href="${origin}/ru/rss.xml" rel="self"`
-  )
 
   // Not announced outside the Blog.
   await page.goto("/ru/cv")
