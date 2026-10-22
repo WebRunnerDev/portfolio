@@ -78,6 +78,23 @@ export async function readPost(
   }
 }
 
+// The newest `limit` published Posts with a Translation of their own on the
+// Lang, no Fallback: the RSS feed of a Lang has no EN copies.
+export async function readFeedPosts(
+  db: D1Database,
+  lang: Lang,
+  limit: number
+): Promise<Post[]> {
+  const { results } = await db
+    .prepare(
+      `${SELECT_POST} AND t.lang = ?1
+      ORDER BY p.published_at DESC, p.id DESC LIMIT ?2`
+    )
+    .bind(lang, limit)
+    .all<PostRow>()
+  return results.map(toPost)
+}
+
 // Newest first, without the body; `?tag=<slug>` keeps the posts with that Tag.
 export const posts = new Hono<PublicEnv>()
   .get("/", sValidator("query", PostsQuerySchema, rejectInvalid), async (c) => {
