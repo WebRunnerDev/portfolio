@@ -6,6 +6,7 @@ import {
   DEFAULT_OG_IMAGE,
   OG_LOCALES,
   alternates,
+  blogFeed,
   blogPosting,
   jsonLd,
   notFoundMeta,
@@ -52,6 +53,7 @@ export function headTags(
     tag("meta", { property: name, content })
   const { article, langs = LANGS } = meta
   const posting = blogPosting(url.origin, lang, path, meta)
+  const feed = blogFeed(lang, path)
 
   return [
     tag("meta", { name: "description", content: meta.description }),
@@ -60,6 +62,13 @@ export function headTags(
     ...alternates(url.origin, path, langs).map(({ hrefLang, href }) =>
       tag("link", { rel: "alternate", hreflang: hrefLang, href })
     ),
+    feed &&
+      tag("link", {
+        rel: "alternate",
+        type: "application/rss+xml",
+        title: feed.title,
+        href: new URL(feed.path, url.origin).href,
+      }),
     property("og:type", article ? "article" : "website"),
     property("og:site_name", BRAND),
     property("og:title", meta.title),

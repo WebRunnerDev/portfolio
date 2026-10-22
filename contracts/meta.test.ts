@@ -5,6 +5,7 @@ import {
   PAGE_PATHS,
   albumMeta,
   alternates,
+  blogFeed,
   blogPosting,
   cvMeta,
   jsonLd,
@@ -270,5 +271,22 @@ describe("jsonLd", () => {
     const text = jsonLd({ headline: "</script><!-- x" })
     expect(text).not.toContain("<")
     expect(JSON.parse(text)).toEqual({ headline: "</script><!-- x" })
+  })
+})
+
+describe("blogFeed", () => {
+  it("announces the Lang's feed on the Blog and its posts", () => {
+    for (const path of ["blog", "blog/edge"]) {
+      expect(blogFeed("ru", path)).toEqual({
+        title: "Блог · WebRunner",
+        path: "/ru/rss.xml",
+      })
+    }
+  })
+
+  it("is null on any other page", () => {
+    for (const path of ["", "cv", "projects/blog", "blog/edge/x"]) {
+      expect(blogFeed("en", path)).toBeNull()
+    }
   })
 })

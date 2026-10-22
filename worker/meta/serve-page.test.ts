@@ -388,6 +388,18 @@ describe("servePage", () => {
     expect(await resolveMeta(broken, "ru", "cv")).toEqual(pageMeta("ru", "cv"))
   })
 
+  it("announces the RSS feed of the Lang on the Blog only", async () => {
+    const feed =
+      /<link data-meta rel="alternate" type="application\/rss\+xml" title="([^"]+)" href="([^"]+)">/
+    const blog = await page("https://webrunner.dev/kk/blog")
+    expect(feed.exec(blog.html)?.slice(1)).toEqual([
+      "Блог · WebRunner",
+      "https://webrunner.dev/kk/rss.xml",
+    ])
+    const cv = await page("https://webrunner.dev/kk/cv")
+    expect(cv.html).not.toContain("application/rss+xml")
+  })
+
   it("canonicalizes a trailing slash", async () => {
     const { attr } = await page("https://webrunner.dev/de/blog/")
     expect(attr(/rel="canonical" href="([^"]+)"/)).toBe(

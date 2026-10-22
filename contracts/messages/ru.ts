@@ -73,6 +73,7 @@ export const ru: Messages = {
   "blog.readingTime.other": "{count} мин чтения",
   "blog.filter": "Посты с тегом «{tag}»",
   "blog.filter.reset": "Все посты",
+  "blog.rss": "RSS-лента",
   "blog.empty.title": "Постов пока нет",
   "blog.empty.text":
     "Здесь появятся заметки о фронтенде, облаке и тестировании.",

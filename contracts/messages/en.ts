@@ -72,6 +72,7 @@ export const en = {
   "blog.readingTime.other": "{count} min read",
   "blog.filter": "Posts tagged “{tag}”",
   "blog.filter.reset": "All posts",
+  "blog.rss": "RSS feed",
   "blog.empty.title": "No posts yet",
   "blog.empty.text": "Notes on frontend, the cloud and testing appear here.",
   "blog.emptyTag.title": "No posts with this tag",
