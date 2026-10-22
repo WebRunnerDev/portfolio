@@ -16,7 +16,7 @@ Code shared with the frontend (Lang list, UI dictionaries, page meta, API schema
 
 ADR-0001: crawlers don't run JS, so `worker/meta/serve-page.ts` rewrites `index.html` with [HTMLRewriter](https://developers.cloudflare.com/workers/runtime-apis/html-rewriter/) for every path whose first segment is a Lang. Other paths (`/`, `/admin`, files in `public/`) pass through untouched.
 
-- **Tags:** `<html lang dir>`, `<title>`, description, `og:type`, `og:site_name`, `og:title`, `og:description`, `og:image` (`/og-default.png` unless the page has its own), `og:url`, `og:locale` (+ `og:locale:alternate`), `twitter:card`, `canonical` and hreflang on all 6 Langs + `x-default` (EN). URLs use the request's origin; a trailing slash is dropped.
+- **Tags:** `<html lang dir>`, `<title>`, description, `og:type`, `og:site_name`, `og:title`, `og:description`, `og:image` (`/og-default.png` unless the page has its own), `og:url`, `og:locale` (+ `og:locale:alternate`), `twitter:card`, `canonical` and hreflang on all 6 Langs + `x-default` (EN), unless the page lists its own `langs`. URLs use the request's origin; a trailing slash is dropped.
 - **Values:** `contracts/meta.ts`, from the UI dictionaries (`nav.*` for titles, `meta.*` for descriptions). `LangHead` (`src/shared/i18n`) renders the same title, description, canonical and hreflang on the client and removes the injected tags (`data-meta`), which would go stale on the first navigation.
 - **404:** a path no page has answers 404 with the same SPA, the Not Found title and `noindex`.
 - **Previews** (`*.workers.dev`) get `X-Robots-Tag: noindex` and `<meta name="robots" content="noindex">`.
@@ -25,6 +25,8 @@ ADR-0001: crawlers don't run JS, so `worker/meta/serve-page.ts` rewrites `index.
 - **CV:** the title and description come from the Profile on the Lang (EN when it has none); without a Profile, the section meta. `cv/print` (the Print CV) gets the same meta and `noindex`.
 - **Project** (`projects/:slug`, `projectMeta`): the title and description of the Project on the Lang (EN when it has none), its cover through Cloudflare Images at 1200px as `og:image` (`/og-default.png` without one). Without a Case Study, or for an unknown slug, a 404. When D1 fails, the Projects section meta with 200: the page may well be there.
 - **Album** (`gallery/:slug`, `albumMeta`): the title of the Album on the Lang (EN when it has none), described as a photo album (`meta.album`), its cover (the chosen photo, else the first) through Cloudflare Images at 1200px as `og:image` (`/og-default.png` without photos). An unknown slug is a 404. When D1 fails, the Gallery section meta with 200.
+- **Post** (`blog/:slug`, `postMeta`): the title of the Post on the Lang (EN when it has none), its excerpt as the description (`meta.blog` without one), its cover through Cloudflare Images at 1200px as `og:image`. `og:type=article` with `article:published_time` and `article:modified_time` (`updated_at`). On the Fallback the text is EN, but `og:locale` and canonical stay the page's own. hreflang and `og:locale:alternate` only on the Langs the Post has a Translation on (`x-default` only with EN): a Fallback page would duplicate the EN one. A draft or an unknown slug is a 404; when D1 fails, the Blog section meta with 200.
+- **JSON-LD:** a Post's page gets `<script type="application/ld+json">` with a `BlogPosting` (`blogPosting` in `contracts/meta.ts`): headline, description, image, `datePublished`, `dateModified`, `author` as a `Person` (the Profile's name, linked to the CV; left out without a Profile), `inLanguage` (EN on the Fallback), `url`. `jsonLd` escapes `<` as `\u003c`, so the text can't close the element. A data block is never run, so CSP has nothing to report; `securePage` gives it the nonce like every `<script>` anyway. `LangHead` renders the same one, since Google reads the rendered page. Check with the [Rich Results Test](https://search.google.com/test/rich-results).
 
 ## Security headers
 
@@ -125,7 +127,7 @@ After the rate limit, every `/api/*` request goes through `checkOrigin` (`worker
 | `experience`, `education`, `languages` | Lists by `position`; experience with its technologies |
 | `certifications`, `technologies`, `tracks` | Untranslated lists; technologies by category |
 | `projects`, `projects/:slug` | List without `caseStudy` (`hasCaseStudy` instead); by slug with it |
-| `posts?tag=<slug>`, `posts/:slug` | Published only, newest first, list without `body`; drafts answer 404 |
+| `posts?tag=<slug>`, `posts/:slug` | Published only, newest first, list without `body`; drafts answer 404. `posts/:slug` adds `body`, `updatedAt` and `langs` (the Langs it has a Translation on) |
 | `albums`, `albums/:slug` | List with `photoCount`; by slug with its photos. `cover` (`key`, `width`, `height`) is the chosen photo, else the first one in order (null for an empty album) |
 
 **Fallback** (CONTEXT.md): each translated entity comes with its Translation on the Lang, or its EN one and `fallback: true` when there is none. An entity translated on neither is left out (404 by slug). The SQL is `translationOf()` in `worker/api/public.ts`: one join that picks the Lang's row, else EN, so fields never mix two Translations. A photo's caption is optional: a photo without any caption has `caption: null` and `fallback: false`.
