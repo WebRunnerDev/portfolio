@@ -109,6 +109,16 @@ Public pages read `/api/public/:lang/*` (`worker/README.md` › Public API) thro
 - **Paging:** buttons, ←/→ and touch swipes, round the ends. Arrows and swipes go through `flipX`: in RTL ← and a swipe to the right go forward. The photo is never mirrored. Its neighbours preload in the size the Lightbox `sizes` picks (`lib/lightbox-image.ts`).
 - **E2E:** `e2e/gallery.spec.ts`; **Meta:** `worker/meta/serve-page.test.ts`.
 
+## Blog
+
+`/{lang}/blog` (`BlogPage` in `src/pages/blog/`): the published Posts, newest first, from `posts` (`loadPosts`), as a card grid like the Projects. `PostCard` stays in the page slice until the home page needs it.
+
+- **Card:** the cover only if the post has one (16:9, `srcset` up to 1280w, the first at `fetchpriority="high"`), then the date and reading time, title, excerpt and Tags. Not a link yet: the post's page (#99) makes it one.
+- **Date:** `formatDate` (`@/shared/i18n`), `ar` with Western digits; the reading time through `useTPlural()` (`blog.readingTime.*`).
+- **Tag filter:** `?tag=<slug>` (`parseTagSearch` on the route, `loaderDeps`), so a filtered list can be shared. Each Tag on a card is a link to it; the router marks the current one `aria-current`. The filter names the Tag (from the posts, else the slug) with a link to all posts. An unknown Tag is an empty list: the API answers it with none.
+- **Fallback:** `FallbackNotice` on the card, `lang="en"` on the title and excerpt.
+- **E2E:** `e2e/blog.spec.ts`.
+
 ## Admin
 
 `/admin` ([ADR-0004](../adr/0004-cloudflare-access-for-admin.md)) sits outside `/$lang`: its own layout, EN only, `<html dir="ltr">`, `noindex`. Routes are in `src/app/routes/admin/`, everything else in one page slice, `src/pages/admin/`.
