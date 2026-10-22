@@ -5,7 +5,7 @@ Cloudflare Worker (ADR-0001): serves the SPA through Workers Static Assets, owns
 Code shared with the frontend (Lang list, UI dictionaries, page meta, API schemas and types) lives in `contracts/`, imported as `@contracts/*` (mapped in `tsconfig.worker.json`); never import from `src/`.
 
 - Hashed build output (`/assets/*`) is served without invoking the Worker; everything else runs it first (`run_worker_first`) and goes to `ASSETS` unless a rule below takes it. Unknown paths fall back to `index.html` (`not_found_handling: "single-page-application"`).
-- Pages under a Lang (`/{lang}/…`) get Meta Injection (below). `/api/*` goes to the API below, `/media/*` to the MEDIA bucket (Media below), `/{lang}/cv.pdf` to the CV PDF (CV PDF below). `GET /api/health` → `{"status":"ok"}`.
+- Pages under a Lang (`/{lang}/…`) get Meta Injection (below). `/api/*` goes to the API below, `/media/*` to the MEDIA bucket (Media below), `/{lang}/cv.pdf` to the CV PDF (CV PDF below), `/{lang}/rss.xml` to the Blog's feed (RSS below). `GET /api/health` → `{"status":"ok"}`.
 - `/api/public/:lang/*` reads published content on a Lang (Public API below).
 - `/api/*` is rate limited per IP (Rate limits below); pages, assets and `/media/*` are not.
 - `/api/*` gives no CORS headers (the SPA is on the same origin, ADR-0001) and refuses writes from other origins (Origin and body limits below).
@@ -26,6 +26,7 @@ ADR-0001: crawlers don't run JS, so `worker/meta/serve-page.ts` rewrites `index.
 - **Project** (`projects/:slug`, `projectMeta`): the title and description of the Project on the Lang (EN when it has none), its cover through Cloudflare Images at 1200px as `og:image` (`/og-default.png` without one). Without a Case Study, or for an unknown slug, a 404. When D1 fails, the Projects section meta with 200: the page may well be there.
 - **Album** (`gallery/:slug`, `albumMeta`): the title of the Album on the Lang (EN when it has none), described as a photo album (`meta.album`), its cover (the chosen photo, else the first) through Cloudflare Images at 1200px as `og:image` (`/og-default.png` without photos). An unknown slug is a 404. When D1 fails, the Gallery section meta with 200.
 - **Post** (`blog/:slug`, `postMeta`): the title of the Post on the Lang (EN when it has none), its excerpt as the description (`meta.blog` without one), its cover through Cloudflare Images at 1200px as `og:image`. `og:type=article` with `article:published_time` and `article:modified_time` (`updated_at`). On the Fallback the text is EN, but `og:locale` and canonical stay the page's own. hreflang and `og:locale:alternate` only on the Langs the Post has a Translation on (`x-default` only with EN): a Fallback page would duplicate the EN one. A draft or an unknown slug is a 404; when D1 fails, the Blog section meta with 200.
+- **RSS:** the Blog and every Post's page get `<link rel="alternate" type="application/rss+xml">` to the Lang's feed (`blogFeed` in `contracts/meta.ts`), titled as the Blog; `LangHead` renders the same.
 - **JSON-LD:** a Post's page gets `<script type="application/ld+json">` with a `BlogPosting` (`blogPosting` in `contracts/meta.ts`): headline, description, image, `datePublished`, `dateModified`, `author` as a `Person` (the Profile's name, linked to the CV; left out without a Profile), `inLanguage` (EN on the Fallback), `url`. `jsonLd` escapes `<` as `\u003c`, so the text can't close the element. A data block is never run, so CSP has nothing to report; `securePage` gives it the nonce like every `<script>` anyway. `LangHead` renders the same one, since Google reads the rendered page. Check with the [Rich Results Test](https://search.google.com/test/rich-results).
 
 ## Security headers
@@ -201,6 +202,19 @@ ADR-0003: one PDF per Lang, printed from the Print CV (`/{lang}/cv/print`, `docs
 - **Tests:** `worker/cv-pdf/cv-pdf.test.ts` puts a fake browser in with `vi.spyOn(browsers, "launch")` (`worker/cv-pdf/browser.ts`): `vi.mock` doesn't work in workerd.
 
 **Check after the deploy:** at `https://webrunner.dev/admin/cv-pdf` press **Generate** for EN and RU, then open each `/{lang}/cv.pdf`: one page, the text selects, links click, no phone.
+
+## RSS
+
+`GET /{lang}/rss.xml` (`worker/rss/serve.ts`, before Meta Injection): RSS 2.0 of the Blog on a Lang. A path whose first segment is not a Lang goes to the pages.
+
+- **Items:** the 20 newest published Posts with a Translation of their own on the Lang (`readFeedPosts`), no Fallback: the `kk` feed has no EN copies, the `en` one has every Post. Drafts never.
+- **Item:** `title`, `link` and `guid isPermaLink="true"` (the post's absolute URL), `pubDate` (RFC 822, `toUTCString()`), `description` (the excerpt, left out when empty), a `category` per Tag.
+- **Channel:** `title` and `description` as the Blog on that Lang (`nav.blog`, `meta.blog`), `link` to `/{lang}/blog`, `language`, `atom:link rel="self"`. URLs use the request's origin.
+- **Escaping:** every text goes through `xml()`: `& < > " '` escaped, the C0 control characters XML 1.0 forbids dropped.
+- **Headers:** `Content-Type: application/rss+xml; charset=utf-8`, `Cache-Control: public, max-age=60` (as the Public API), `nosniff`; `X-Robots-Tag: noindex` on previews. `HEAD` without a body, other methods 405. D1 failing → 503.
+- **Link:** the Blog page links it next to its title (`blog.rss`); its pages announce it in `<head>` (Meta Injection above).
+
+**Check after the deploy:** run `https://webrunner.dev/{lang}/rss.xml` for each Lang through the [W3C Feed Validator](https://validator.w3.org/feed/).
 
 ## Tests
 
