@@ -177,3 +177,83 @@ test("writes, tags, translates and publishes a post on its own page", async ({
   await expect(preview).toBeVisible()
   await expect(panel.getByLabel("Body")).toBeHidden()
 })
+
+test("drops and pastes images into a post's body", async ({ page }) => {
+  const slug = `pictures-${Date.now()}`
+  await page.goto("/admin/posts")
+  await page.getByRole("button", { name: "New post" }).click()
+  const dialog = page.getByRole("dialog")
+  await dialog.getByLabel("Title").fill("Pictures")
+  await dialog.getByLabel("Slug").fill(slug)
+  await dialog.getByRole("button", { name: "Create" }).click()
+  await expect(dialog).toBeHidden()
+  await page
+    .getByRole("row", { name: new RegExp(slug) })
+    .getByRole("link", { name: "Pictures" })
+    .click()
+
+  const panel = page.getByRole("tabpanel")
+  const body = panel.getByLabel("Body")
+  const preview = panel.getByRole("region", { name: "Preview" })
+  // A DataTransfer of `name:type:bytes` files, `png` for a real one. Strings:
+  // e2e/ is type-checked without the DOM lib.
+  const transfer = (...entries: string[]) => `(() => {
+      const png = Uint8Array.from(atob("${COVER.toString("base64")}"), (c) => c.charCodeAt(0))
+      const data = new DataTransfer()
+      for (const [name, type, bytes] of ${JSON.stringify(entries.map((entry) => entry.split(":")))}) {
+        data.items.add(new File([bytes === "png" ? png : bytes], name, { type }))
+      }
+      return data
+    })()`
+  const files = (...entries: string[]) =>
+    page.evaluateHandle(transfer(...entries))
+  const image = /!\[\]\(\/media\/image\/[^)]+\.png\)/
+
+  // Dropped at the caret; the caret ends up in the alt text.
+  await body.fill("Intro\n\n")
+  await body.dispatchEvent("drop", {
+    dataTransfer: await files("cat.png:image/png:png"),
+  })
+  await expect(body).toHaveValue(new RegExp(`^Intro\n\n${image.source}$`))
+  await page.keyboard.type("A cat")
+  await expect(body).toHaveValue(/^Intro\n\n!\[A cat\]\(\/media\/image\//)
+  await expect(preview.getByRole("img", { name: "A cat" })).toHaveAttribute(
+    "srcset",
+    /\/media\/image\/.+\.png 1920w/
+  )
+
+  // Pasted: two at once, both in the text.
+  await body.press("End")
+  await body.press("Enter")
+  // Playwright's own paste event has no clipboardData.
+  await page.evaluate(`document.activeElement.dispatchEvent(
+    new ClipboardEvent("paste", {
+      bubbles: true,
+      cancelable: true,
+      clipboardData: ${transfer("a.png:image/png:png", "b.png:image/png:png")},
+    })
+  )`)
+  await expect
+    .poll(async () => (await body.inputValue()).match(/\/media\/image\//g))
+    .toHaveLength(3)
+  expect(await body.inputValue()).not.toContain("Uploading")
+
+  // A file the Worker refuses, and one that isn't an image: an error each,
+  // the text as it was.
+  const before = await body.inputValue()
+  await body.dispatchEvent("drop", {
+    dataTransfer: await files(
+      "fake.png:image/png:not a png",
+      "notes.txt:text/plain:hello"
+    ),
+  })
+  const errors = panel.getByRole("alert", { name: "Image errors" })
+  await expect(errors).toContainText("fake.png: This file type isn't allowed.")
+  await expect(errors).toContainText("notes.txt: Only images go here.")
+  await expect(body).toHaveValue(before)
+  await errors.getByRole("button", { name: "Dismiss notes.txt" }).click()
+  await expect(errors).not.toContainText("notes.txt")
+
+  await panel.getByRole("button", { name: "Save EN" }).click()
+  await expect(panel.getByText("Saved", { exact: true })).toBeVisible()
+})
