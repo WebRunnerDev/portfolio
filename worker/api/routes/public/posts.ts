@@ -6,6 +6,7 @@ import {
   type PostDetail,
   type Tag,
 } from "@contracts/api/public"
+import type { Lang } from "@contracts/lang"
 import { apiError, methodNotAllowed, rejectInvalid } from "../../errors"
 import { parseJson, translationOf, type PublicEnv } from "../../public"
 
@@ -20,11 +21,17 @@ type PostRow = {
   published_at: string
   tags: string
   body: string
+  updated_at: string
+  langs: string
 }
 
 // Drafts never leave the Worker.
 const SELECT_POST = `SELECT p.id, t.lang <> ?1 AS fallback, p.slug, t.title,
     t.excerpt, t.reading_minutes, p.cover_key, p.published_at, t.body,
+    p.updated_at, (
+      SELECT json_group_array(lang) FROM post_translation
+      WHERE post_id = p.id
+    ) AS langs,
     (
       SELECT json_group_array(json_object('slug', slug, 'name', name))
       FROM (
@@ -51,6 +58,26 @@ function toPost(row: PostRow): Post {
   }
 }
 
+// The published Post at `slug` on a Lang, with its body; null for an unknown
+// slug and a draft. Meta Injection of its page reads it too.
+export async function readPost(
+  db: D1Database,
+  lang: Lang,
+  slug: string
+): Promise<PostDetail | null> {
+  const row = await db
+    .prepare(`${SELECT_POST} AND p.slug = ?2`)
+    .bind(lang, slug)
+    .first<PostRow>()
+  if (!row) return null
+  return {
+    ...toPost(row),
+    body: row.body,
+    updatedAt: row.updated_at,
+    langs: parseJson<Lang[]>(row.langs),
+  }
+}
+
 // Newest first, without the body; `?tag=<slug>` keeps the posts with that Tag.
 export const posts = new Hono<PublicEnv>()
   .get("/", sValidator("query", PostsQuerySchema, rejectInvalid), async (c) => {
@@ -68,11 +95,9 @@ export const posts = new Hono<PublicEnv>()
     return c.json(results.map(toPost) satisfies Post[])
   })
   .get("/:slug", async (c) => {
-    const row = await c.env.DB.prepare(`${SELECT_POST} AND p.slug = ?2`)
-      .bind(c.var.lang, c.req.param("slug"))
-      .first<PostRow>()
-    if (!row) return apiError(c, 404, "not_found")
-    return c.json({ ...toPost(row), body: row.body } satisfies PostDetail)
+    const post = await readPost(c.env.DB, c.var.lang, c.req.param("slug"))
+    if (!post) return apiError(c, 404, "not_found")
+    return c.json(post satisfies PostDetail)
   })
   .all("/", methodNotAllowed("GET, HEAD"))
   .all("/:slug", methodNotAllowed("GET, HEAD"))

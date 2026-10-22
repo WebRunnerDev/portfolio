@@ -173,11 +173,14 @@ export const PostsQuerySchema = v.object({
   tag: v.optional(v.pipe(v.string(), v.nonEmpty())),
 })
 
-// GET /api/public/:lang/posts/:slug
+// GET /api/public/:lang/posts/:slug. `langs`: the Langs it has a
+// Translation on, for hreflang.
 export const PostDetailSchema = v.object({
   ...PostSchema.entries,
   // Markdown.
   body: v.string(),
+  updatedAt: v.string(),
+  langs: v.array(v.picklist(LANGS)),
 })
 
 export type PostDetail = v.InferOutput<typeof PostDetailSchema>
