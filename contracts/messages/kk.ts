@@ -73,6 +73,7 @@ export const kk: Messages = {
   "blog.readingTime.other": "{count} мин оқу",
   "blog.filter": "«{tag}» тегі бар жазбалар",
   "blog.filter.reset": "Барлық жазбалар",
+  "blog.rss": "RSS арнасы",
   "blog.empty.title": "Әзірге жазбалар жоқ",
   "blog.empty.text":
     "Мұнда фронтенд, бұлт және тестілеу туралы жазбалар шығады.",

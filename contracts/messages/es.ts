@@ -75,6 +75,7 @@ export const es: Messages = {
   "blog.readingTime.other": "{count} min de lectura",
   "blog.filter": "Publicaciones con la etiqueta «{tag}»",
   "blog.filter.reset": "Todas las publicaciones",
+  "blog.rss": "Feed RSS",
   "blog.empty.title": "Aún no hay publicaciones",
   "blog.empty.text": "Aquí aparecerán notas sobre frontend, la nube y testing.",
   "blog.emptyTag.title": "No hay publicaciones con esta etiqueta",
