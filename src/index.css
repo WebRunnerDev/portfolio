@@ -153,6 +153,15 @@
   }
 }
 
+/* A Shiki token in a code block (shared/ui/markdown): both themes' colours
+ * come as variables, the theme class picks one, so switching repaints only. */
+@utility shiki-token {
+  color: var(--shiki-light);
+  .dark & {
+    color: var(--shiki-dark);
+  }
+}
+
 /* Print CV (ADR-0003): one A4 page with these margins. The sheet keeps the
  * type and spacing tokens and scales them all by --print-zoom, the print
  * density. On screen it shows the page as it prints; in print @page gives
