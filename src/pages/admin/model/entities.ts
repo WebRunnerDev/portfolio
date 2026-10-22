@@ -40,8 +40,9 @@ export type Field = {
   | { kind: "select"; options: readonly string[]; initial?: string }
   // The id of a row of another entity: a photo's album.
   | { kind: "ref"; entity: string }
-  // Ids of rows of another entity: a project's technologies.
-  | { kind: "refs"; entity: string }
+  // Ids of rows of another entity: a project's technologies. `addable`: a
+  // new row of it can be created right there (a post's tags).
+  | { kind: "refs"; entity: string; addable?: true }
   // The file of one of the row's `gallery` rows: an album's cover photo.
   | { kind: "cover" }
   // An R2 key, filled by an upload. `fills` derives more fields from the file.
@@ -89,6 +90,9 @@ export type EntityConfig = {
   gallery?: string
   // A single record without an id in the path (the Profile).
   single?: boolean
+  // Rows are drafts until published (`status`): the editor publishes and
+  // unpublishes them with a button. The first publish dates `publishedAt`.
+  publishable?: boolean
   // The row's name in lists and headings: the first of these fields that is
   // set, EN Translation first.
   titleFields: string[]
@@ -363,6 +367,7 @@ export const ENTITIES: EntityConfig[] = [
     schemas: PostAdmin,
     translated: true,
     ordered: false,
+    publishable: true,
     titleFields: ["title", "slug"],
     columns: [
       { label: "Slug", field: "slug", kind: "text" },
@@ -373,13 +378,6 @@ export const ENTITIES: EntityConfig[] = [
       { name: "title", label: "Title", translated: true, kind: "text" },
       { name: "slug", label: "Slug", kind: "slug" },
       { name: "excerpt", label: "Excerpt", translated: true, kind: "textarea" },
-      {
-        name: "status",
-        label: "Status",
-        kind: "select",
-        options: ["draft", "published"],
-        initial: "draft",
-      },
       {
         name: "publishedAt",
         label: "Published at",
@@ -393,6 +391,7 @@ export const ENTITIES: EntityConfig[] = [
         label: "Tags",
         kind: "refs",
         entity: "tags",
+        addable: true,
         create: false,
       },
       {
@@ -401,14 +400,7 @@ export const ENTITIES: EntityConfig[] = [
         translated: true,
         kind: "markdown",
         create: false,
-        hint: "Markdown",
-      },
-      {
-        name: "readingMinutes",
-        label: "Reading time, minutes",
-        translated: true,
-        kind: "number",
-        create: false,
+        hint: "Markdown. The reading time is counted from it on save",
       },
     ],
   }),

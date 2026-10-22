@@ -16,6 +16,7 @@ import {
 import type { AdminEnv } from "../../access"
 import { crudRoutes } from "../../admin"
 import type { Entity } from "../../admin-store"
+import { readingMinutes } from "../../reading-time"
 
 // Every content entity of the data model (docs/plan.md › Модель данных) but
 // the Profile, which is a single record (profile.ts). `fields` follow the
@@ -116,6 +117,10 @@ const post: Entity = {
   translation: {
     fields: ["title", "excerpt", "body", "readingMinutes"],
     enRequired: true,
+    normalize: (values) => ({
+      ...values,
+      readingMinutes: readingMinutes(String(values.body ?? "")),
+    }),
   },
   orderBy: "created_at DESC, id DESC",
   touch: true,

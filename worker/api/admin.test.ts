@@ -175,7 +175,7 @@ const CASES: Case[] = [
       translations: { en: { title: "Hello", body: "# Hi" } },
     },
     patch: { slug: "hello-world", tagIds: [900, 901] },
-    translation: { title: "Привет", readingMinutes: 3 },
+    translation: { title: "Привет", body: "Привет, мир" },
   },
   {
     path: "/tags",
@@ -600,6 +600,50 @@ describe("posts", () => {
       201
     )
     expect(post.publishedAt).toBe(publishedAt)
+  })
+
+  it("counts the reading time of each Translation from its body", async () => {
+    const words = (count: number) => Array(count).fill("word").join(" ")
+    const post = await json(
+      await call("POST", "/posts", {
+        slug: "long-read",
+        translations: { en: { title: "Long", body: words(401) } },
+      }),
+      201
+    )
+    expect(post.translations).toMatchObject({ en: { readingMinutes: 3 } })
+
+    const withRu = await json(
+      await call("PUT", `/posts/${post.id}/translations/ru`, {
+        title: "Коротко",
+        body: `${words(10)}
+
+\`\`\`
+${words(1000)}
+\`\`\``,
+      }),
+      200
+    )
+    expect(withRu.translations).toMatchObject({
+      en: { readingMinutes: 3 },
+      ru: { readingMinutes: 1 },
+    })
+    const { minutes } = (await env.DB.prepare(
+      "SELECT reading_minutes AS minutes FROM post_translation WHERE post_id = ? AND lang = 'en'"
+    )
+      .bind(post.id)
+      .first<{ minutes: number }>())!
+    expect(minutes).toBe(3)
+  })
+
+  it("refuses a reading time in the body", async () => {
+    const fields = await invalid(
+      await call("POST", "/posts", {
+        slug: "given-minutes",
+        translations: { en: { title: "T", readingMinutes: 9 } },
+      })
+    )
+    expect(Object.keys(fields)).toEqual(["translations.en.readingMinutes"])
   })
 })
 

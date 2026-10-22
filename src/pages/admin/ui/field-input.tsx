@@ -1,4 +1,5 @@
 import { useId, type ReactNode } from "react"
+import { cn } from "cn"
 
 import {
   Checkbox,
@@ -16,6 +17,7 @@ import type { FormValue } from "../lib/form"
 import type { Field } from "../model/entities"
 import { CoverInput, type Gallery } from "./cover-input"
 import { FileInput } from "./file-input"
+import { MarkdownInput } from "./markdown-input"
 import { RefSelect } from "./ref-select"
 import { RefsInput } from "./refs-input"
 
@@ -32,6 +34,7 @@ const INPUT_TYPES = {
 // One field of a form: its label, control, hint and messages. `lang` and
 // `dir`: the Translation's, on its text controls.
 export function FieldInput({
+  className,
   field,
   value,
   required,
@@ -42,6 +45,7 @@ export function FieldInput({
   onUploaded,
   gallery,
 }: {
+  className?: string
   field: Field
   value: FormValue
   required: boolean
@@ -70,12 +74,13 @@ export function FieldInput({
   switch (field.kind) {
     case "refs":
       return (
-        <fieldset className="flex flex-col gap-zsd-xs">
+        <fieldset className={cn("flex flex-col gap-zsd-xs", className)}>
           <legend className="mb-zsd-xs text-sm font-medium">
             {field.label}
           </legend>
           <RefsInput
             entityPath={field.entity}
+            addable={field.addable}
             value={Array.isArray(value) ? value : []}
             onChange={onChange}
           />
@@ -90,7 +95,7 @@ export function FieldInput({
       return (
         <fieldset
           aria-describedby={describedBy}
-          className="flex flex-col gap-zsd-xs"
+          className={cn("flex flex-col gap-zsd-xs", className)}
         >
           <legend className="mb-zsd-xs text-sm font-medium">
             {field.label}
@@ -110,7 +115,7 @@ export function FieldInput({
       )
     case "boolean":
       return (
-        <div className="flex items-center gap-zsd-sm">
+        <div className={cn("flex items-center gap-zsd-sm", className)}>
           <Checkbox
             {...common}
             checked={value === true}
@@ -119,15 +124,23 @@ export function FieldInput({
           <Label htmlFor={id}>{field.label}</Label>
         </div>
       )
+    case "markdown":
+      control = (
+        <MarkdownInput
+          {...common}
+          {...writing}
+          value={text}
+          onChange={onChange}
+        />
+      )
+      break
     case "textarea":
     case "lines":
-    case "markdown":
       control = (
         <Textarea
           {...common}
           {...writing}
-          rows={{ textarea: 3, lines: 4, markdown: 12 }[field.kind]}
-          className={field.kind === "markdown" ? "font-mono" : undefined}
+          rows={{ textarea: 3, lines: 4 }[field.kind]}
           value={text}
           onChange={(event) => onChange(event.target.value)}
         />
@@ -189,7 +202,7 @@ export function FieldInput({
   const hint = field.kind === "lines" ? "One per line" : field.hint
 
   return (
-    <div className="flex flex-col gap-zsd-xs">
+    <div className={cn("flex flex-col gap-zsd-xs", className)}>
       <Label htmlFor={id}>
         {field.label}
         {required && <span aria-hidden>*</span>}

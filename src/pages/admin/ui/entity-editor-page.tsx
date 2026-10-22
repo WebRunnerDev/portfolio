@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react"
 import { getRouteApi, Link, useBlocker } from "@tanstack/react-router"
+import { cn } from "cn"
 import { LANGS, langDirection, type Lang } from "@contracts/lang"
 
 import {
@@ -52,8 +53,13 @@ import {
   type FormValue,
   type FormValues,
 } from "../lib/form"
-import { rowTitle } from "../lib/row"
-import { findEntity, type EntityConfig, type Field } from "../model/entities"
+import { cellText, rowTitle } from "../lib/row"
+import {
+  findEntity,
+  type Column,
+  type EntityConfig,
+  type Field,
+} from "../model/entities"
 import { useResource } from "../model/use-resource"
 import { ApiErrorNotice } from "./api-error-notice"
 import type { Gallery } from "./cover-input"
@@ -247,6 +253,14 @@ function RowEditor({
     }))
   }
 
+  // Publishes what is saved: the button waits while anything is unsaved, so
+  // the fields can take the answer as they are.
+  async function publish(status: "draft" | "published") {
+    const next = await patchRow(path, entity.schemas.entity, { status })
+    setSaved(next)
+    setValues(initialValues(plain, next))
+  }
+
   // EN can go only where the entity doesn't need it (a photo's caption).
   const removable = (lang: Lang) =>
     translationsOf(saved)[lang] !== undefined &&
@@ -257,6 +271,9 @@ function RowEditor({
       <h1 className="font-heading text-zsd-headline-md break-words">
         {rowTitle(entity, saved)}
       </h1>
+      {entity.publishable && (
+        <PublishBar row={saved} dirty={dirty} onPublish={publish} />
+      )}
       {plain.length > 0 && (
         <Section title="Fields">
           <EditorForm
@@ -276,7 +293,10 @@ function RowEditor({
         </Section>
       )}
       {entity.translated && (
-        <Section title="Translations">
+        <Section
+          title="Translations"
+          wide={translated.some((field) => field.kind === "markdown")}
+        >
           <Tabs value={tab} onValueChange={(next) => setTab(next as Lang)}>
             <TabsList className="h-auto flex-wrap">
               {LANGS.map((lang) => {
@@ -384,12 +404,24 @@ function RowEditor({
   )
 }
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+// `wide`: room for a Markdown field's text and preview side by side.
+function Section({
+  title,
+  wide,
+  children,
+}: {
+  title: string
+  wide?: boolean
+  children: ReactNode
+}) {
   const id = useId()
   return (
     <section
       aria-labelledby={id}
-      className="flex max-w-2xl flex-col gap-zsd-md"
+      className={cn(
+        "flex flex-col gap-zsd-md",
+        wide ? "max-w-6xl" : "max-w-2xl"
+      )}
     >
       <h2 id={id} className="font-heading text-zsd-headline-sm">
         {title}
@@ -440,6 +472,8 @@ function EditorForm({
       {fields.map((field) => (
         <FieldInput
           key={field.name}
+          // In a wide section only a Markdown field takes the whole width.
+          className={field.kind === "markdown" ? undefined : "max-w-2xl"}
           field={field}
           value={values[field.name] ?? ""}
           required={required(field)}
@@ -472,6 +506,54 @@ function EditorForm({
         </p>
       </div>
     </form>
+  )
+}
+
+const PUBLISHED_AT: Column = { label: "", field: "publishedAt", kind: "date" }
+
+// The status of a publishable row and the button that changes it.
+function PublishBar({
+  row,
+  dirty,
+  onPublish,
+}: {
+  row: AdminRow
+  dirty: boolean
+  onPublish: (status: "draft" | "published") => Promise<void>
+}) {
+  const saving = useSaving()
+  const published = row.status === "published"
+  const date = cellText(row, PUBLISHED_AT)
+
+  return (
+    <div className="flex flex-wrap items-center gap-zsd-sm">
+      <p data-testid="publish-status" className="text-zsd-body-md">
+        {published ? "Published" : "Draft"}
+        {published && date && `, ${date}`}
+      </p>
+      <Button
+        type="button"
+        variant={published ? "outline" : "default"}
+        disabled={dirty || saving.pending}
+        onClick={() =>
+          void saving.save({}, () =>
+            onPublish(published ? "draft" : "published")
+          )
+        }
+      >
+        {saving.pending ? "Saving…" : published ? "Unpublish" : "Publish"}
+      </Button>
+      {dirty && (
+        <p className="text-zsd-body-sm text-muted-foreground">
+          Save the changes first.
+        </p>
+      )}
+      {saving.failure && (
+        <p role="alert" className="text-zsd-body-sm text-zsd-error">
+          {saving.failure}
+        </p>
+      )}
+    </div>
   )
 }
 

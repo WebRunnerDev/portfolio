@@ -91,3 +91,89 @@ test("creates a project with EN and RU Translations and a cover", async ({
   await confirm.getByRole("button", { name: "Discard changes" }).click()
   await expect(page.getByRole("heading", { name: "Projects" })).toBeVisible()
 })
+
+test("writes, tags, translates and publishes a post on its own page", async ({
+  page,
+  request,
+}) => {
+  const slug = `edge-notes-${Date.now()}`
+  const tagSlug = `cloud-native-${Date.now()}`
+  const listed = async (lang: string) => {
+    const response = await request.get(`/api/public/${lang}/posts`)
+    expect(response.status()).toBe(200)
+    const posts: { slug: string }[] = await response.json()
+    return posts.find((post) => post.slug === slug)
+  }
+
+  await page.goto("/admin/posts")
+  await page.getByRole("button", { name: "New post" }).click()
+  const dialog = page.getByRole("dialog")
+  await dialog.getByLabel("Title").fill("Edge notes")
+  await dialog.getByLabel("Slug").fill(slug)
+  await dialog.getByRole("button", { name: "Create" }).click()
+  await expect(dialog).toBeHidden()
+  await page
+    .getByRole("row", { name: new RegExp(slug) })
+    .getByRole("link", { name: "Edge notes" })
+    .click()
+  await expect(page.getByTestId("publish-status")).toHaveText("Draft")
+
+  // A new tag, created right here, its slug following the name.
+  const fields = page.getByRole("region", { name: "Fields" })
+  await fields.getByLabel("New tag name").fill("Cloud Native")
+  await expect(fields.getByLabel("New tag slug")).toHaveValue("cloud-native")
+  await fields.getByLabel("New tag slug").fill(tagSlug)
+  await fields.getByRole("button", { name: "Add tag" }).click()
+  await expect(fields.getByLabel("Cloud Native")).toBeChecked()
+  await expect(fields.getByLabel("New tag name")).toHaveValue("")
+  await fields.getByRole("button", { name: "Save fields" }).click()
+  await expect(fields.getByText("Saved", { exact: true })).toBeVisible()
+
+  // The preview follows the Markdown as it is typed.
+  const panel = page.getByRole("tabpanel")
+  const preview = panel.getByRole("region", { name: "Preview" })
+  await expect(preview).toContainText("Nothing to preview yet.")
+  const words = Array(250).fill("word").join(" ")
+  await panel
+    .getByLabel("Body")
+    .fill(`# Hello edge\n\nSome **bold** text.\n\n${words}`)
+  await expect(
+    preview.getByRole("heading", { name: "Hello edge" })
+  ).toBeVisible()
+  await expect(preview.locator("strong")).toHaveText("bold")
+  await panel.getByRole("button", { name: "Save EN" }).click()
+  await expect(panel.getByText("Saved", { exact: true })).toBeVisible()
+
+  await page.getByRole("tab", { name: /^ru/ }).click()
+  await panel.getByLabel("Title").fill("Заметки о краю")
+  await panel.getByLabel("Body").fill("Коротко.")
+  await expect(preview).toContainText("Коротко.")
+  await panel.getByRole("button", { name: "Save RU" }).click()
+  await expect(panel.getByText("Saved", { exact: true })).toBeVisible()
+
+  // A draft is not public; publishing makes it so, unpublishing hides it.
+  expect(await listed("en")).toBeUndefined()
+  await page.getByRole("button", { name: "Publish" }).click()
+  await expect(page.getByTestId("publish-status")).toHaveText(/^Published, /)
+  expect(await listed("en")).toMatchObject({
+    title: "Edge notes",
+    readingMinutes: 2,
+    tags: [{ slug: tagSlug, name: "Cloud Native" }],
+    fallback: false,
+  })
+  expect(await listed("ru")).toMatchObject({
+    title: "Заметки о краю",
+    readingMinutes: 1,
+  })
+  await page.getByRole("button", { name: "Unpublish" }).click()
+  await expect(page.getByTestId("publish-status")).toHaveText("Draft")
+  expect(await listed("en")).toBeUndefined()
+
+  // Below lg the text and the preview take turns.
+  await page.setViewportSize({ width: 390, height: 844 })
+  await expect(panel.getByLabel("Body")).toBeVisible()
+  await expect(preview).toBeHidden()
+  await panel.getByRole("radio", { name: "Preview" }).click()
+  await expect(preview).toBeVisible()
+  await expect(panel.getByLabel("Body")).toBeHidden()
+})

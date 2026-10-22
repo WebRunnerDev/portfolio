@@ -135,9 +135,9 @@ describe("the editor", () => {
     const body = translationBody(posts, {
       ...initialValues(translatedFields(posts)),
       title: "Привет",
-      readingMinutes: "4",
+      body: "# Привет",
     })
-    expect(body).toEqual({ title: "Привет", readingMinutes: 4 })
+    expect(body).toEqual({ title: "Привет", body: "# Привет" })
     expect(validateTranslation(posts, body)).toEqual({})
     expect(validateTranslation(posts, {}).title).toEqual(["Required"])
   })

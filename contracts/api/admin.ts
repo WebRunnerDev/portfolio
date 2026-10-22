@@ -226,29 +226,39 @@ export const ProjectAdmin = translatedEntity(
 )
 
 // /api/admin/posts, drafts included. Publishing without `publishedAt` sets it
-// to now; going back to draft keeps it.
-export const PostAdmin = translatedEntity(
-  {
-    slug: Slug,
-    status: v.optional(v.picklist(["draft", "published"]), "draft"),
-    coverKey: v.optional(v.nullable(Key), null),
-    publishedAt: v.optional(
-      v.nullable(v.pipe(v.string(), v.isoTimestamp())),
-      null
+// to now; going back to draft keeps it. `readingMinutes` is the Worker's,
+// counted from `body` on every save of a Translation: answered, never taken.
+const postFields = {
+  slug: Slug,
+  status: v.optional(v.picklist(["draft", "published"]), "draft"),
+  coverKey: v.optional(v.nullable(Key), null),
+  publishedAt: v.optional(
+    v.nullable(v.pipe(v.string(), v.isoTimestamp())),
+    null
+  ),
+  tagIds: IdList,
+}
+
+const PostTranslationSchema = v.strictObject({
+  title: Text,
+  excerpt: v.optional(v.string(), ""),
+  // Markdown.
+  body: v.optional(v.string(), ""),
+})
+
+export const PostAdmin = {
+  ...translatedEntity(postFields, PostTranslationSchema),
+  entity: v.object({
+    id: Id,
+    ...postFields,
+    translations: translationsOf(
+      v.object({
+        ...PostTranslationSchema.entries,
+        readingMinutes: v.pipe(v.number(), v.integer(), v.minValue(0)),
+      })
     ),
-    tagIds: IdList,
-  },
-  v.strictObject({
-    title: Text,
-    excerpt: v.optional(v.string(), ""),
-    // Markdown.
-    body: v.optional(v.string(), ""),
-    readingMinutes: v.optional(
-      v.pipe(v.number(), v.integer(), v.minValue(0)),
-      1
-    ),
-  })
-)
+  }),
+}
 
 // /api/admin/tags
 export const TagAdmin = plainEntity({ slug: Slug, name: Text })
