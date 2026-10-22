@@ -8,6 +8,7 @@ import {
   EducationSchema,
   ExperienceSchema,
   LanguageSkillSchema,
+  PostSchema,
   ProfileSchema,
   ProjectDetailSchema,
   ProjectSchema,
@@ -106,6 +107,18 @@ export const getProject = (lang: Lang, slug: string, options?: Options) =>
     lang,
     `projects/${encodeURIComponent(slug)}`,
     ProjectDetailSchema,
+    options
+  )
+
+// Newest first; `tag` keeps the posts with that Tag (an unknown one: none).
+export const getPosts = (
+  lang: Lang,
+  { tag, ...options }: Options & { tag?: string } = {}
+) =>
+  get(
+    lang,
+    tag ? `posts?tag=${encodeURIComponent(tag)}` : "posts",
+    v.array(PostSchema),
     options
   )
 

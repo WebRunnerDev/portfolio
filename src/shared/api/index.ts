@@ -8,6 +8,7 @@ export {
   getEducation,
   getExperience,
   getLanguages,
+  getPosts,
   getProfile,
   getProject,
   getProjects,

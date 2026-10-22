@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 
 import {
   PublicApiError,
+  getPosts,
   getProfile,
   getProject,
   getProjects,
@@ -55,6 +56,16 @@ describe("public API client", () => {
     const fetch = answer(200, { ...project, caseStudy: null })
     await getProject("en", "a b/c")
     expect(fetch.mock.calls[0][0]).toBe("/api/public/en/projects/a%20b%2Fc")
+  })
+
+  it("asks posts by Tag only with one, encoded", async () => {
+    const fetch = answer(200, [])
+    await getPosts("en")
+    await getPosts("kk", { tag: "c++ & go" })
+    expect(fetch.mock.calls[0][0]).toBe("/api/public/en/posts")
+    expect(fetch.mock.calls[1][0]).toBe(
+      "/api/public/kk/posts?tag=c%2B%2B%20%26%20go"
+    )
   })
 
   it("passes the abort signal on", async () => {
