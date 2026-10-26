@@ -6,6 +6,7 @@ import type { Photo } from "@contracts/api/public"
 import { imageSrcSet, imageUrl } from "@contracts/media"
 import { useLang, useT, useTPlural } from "@/shared/i18n"
 import { FallbackNotice, fallbackLang } from "@/shared/ui/fallback-notice"
+import { Loader } from "@/shared/ui/loader"
 
 import { photoAlt } from "../lib/photo-alt"
 
@@ -136,7 +137,11 @@ export function AlbumPage() {
         </div>
       )}
       {openIndex >= 0 && (
-        <Suspense>
+        <Suspense
+          fallback={
+            <Loader className="fixed inset-0 z-50 justify-center bg-zsd-surface" />
+          }
+        >
           <Lightbox
             title={album.title}
             titleLang={fallbackLang(album)}

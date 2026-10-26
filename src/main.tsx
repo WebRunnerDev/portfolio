@@ -4,6 +4,8 @@ import { RouterProvider, createRouter } from "@tanstack/react-router"
 
 import "./index.css"
 import { routeTree } from "./app/routeTree.gen"
+import { LOADER_DELAY_MS } from "@/shared/ui/loader"
+import { PageLoading } from "@/shared/ui/page-state"
 
 // ADR-0005: page changes run in a View Transition; without the API they are
 // instant. index.css sets the animation.
@@ -11,11 +13,15 @@ import { routeTree } from "./app/routeTree.gen"
 // a page within a minute doesn't ask again. A new Lang is a new cache entry.
 // Back puts the scroll where it was: closing the Lightbox with Back leaves
 // the Album where the reader left it.
+// A route still loading its data or code shows its `pendingComponent` (else
+// PageLoading) after LOADER_DELAY_MS: a faster answer never flashes a Loader.
 const router = createRouter({
   routeTree,
   defaultViewTransition: true,
   defaultStaleTime: 60_000,
   scrollRestoration: true,
+  defaultPendingMs: LOADER_DELAY_MS,
+  defaultPendingComponent: PageLoading,
 })
 
 declare module "@tanstack/react-router" {

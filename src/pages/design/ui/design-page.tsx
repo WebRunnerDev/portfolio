@@ -6,7 +6,8 @@ import { LANGS, langDirection } from "@contracts/lang"
 import { useDirection } from "@/shared/lib/direction"
 import { cn } from "@/shared/lib/utils"
 import { Button } from "@/shared/ui/kit"
-import { Logo, LOGO_TILES } from "@/shared/ui/logo"
+import { Loader } from "@/shared/ui/loader"
+import { Logo } from "@/shared/ui/logo"
 import { Reveal, RevealText } from "@/shared/ui/reveal"
 
 // Design showcase: renders DESIGN.md tokens with real fonts in both modes.
@@ -927,21 +928,7 @@ function TilesSection() {
         </div>
         <div>
           <Caption>Loader (static with reduced motion)</Caption>
-          <div role="status" className="flex items-center gap-zsd-md">
-            <svg viewBox="0 0 10 10" className="size-10" aria-hidden>
-              {LOGO_TILES.map((d, i) => (
-                <path
-                  key={d}
-                  d={d}
-                  className="animate-pulse fill-zsd-primary motion-reduce:animate-none"
-                  style={{ animationDelay: `${i * 140}ms` }}
-                />
-              ))}
-            </svg>
-            <span className="text-zsd-body-sm text-zsd-on-surface-muted">
-              Loading…
-            </span>
-          </div>
+          <Loader delay={false} />
         </div>
       </div>
     </Section>
