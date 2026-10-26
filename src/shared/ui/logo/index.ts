@@ -1,2 +1,2 @@
 export { BrandLockup } from "./brand-lockup"
-export { Logo, LOGO_TILES } from "./logo"
+export { Logo, LogoTiles, LOGO_TILES, type TilePlacement } from "./logo"
