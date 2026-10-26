@@ -17,7 +17,7 @@ x-zsd:
   intent:
     audience: Recruiters and hiring managers.
     primary-task: Find the skill level in two minutes, open projects and the CV, download the CV PDF, or make contact.
-    character: Industrial futurism. Graphite surfaces, one rust accent, sharp edges, rhombus tiles.
+    character: Industrial futurism with momentum. Heavy graphite that gains speed. Graphite surfaces, one rust accent, sharp edges, rhombus tiles.
     density: comfortable
     theme: system default with a light and a dark mode
     references:
@@ -35,6 +35,9 @@ x-zsd:
       - Text in a gray that is below 4.5:1 on its surface.
       - Status feedback that depends only on color.
       - Mirrored logo, hero, music player, or code blocks.
+      - The easing keywords ease, ease-in, ease-out, ease-in-out, and linear.
+      - Smooth scroll libraries and scroll hijacking.
+      - A custom cursor.
     preserve:
       - Rust value from the source palette as the primary color in both modes.
       - Dark text and surface values from the source palette.
@@ -56,7 +59,6 @@ x-zsd:
       - lucide-react
   unresolved:
     - External reference sites.
-    - Hero effect for the full tier.
     - Gallery photo crop ratios.
   layout:
     viewport-min: 320px
@@ -80,8 +82,14 @@ x-zsd:
     duration-fast: 120ms
     duration-base: 200ms
     duration-slow: 400ms
-    easing-standard: cubic-bezier(0.2, 0, 0, 1)
-    easing-exit: cubic-bezier(0.4, 0, 1, 1)
+    duration-reveal: 800ms
+    stagger-word: 60ms
+    stagger-item: 80ms
+    choreography-max: 1200ms
+    easing-enter: cubic-bezier(0.16, 1, 0.3, 1)
+    easing-hover: cubic-bezier(0.25, 1, 0.5, 1)
+    easing-layout: cubic-bezier(0.87, 0, 0.13, 1)
+    easing-exit: cubic-bezier(0.7, 0, 0.84, 0)
   accessibility:
     target-min: "{spacing.control-height}"
     focus-width: 2px
@@ -124,22 +132,28 @@ colors:
 typography:
   display-lg:
     fontFamily: "Tektur Variable, Readex Pro Variable, system-ui, sans-serif"
-    fontSize: 56px
-    fontWeight: 700
-    lineHeight: 1.05
-    letterSpacing: 0px
+    fontSize: 168px
+    fontWeight: 800
+    lineHeight: 0.9
+    letterSpacing: -0.04em
+  display-sm:
+    fontFamily: "Tektur Variable, Readex Pro Variable, system-ui, sans-serif"
+    fontSize: 72px
+    fontWeight: 800
+    lineHeight: 0.9
+    letterSpacing: -0.03em
   headline-lg:
     fontFamily: "Tektur Variable, Readex Pro Variable, system-ui, sans-serif"
     fontSize: 40px
     fontWeight: 700
     lineHeight: 1.1
-    letterSpacing: 0px
+    letterSpacing: -0.02em
   headline-md:
     fontFamily: "Tektur Variable, Readex Pro Variable, system-ui, sans-serif"
     fontSize: 28px
     fontWeight: 600
     lineHeight: 1.2
-    letterSpacing: 0px
+    letterSpacing: -0.01em
   headline-sm:
     fontFamily: "Tektur Variable, Readex Pro Variable, system-ui, sans-serif"
     fontSize: 20px
@@ -282,7 +296,7 @@ Record unresolved choices in `x-zsd.unresolved`.
 
 ## Colors
 
-The light mode is the base. `x-zsd.modes.dark` gives the dark values with the same keys.
+`x-zsd.modes.dark` gives the dark values.
 The system preference selects the mode until the user selects a mode.
 
 - `primary`: Use for the main action, the active navigation item, and rhombus tiles. Use one main action in each view.
@@ -305,14 +319,15 @@ The system preference selects the mode until the user selects a mode.
 
 All text pairs are 4.5:1 or more in both modes. Control boundaries and the focus outline are 3:1 or more.
 In dark mode, `primary` on `surface` is 3.5:1. Use it for fills and shapes only, not for text.
-`error` and `primary` are both red hues. Always show an error with an icon and a text message.
+Show each error with an icon and text: `error` looks like `primary`.
 
 ## Typography
 
-Each family contains Kazakh Cyrillic and Latin diacritics. We checked the font files on 2026-10-15.
-Readex Pro is second in each stack. It contains only the Arabic range, so the browser loads it only for Arabic text.
+Each family contains Kazakh Cyrillic and Latin diacritics.
+The browser loads Readex Pro only for Arabic text.
 
 - `display-lg`: Use for the brand name in the hero, one time on the home page.
+- `display-sm`: Use for the hero brand below `lg` and in the footer.
 - `headline-lg`: Use for the page title. Use one page title in each view.
 - `headline-md`: Use for section titles.
 - `headline-sm`: Use for card titles and dialog titles.
@@ -323,7 +338,9 @@ Readex Pro is second in each stack. It contains only the Arabic range, so the br
 - `label-mono`: Use for dates, technology tags, and badges. Use uppercase, but not for Arabic.
 - `code-md`: Use for code blocks and inline code. Code is always left to right.
 
-Below `x-zsd.breakpoints.md`, use `headline-lg` for the hero brand and `headline-md` for page titles.
+Below `md`, use `headline-md` for page titles. Below `lg`, break the hero brand by hand into "Web" and "Runner".
+Arabic text has no negative letter spacing.
+
 Limit prose lines to `x-zsd.layout.prose-max`. Wrap long words and URLs.
 
 ## Layout
@@ -339,10 +356,10 @@ Keep each pointer target at least `control-height` in both dimensions.
 - From `sm`: two columns of project cards. Long titles fit in two lines.
 - From `md`: the CV shows the date column beside each entry.
 - From `lg`: three columns of cards. Four columns in the gallery.
-- From `xl`: no new layout. The content stops at `x-zsd.layout.content-max`.
 
-The header shows the logo, the current section, the Lang control, the mode control, and the menu button.
 A full-screen menu replaces a navigation bar at all widths.
+See `docs/design-brief.md` for the header, footer, and home layouts.
+
 Do not let the page scroll horizontally at `x-zsd.layout.viewport-min`. Code blocks scroll in their own region.
 Keep the reading sequence and the keyboard sequence the same in each layout.
 
@@ -350,7 +367,7 @@ Keep the reading sequence and the keyboard sequence the same in each layout.
 
 Show depth with `surface-raised` and a border, not with drop shadows.
 Apply `x-zsd.border.width-default` with `x-zsd.border.color-default` on each raised surface.
-In dark mode only, add `x-zsd.elevation.shadow-accent` in `primary-text` at 40% opacity on hover and focus.
+In dark mode only, add `x-zsd.elevation.shadow-accent` in `primary-text` at 40% opacity on hover and focus of the main action.
 
 ## Shapes
 
@@ -366,7 +383,7 @@ Rhombus tiles are squares at 45 degrees, as in `public/logo.svg`.
 
 Use `button-primary` for the main action. Use `button-secondary` with an `outline` border for other actions.
 
-- On hover, use `button-primary-hover`. In dark mode, add the accent shadow.
+- On hover, use `button-primary-hover`.
 - On press, keep the position and the size.
 - During loading, keep the width, show a progress label, and prevent a second submission.
 - Use `button-disabled` when an action cannot operate. Explain the cause when useful.
@@ -377,14 +394,15 @@ Use `link` for text links. Underline links in body text.
 
 ### Input
 
-Inputs occur in the admin area. Use `input` with an `outline` border and a visible label above the field.
+Use `input` with an `outline` border and a label above the field.
 For an invalid value, use `error` on the boundary and the message, and keep the entered value.
 
 ### Card
 
 Use `card` for projects and posts. The whole card is one link with its title as the accessible name.
 Put other links, for example GitHub, outside the card link.
-On hover, change the border to `primary`. For an empty list, explain what appears there.
+On hover, change the border to `primary` and fill the chamfered corner with a `tile`.
+For an empty list, explain what appears there.
 
 ### Badge
 
@@ -395,26 +413,28 @@ Use `badge` with an `outline-muted` border for technology tags. Use `badge-succe
 Use `tile` for rhombus decoration, the loader, the player button, and the menu animation. Use `tile-inactive` for inactive tiles.
 The logo uses `on-surface` through `currentColor`. Hide decorative tiles from assistive technology.
 
+The seven logo tiles move as one element between the hero, the header, and the menu.
+
 ### Alert
 
 Use `alert-error` when a task fails. State what failed and give a recovery action.
 
 ## Do's and Don'ts
 
-- Do use one main action in each view.
-- Do keep a border on each raised surface.
 - Do use logical properties so that the ar Lang mirrors the layout.
 - Do test real Kazakh, German, and Arabic text in narrow layouts.
 - Do not use rust for large fills or for body text in dark mode.
-- Do not use rounded corners or soft drop shadows.
 - Do not mirror the logo, the hero, the music player, or code blocks.
-- Do not put a clip path on the element that has the focus outline.
+- Do not use a custom cursor or a smooth scroll library.
 
 ## Motion
 
+Each animation must show why it moves. Animate only transform and opacity.
+Use `easing-enter` to enter, `easing-hover` for hover, `easing-layout` for tiles, and `easing-exit` to leave.
 Use `x-zsd.motion.duration-fast` for hover and press and `x-zsd.motion.duration-base` for menus and dialogs.
 Use `x-zsd.motion.duration-slow` for the menu tile layout and page transitions.
-Use `x-zsd.motion.easing-standard` to enter and `x-zsd.motion.easing-exit` to leave.
+
+Text moves up from under a mask in `duration-reveal`, `stagger-word` apart.
 Horizontal motion goes in the reading direction, so the ar Lang inverts it.
 With reduced motion, change states immediately and use a fade for page transitions. Show the loader as static tiles with a text label.
 
@@ -431,7 +451,9 @@ Do not apply filters to photos. Give each photo alternative text.
 
 Support keyboard operation in the reading sequence.
 Use `x-zsd.accessibility.focus-width`, `x-zsd.accessibility.focus-offset`, and `x-zsd.accessibility.focus-color` for the focus outline.
+On a chamfered element, the focus outline follows the chamfer.
 Keep focus visible under the sticky header. Move focus into the full-screen menu and return it on close.
+Selection is `on-primary` on `primary`.
 
 ### Review checks
 

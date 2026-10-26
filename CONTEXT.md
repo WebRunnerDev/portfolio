@@ -22,6 +22,6 @@
 | **Album** | Группа фото в галерее. Обложка — одно из его фото; не выбрана — первое по порядку. | |
 | **Photo** | Изображение в R2, принадлежит Album, с опциональной переводимой подписью. | |
 | **Track** | Аудиотрек плейлиста в R2 с полем источника/лицензии. | |
-| **Hero Tier** | Уровень hero-анимации: `full` (WebGL), `lite` (CSS/SVG ромбы), `static` (картинка). | |
+| **Hero Tier** | Уровень hero-анимации: `full` (кинетическая сетка ромбов на canvas, по Kinetic Grid из OriginKit), `lite` (CSS/SVG ромбы), `static` (картинка). | |
 | **Admin** | Lazy-маршрут `/admin` за Cloudflare Access. | «CMS», «панель» |
 | **Meta Injection** | Подстановка `<title>`/OG/hreflang в HTML на Worker через HTMLRewriter. | «SSR» — у нас его нет |
