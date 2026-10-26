@@ -1,1 +1,1 @@
-export { PageError, PagePending } from "./page-state"
+export { PageError, PageLoading, PagePending } from "./page-state"
