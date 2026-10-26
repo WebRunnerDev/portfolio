@@ -1,7 +1,7 @@
 import { Outlet, createFileRoute, redirect } from "@tanstack/react-router"
 
 import { DEFAULT_LANG, isLang, withLang, type Lang } from "@contracts/lang"
-import { DirectionProvider } from "@/app/providers"
+import { DirectionProvider, MotionProvider } from "@/app/providers"
 import { NotFoundPage } from "@/pages/not-found"
 import { LangHead } from "@/shared/i18n"
 import { SiteFooter } from "@/widgets/footer"
@@ -23,14 +23,16 @@ export const Route = createFileRoute("/$lang")({
   },
   component: () => (
     <DirectionProvider>
-      <LangHead />
-      <div className="flex min-h-svh flex-col">
-        <SiteHeader menu={<SiteMenu />} />
-        <main id="main" tabIndex={-1} className="flex flex-1 flex-col">
-          <Outlet />
-        </main>
-        <SiteFooter />
-      </div>
+      <MotionProvider>
+        <LangHead />
+        <div className="flex min-h-svh flex-col">
+          <SiteHeader menu={<SiteMenu />} />
+          <main id="main" tabIndex={-1} className="flex flex-1 flex-col">
+            <Outlet />
+          </main>
+          <SiteFooter />
+        </div>
+      </MotionProvider>
     </DirectionProvider>
   ),
   notFoundComponent: NotFoundPage,

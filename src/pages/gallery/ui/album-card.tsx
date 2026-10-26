@@ -12,7 +12,7 @@ import { Logo } from "@/shared/ui/logo"
 const COVER_SIZES = "(min-width: 1024px) 384px, (min-width: 640px) 50vw, 100vw"
 
 const MOTION_FAST =
-  "transition-colors duration-(--zsd-x-zsd-motion-duration-fast) ease-(--zsd-x-zsd-motion-easing-standard) motion-reduce:transition-none"
+  "transition-colors duration-(--zsd-x-zsd-motion-duration-fast) ease-zsd-hover motion-reduce:transition-none"
 
 function Cover({
   cover,
@@ -72,7 +72,7 @@ export function AlbumCard({
   return (
     <article
       data-testid="album-card"
-      className="group/card relative h-full hover:elevation-accent has-[a.card-link:focus-visible]:outline-2 has-[a.card-link:focus-visible]:outline-offset-2 has-[a.card-link:focus-visible]:outline-ring has-[a.card-link:focus-visible]:elevation-accent"
+      className="group/card focus-chamfer-md relative h-full hover:elevation-accent has-[a.card-link:focus-visible]:elevation-accent"
     >
       {/* DESIGN.md › Shapes: the outer layer draws the chamfered border. */}
       <div

@@ -19,6 +19,19 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* DESIGN.md › Motion: only the curves from tokens.css, as `ease-zsd-*`.
+ * Tailwind's keyword curves (ease-in, ease-out, ease-in-out) are removed; a
+ * transition without an ease class takes the hover curve and duration. */
+@theme inline {
+  --ease-*: initial;
+  --ease-zsd-enter: var(--zsd-x-zsd-motion-easing-enter);
+  --ease-zsd-hover: var(--zsd-x-zsd-motion-easing-hover);
+  --ease-zsd-layout: var(--zsd-x-zsd-motion-easing-layout);
+  --ease-zsd-exit: var(--zsd-x-zsd-motion-easing-exit);
+  --default-transition-timing-function: var(--zsd-x-zsd-motion-easing-hover);
+  --default-transition-duration: var(--zsd-x-zsd-motion-duration-fast);
+}
+
 @theme inline {
   --font-heading: var(--zsd-typography-headline-lg-font-family);
   --font-sans: var(--zsd-typography-body-md-font-family);
@@ -142,6 +155,76 @@
   }
 }
 
+/* DESIGN.md › Accessibility: the focus outline of a chamfered element follows
+ * the cut. Put it on the element that takes the focus (or holds the
+ * `.card-link`), which must be positioned (`relative`) and not clipped; its
+ * chamfered child keeps `chamfer-*`. The ring is a frame on ::before, cut
+ * at both edges: offset by d, a 45° cut grows by d × (2 − √2). */
+@utility focus-chamfer-sm {
+  --focus-chamfer: var(--zsd-x-zsd-border-chamfer-sm);
+  @apply focus-chamfer;
+}
+
+@utility focus-chamfer-md {
+  --focus-chamfer: var(--zsd-x-zsd-border-chamfer-md);
+  @apply focus-chamfer;
+}
+
+@utility focus-chamfer {
+  &:focus-visible {
+    outline: none;
+  }
+  &::before {
+    --o: var(--zsd-x-zsd-accessibility-focus-offset);
+    --w: var(--zsd-x-zsd-accessibility-focus-width);
+    --cut-out: calc(var(--focus-chamfer) + 0.5858 * (var(--o) + var(--w)));
+    --cut-in: calc(var(--focus-chamfer) + 0.5858 * var(--o));
+    content: none;
+    position: absolute;
+    inset: calc(-1 * (var(--o) + var(--w)));
+    pointer-events: none;
+    background: var(--zsd-x-zsd-accessibility-focus-color);
+    clip-path: polygon(
+      evenodd,
+      0 0,
+      calc(100% - var(--cut-out)) 0,
+      100% var(--cut-out),
+      100% 100%,
+      0 100%,
+      0 0,
+      var(--w) var(--w),
+      var(--w) calc(100% - var(--w)),
+      calc(100% - var(--w)) calc(100% - var(--w)),
+      calc(100% - var(--w)) calc(var(--w) + var(--cut-in)),
+      calc(100% - var(--w) - var(--cut-in)) var(--w),
+      var(--w) var(--w)
+    );
+  }
+  &:where([dir="rtl"], [dir="rtl"] *)::before {
+    clip-path: polygon(
+      evenodd,
+      var(--cut-out) 0,
+      100% 0,
+      100% 100%,
+      0 100%,
+      0 var(--cut-out),
+      var(--cut-out) 0,
+      calc(var(--w) + var(--cut-in)) var(--w),
+      var(--w) calc(var(--w) + var(--cut-in)),
+      var(--w) calc(100% - var(--w)),
+      calc(100% - var(--w)) calc(100% - var(--w)),
+      calc(100% - var(--w)) var(--w),
+      calc(var(--w) + var(--cut-in)) var(--w)
+    );
+  }
+  /* data-focus-preview: the /design page shows the ring without focus. */
+  &:focus-visible::before,
+  &:has(.card-link:focus-visible)::before,
+  &[data-focus-preview]::before {
+    content: "";
+  }
+}
+
 /* DESIGN.md › Elevation & Depth: accent shadow, dark mode only.
  * drop-shadow follows a clipped (chamfered) child, unlike box-shadow. */
 @utility elevation-accent {
@@ -200,6 +283,17 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* DESIGN.md › Accessibility: a solid square outline, no transition. */
+  :focus-visible {
+    outline: var(--zsd-x-zsd-accessibility-focus-width) solid
+      var(--zsd-x-zsd-accessibility-focus-color);
+    outline-offset: var(--zsd-x-zsd-accessibility-focus-offset);
+  }
+  /* The same in both modes and in code blocks (5.3:1). */
+  ::selection {
+    background-color: var(--zsd-colors-primary);
+    color: var(--zsd-colors-on-primary);
+  }
   html {
     @apply font-sans;
     /* Anchors and focused elements stay clear of the sticky header. */
@@ -212,7 +306,7 @@
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation-duration: var(--zsd-x-zsd-motion-duration-slow);
-  animation-timing-function: var(--zsd-x-zsd-motion-easing-standard);
+  animation-timing-function: var(--zsd-x-zsd-motion-easing-enter);
 }
 
 /* ADR-0005: View Transitions (theme crossfade, page changes) are instant

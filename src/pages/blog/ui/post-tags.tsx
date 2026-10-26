@@ -5,7 +5,7 @@ import type { Tag } from "@contracts/api/public"
 import { useLang, useT } from "@/shared/i18n"
 
 const MOTION_FAST =
-  "transition-colors duration-(--zsd-x-zsd-motion-duration-fast) ease-(--zsd-x-zsd-motion-easing-standard) motion-reduce:transition-none"
+  "transition-colors duration-(--zsd-x-zsd-motion-duration-fast) ease-zsd-hover motion-reduce:transition-none"
 
 // DESIGN.md › Badge, as links that filter the list by their Tag, lifted above
 // the stretched link of a card by `relative z-10`. The one the list is

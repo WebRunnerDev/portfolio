@@ -32,6 +32,43 @@ const deprecatedInsetRestrictions = [
   },
 ]
 
+// DESIGN.md › Motion: only the curves from DESIGN.md. In classes that is
+// `ease-zsd-*` (index.css drops Tailwind's own), never a keyword or an
+// arbitrary curve, also inside arbitrary transitions and animations.
+const KEYWORD_CURVE =
+  "[:_,](ease|ease-in|ease-out|ease-in-out|linear)(?=[_,)\\]])"
+const easingRestrictions = [
+  {
+    pattern: "^(.*:)?ease-(linear|in|out|in-out|initial)$",
+    message: "DESIGN.md bans keyword curves; use `ease-zsd-*`.",
+  },
+  {
+    pattern: "^(.*:)?ease-[\\[(].*$",
+    message: "Take the curve from DESIGN.md: `ease-zsd-*`.",
+  },
+  {
+    pattern: `^(.*:)?(\\[(transition|animation)[^\\]]*|animate-\\[.*)${KEYWORD_CURVE}.*$`,
+    message:
+      "DESIGN.md bans keyword curves; use the --zsd-x-zsd-motion-easing-* tokens.",
+  },
+]
+
+// The same for Motion: `ease` comes from EASE in @/shared/lib/motion, and a
+// transition object names it, or Motion falls back to its keyword curves.
+const motionEasingRestrictions = [
+  {
+    selector:
+      "Property[key.name='ease']:not([value.type='Identifier'], [value.type='MemberExpression'])",
+    message:
+      "Take the curve from EASE in @/shared/lib/motion (DESIGN.md › Motion).",
+  },
+  {
+    selector:
+      ":matches(JSXAttribute[name.name='transition'] > JSXExpressionContainer, Property[key.name='transition']) > ObjectExpression:not(:has(> Property[key.name='ease']))",
+    message: "Give the transition an `ease` from EASE in @/shared/lib/motion.",
+  },
+]
+
 export default defineConfig([
   globalIgnores([
     "dist",
@@ -69,8 +106,9 @@ export default defineConfig([
       ],
       "better-tailwindcss/no-restricted-classes": [
         "error",
-        { restrict: deprecatedInsetRestrictions },
+        { restrict: [...deprecatedInsetRestrictions, ...easingRestrictions] },
       ],
+      "no-restricted-syntax": ["error", ...motionEasingRestrictions],
       "better-tailwindcss/no-deprecated-classes": "error",
       "better-tailwindcss/no-duplicate-classes": "error",
       "better-tailwindcss/no-conflicting-classes": "error",

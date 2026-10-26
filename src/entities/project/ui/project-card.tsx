@@ -12,7 +12,7 @@ import { ProjectStatus } from "./project-status"
 import { ProjectTechnologies } from "./project-technologies"
 
 const MOTION_FAST =
-  "transition-colors duration-(--zsd-x-zsd-motion-duration-fast) ease-(--zsd-x-zsd-motion-easing-standard) motion-reduce:transition-none"
+  "transition-colors duration-(--zsd-x-zsd-motion-duration-fast) ease-zsd-hover motion-reduce:transition-none"
 
 // One column below `sm`, two from `sm`, three from `lg` in the 1200px content
 // box (DESIGN.md › Responsive behavior).
@@ -85,7 +85,7 @@ export function ProjectCard({
       className={cn(
         "group/card relative h-full",
         linked &&
-          "hover:elevation-accent has-[a.card-link:focus-visible]:outline-2 has-[a.card-link:focus-visible]:outline-offset-2 has-[a.card-link:focus-visible]:outline-ring has-[a.card-link:focus-visible]:elevation-accent"
+          "focus-chamfer-md hover:elevation-accent has-[a.card-link:focus-visible]:elevation-accent"
       )}
     >
       {/* DESIGN.md › Shapes: the outer layer draws the chamfered border. */}

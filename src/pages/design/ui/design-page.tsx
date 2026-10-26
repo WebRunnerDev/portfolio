@@ -7,6 +7,7 @@ import { useDirection } from "@/shared/lib/direction"
 import { cn } from "@/shared/lib/utils"
 import { Button } from "@/shared/ui/kit"
 import { Logo, LOGO_TILES } from "@/shared/ui/logo"
+import { Reveal, RevealText } from "@/shared/ui/reveal"
 
 // Design showcase: renders DESIGN.md tokens with real fonts in both modes.
 // Not linked from navigation and marked noindex. /ar/design shows RTL.
@@ -95,7 +96,7 @@ const SPACING_VARS = SPACING_TOKENS.map((t) => `--zsd-spacing-${t}`)
 const FOCUS_RING =
   "outline-offset-2 focus-visible:outline-2 focus-visible:outline-ring"
 const MOTION_FAST =
-  "transition-colors duration-(--zsd-x-zsd-motion-duration-fast) ease-(--zsd-x-zsd-motion-easing-standard) motion-reduce:transition-none"
+  "transition-colors duration-(--zsd-x-zsd-motion-duration-fast) ease-zsd-hover motion-reduce:transition-none"
 
 export function DesignPage() {
   const { lang } = route.useParams()
@@ -119,7 +120,8 @@ export function DesignPage() {
         </h1>
         <p className="mt-zsd-lg max-w-(--zsd-x-zsd-layout-prose-max) text-zsd-body-lg text-zsd-on-surface-muted">
           Every token from DESIGN.md with real fonts. Switch the mode and the
-          Lang in the header. Press Tab to check the focus outline.
+          Lang in the header. Press Tab to check the focus outline; select text
+          to check the selection.
         </p>
       </div>
       <ColorsSection />
@@ -510,11 +512,11 @@ function PrimaryButton({
     <button
       type="button"
       className={cn(
-        "group/btn hover:elevation-accent focus-visible:elevation-accent disabled:cursor-not-allowed",
-        FOCUS_RING,
+        "group/btn focus-chamfer-sm relative hover:elevation-accent focus-visible:elevation-accent disabled:cursor-not-allowed",
         force === "hover" && "elevation-accent",
-        force === "focus" && "outline-2 outline-ring"
+        force === "focus" && "elevation-accent"
       )}
+      data-focus-preview={force === "focus" || undefined}
       {...props}
     >
       <span
@@ -771,7 +773,7 @@ function ProjectCard({
   return (
     <article
       className={cn(
-        "group/card relative hover:elevation-accent has-[a.card-link:focus-visible]:outline-2 has-[a.card-link:focus-visible]:outline-offset-2 has-[a.card-link:focus-visible]:outline-ring has-[a:focus-visible]:elevation-accent"
+        "group/card focus-chamfer-md relative hover:elevation-accent has-[a:focus-visible]:elevation-accent"
       )}
     >
       <div
@@ -949,11 +951,18 @@ function TilesSection() {
 /* ---------- Motion ---------- */
 
 function MotionSection() {
+  const curves = [
+    ["easing-enter", "ease-zsd-enter", "Entering, reveals"],
+    ["easing-hover", "ease-zsd-hover", "Hover and press"],
+    ["easing-layout", "ease-zsd-layout", "Rhombus tiles"],
+    ["easing-exit", "ease-zsd-exit", "Leaving"],
+  ] as const
   const durations = [
     ["duration-fast", "duration-(--zsd-x-zsd-motion-duration-fast)"],
     ["duration-base", "duration-(--zsd-x-zsd-motion-duration-base)"],
     ["duration-slow", "duration-(--zsd-x-zsd-motion-duration-slow)"],
   ] as const
+  const [run, setRun] = useState(0)
 
   return (
     <Section
@@ -961,27 +970,108 @@ function MotionSection() {
       title="Motion"
       lead="Hover a row. Movement follows the reading direction, so it flips in RTL. Reduced motion turns it off."
     >
-      <ul className="max-w-xl space-y-zsd-sm">
-        {durations.map(([name, cls]) => (
-          <li
-            key={name}
-            className="group/motion flex items-center gap-zsd-lg border border-border p-zsd-md"
-          >
-            <span className="w-32 shrink-0 font-zsd-code-md text-zsd-body-sm">
-              {name}
-            </span>
-            <span className="relative h-6 flex-1">
-              <span
+      <div className="grid gap-zsd-xl lg:grid-cols-2">
+        <div>
+          <Caption>Curves, in duration-slow</Caption>
+          <ul className="space-y-zsd-sm">
+            {curves.map(([name, cls, use]) => (
+              <MotionRow
+                key={name}
+                name={name}
+                note={use}
                 className={cn(
-                  "absolute inset-s-1 top-1 size-4 rotate-45 bg-zsd-primary transition-transform ease-(--zsd-x-zsd-motion-easing-standard) group-hover/motion:translate-x-40 motion-reduce:transition-none rtl:group-hover/motion:-translate-x-40",
+                  "duration-(--zsd-x-zsd-motion-duration-slow)",
                   cls
                 )}
               />
-            </span>
-          </li>
-        ))}
-      </ul>
+            ))}
+          </ul>
+        </div>
+        <div>
+          <Caption>Durations, in easing-hover</Caption>
+          <ul className="space-y-zsd-sm">
+            {durations.map(([name, cls]) => (
+              <MotionRow
+                key={name}
+                name={name}
+                className={cn("ease-zsd-hover", cls)}
+              />
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      <div className="mt-zsd-xxl flex flex-wrap items-center justify-between gap-zsd-md">
+        <Caption>Reveal and RevealText, once in the viewport</Caption>
+        <button
+          type="button"
+          className={SECONDARY_BUTTON}
+          onClick={() => setRun((n) => n + 1)}
+        >
+          Replay
+        </button>
+      </div>
+      <div key={run} className="space-y-zsd-xl">
+        <RevealText
+          as="p"
+          text={"Heavy graphite\nthat gains speed"}
+          className="font-zsd-display-sm text-zsd-display-sm text-balance break-words"
+        />
+        <RevealText
+          as="p"
+          by="line"
+          delay={0.4}
+          text={"Lines move whole:\nfor body text and lists."}
+          className="text-zsd-body-lg text-zsd-on-surface-muted"
+        />
+        <ul className="grid gap-zsd-md sm:grid-cols-4">
+          {["stagger-item", "× order", "from the", "inline start"].map(
+            (label, i) => (
+              <Reveal
+                key={label}
+                as="li"
+                order={i}
+                x={40}
+                className="border border-border bg-zsd-surface-raised p-zsd-md font-zsd-code-md text-zsd-body-sm"
+              >
+                {label}
+              </Reveal>
+            )
+          )}
+        </ul>
+      </div>
     </Section>
+  )
+}
+
+function MotionRow({
+  name,
+  note,
+  className,
+}: {
+  name: string
+  note?: string
+  className: string
+}) {
+  return (
+    <li className="group/motion flex items-center gap-zsd-lg border border-border p-zsd-md">
+      <span className="w-32 shrink-0">
+        <span className="block font-zsd-code-md text-zsd-body-sm">{name}</span>
+        {note && (
+          <span className="block text-zsd-body-sm text-zsd-on-surface-muted">
+            {note}
+          </span>
+        )}
+      </span>
+      <span className="relative h-6 flex-1">
+        <span
+          className={cn(
+            "absolute inset-s-1 top-1 size-4 rotate-45 bg-zsd-primary transition-transform group-hover/motion:translate-x-32 motion-reduce:transition-none rtl:group-hover/motion:-translate-x-32",
+            className
+          )}
+        />
+      </span>
+    </li>
   )
 }
 

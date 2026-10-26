@@ -101,7 +101,7 @@ export function Lightbox({
           event.preventDefault()
           onClosed(photo)
         }}
-        className="inset-0 flex size-full max-w-none translate-0 flex-col gap-0 rounded-none bg-zsd-surface p-0 text-zsd-on-surface ring-0 duration-(--zsd-x-zsd-motion-duration-base) sm:max-w-none rtl:translate-0 data-open:zoom-in-100 motion-reduce:data-open:animate-none data-closed:zoom-out-100"
+        className="inset-0 flex size-full max-w-none translate-0 flex-col gap-0 rounded-none bg-zsd-surface p-0 text-zsd-on-surface ring-0 duration-(--zsd-x-zsd-motion-duration-base) ease-zsd-enter sm:max-w-none rtl:translate-0 data-open:zoom-in-100 motion-reduce:data-open:animate-none data-closed:ease-zsd-exit data-closed:zoom-out-100"
       >
         <DialogTitle lang={titleLang} className="sr-only">
           {title}
@@ -145,9 +145,9 @@ export function Lightbox({
               draggable={false}
               style={offset ? { translate: `${offset}px` } : undefined}
               className={cn(
-                "size-full animate-in object-contain duration-(--zsd-x-zsd-motion-duration-base) fade-in-0 select-none motion-reduce:animate-none",
+                "size-full animate-in object-contain duration-(--zsd-x-zsd-motion-duration-base) ease-zsd-enter fade-in-0 select-none motion-reduce:animate-none",
                 offset === 0 &&
-                  "transition-[translate] ease-(--zsd-x-zsd-motion-easing-standard) motion-reduce:transition-none"
+                  "transition-[translate] ease-zsd-enter motion-reduce:transition-none"
               )}
             />
           </div>

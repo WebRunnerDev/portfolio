@@ -70,6 +70,8 @@ export default defineConfig({
         test: {
           name: "unit",
           include: ["{src,contracts,migrations}/**/*.test.{ts,tsx}"],
+          // Vitest empties CSS; the motion tokens test reads this one raw.
+          css: { include: [/src\/styles\/tokens\.css/] },
         },
       },
       {

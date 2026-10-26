@@ -34,6 +34,18 @@ Frontend `src/` follows FSD 2.1 ([ADR-0009](../adr/0009-feature-sliced-design.md
 - **Storage** through `readTheme` / `writeTheme`: they survive blocked `localStorage`.
 - **Switcher:** `ThemeSwitcher` from `@/features/theme-switcher`.
 
+## Motion
+
+Motion ([ADR-0005](../adr/0005-motion-and-view-transitions.md)) and the curves, durations and staggers of DESIGN.md › Motion.
+
+- **Tokens:** DESIGN.md first, then `src/styles/tokens.css` (`zsd export`) and `EASE`/`DURATION`/`STAGGER` in `@/shared/lib/motion` (seconds, bezier arrays). `tokens.test.ts` checks all three agree.
+- **Classes:** `ease-zsd-enter|hover|layout|exit`. Tailwind's `ease-in`/`ease-out`/`ease-in-out` are removed; a `transition-*` without an ease class takes `easing-hover` and `duration-fast`. ESLint rejects keyword and arbitrary curves (`easing-lint.test.ts`).
+- **Motion:** `MotionProvider` (`src/app/providers/`, in the `/$lang` layout) is `LazyMotion strict` + `MotionConfig reducedMotion="user"`. Use `m.*`, never `motion.*`; the animation features load in their own chunk (`features-*.js`) after the first paint. A `transition` names its `ease` from `EASE` (ESLint).
+- **Reveal** (`@/shared/ui/reveal`): `<Reveal order x>` fades a block in once it enters the viewport (`order × stagger-item`, `x` in the reading direction via `flipX`). `<RevealText text as by>` moves words (or lines, `by="line"`) up from under a mask, `stagger-word` apart; `\n` breaks a line by hand; screen readers get the text in one piece. Both render the end state under reduced motion or without IntersectionObserver, and show it as is if the animation hasn't started by `choreography-max` (features failed to load). E2E: `e2e/motion.spec.ts`.
+- **Focus:** a solid square outline from the `focus-*` tokens on every `:focus-visible` (`index.css`). On a chamfered element put `relative focus-chamfer-sm|md` on the element that takes the focus (or holds the `.card-link`), not on the clipped one: the ring follows the cut and mirrors in RTL.
+- **Selection:** `on-primary` on `primary`, everywhere (`index.css`).
+- **Weight:** the `m` core adds ≈ 11 KB gzip to every page, the features chunk ≈ 19 KB after the first paint.
+
 ## Layout
 
 The `/$lang` route renders the layout: `SiteHeader` (`@/widgets/header`), `<main id="main">`, `SiteFooter` (`@/widgets/footer`). The menu (`@/widgets/menu`) goes into the header through its `menu` slot, because widgets can't import each other.
