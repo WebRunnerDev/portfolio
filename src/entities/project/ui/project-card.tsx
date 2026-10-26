@@ -85,7 +85,7 @@ export function ProjectCard({
       className={cn(
         "group/card relative h-full",
         linked &&
-          "hover:elevation-accent has-[a.card-link:focus-visible]:outline-2 has-[a.card-link:focus-visible]:outline-offset-2 has-[a.card-link:focus-visible]:outline-ring has-[a.card-link:focus-visible]:elevation-accent"
+          "focus-chamfer-md hover:elevation-accent has-[a.card-link:focus-visible]:elevation-accent"
       )}
     >
       {/* DESIGN.md › Shapes: the outer layer draws the chamfered border. */}

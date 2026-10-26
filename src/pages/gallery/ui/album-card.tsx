@@ -72,7 +72,7 @@ export function AlbumCard({
   return (
     <article
       data-testid="album-card"
-      className="group/card relative h-full hover:elevation-accent has-[a.card-link:focus-visible]:outline-2 has-[a.card-link:focus-visible]:outline-offset-2 has-[a.card-link:focus-visible]:outline-ring has-[a.card-link:focus-visible]:elevation-accent"
+      className="group/card focus-chamfer-md relative h-full hover:elevation-accent has-[a.card-link:focus-visible]:elevation-accent"
     >
       {/* DESIGN.md › Shapes: the outer layer draws the chamfered border. */}
       <div
