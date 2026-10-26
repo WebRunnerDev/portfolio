@@ -22,5 +22,11 @@
     "package": "basic-ftp",
     "reason": "The fix is in 6.x, but get-uri (via proxy-agent of @puppeteer/browsers) pins ^5. Only the Node Chrome downloader of @cloudflare/puppeteer reaches it; the Workers entry never imports it.",
     "expires": "2027-01-15"
+  },
+  {
+    "id": "GHSA-mrhx-c7xc-m3w5",
+    "package": "zod",
+    "reason": "The fix is in 4.6.6; zod 3 has none, and steiger (0.8.0 too) pins ^3.25.76. Steiger is the FSD lint CLI and validates only our own config with it; nothing of it ships. Every zod 4 copy is at >=4.6.6 through the package.json overrides.",
+    "expires": "2027-01-15"
   }
 ]
