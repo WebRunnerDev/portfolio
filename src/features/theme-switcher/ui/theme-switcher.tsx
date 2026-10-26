@@ -37,7 +37,7 @@ export function ThemeSwitcher({ className }: { className?: string }) {
             className={cn(
               "size-zsd-control-height rounded-none! text-zsd-on-surface-muted hover:bg-transparent hover:text-zsd-on-surface",
               "outline-offset-[-2px] focus-visible:ring-0 focus-visible:outline-2 focus-visible:outline-ring",
-              "transition-colors duration-(--zsd-x-zsd-motion-duration-fast) ease-(--zsd-x-zsd-motion-easing-standard) motion-reduce:transition-none",
+              "transition-colors duration-(--zsd-x-zsd-motion-duration-fast) ease-zsd-hover motion-reduce:transition-none",
               "data-[state=on]:bg-transparent data-[state=on]:text-zsd-primary-text data-[state=on]:shadow-[inset_0_-2px_0_var(--zsd-colors-primary)]"
             )}
           >

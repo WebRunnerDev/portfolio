@@ -39,7 +39,7 @@ export function LangSwitcher({ className }: { className?: string }) {
           className={cn(
             "flex h-zsd-control-height min-w-zsd-control-height items-center justify-center px-zsd-sm font-zsd-label-mono text-zsd-label-mono uppercase",
             "outline-offset-[-2px] focus-visible:outline-2 focus-visible:outline-ring",
-            "transition-colors duration-(--zsd-x-zsd-motion-duration-fast) ease-(--zsd-x-zsd-motion-easing-standard) motion-reduce:transition-none",
+            "transition-colors duration-(--zsd-x-zsd-motion-duration-fast) ease-zsd-hover motion-reduce:transition-none",
             l === lang
               ? "text-zsd-primary-text shadow-[inset_0_-2px_0_var(--zsd-colors-primary)]"
               : "text-zsd-on-surface-muted hover:text-zsd-on-surface"

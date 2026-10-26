@@ -10,7 +10,7 @@ import { PostDate } from "./post-date"
 import { PostTags } from "./post-tags"
 
 const MOTION_FAST =
-  "transition-colors duration-(--zsd-x-zsd-motion-duration-fast) ease-(--zsd-x-zsd-motion-easing-standard) motion-reduce:transition-none"
+  "transition-colors duration-(--zsd-x-zsd-motion-duration-fast) ease-zsd-hover motion-reduce:transition-none"
 
 // One column below `sm`, two from `sm`, three from `lg` in the 1200px content
 // box (DESIGN.md › Responsive behavior), as the Projects grid.

@@ -19,6 +19,19 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* DESIGN.md › Motion: only the curves from tokens.css, as `ease-zsd-*`.
+ * Tailwind's keyword curves (ease-in, ease-out, ease-in-out) are removed; a
+ * transition without an ease class takes the hover curve and duration. */
+@theme inline {
+  --ease-*: initial;
+  --ease-zsd-enter: var(--zsd-x-zsd-motion-easing-enter);
+  --ease-zsd-hover: var(--zsd-x-zsd-motion-easing-hover);
+  --ease-zsd-layout: var(--zsd-x-zsd-motion-easing-layout);
+  --ease-zsd-exit: var(--zsd-x-zsd-motion-easing-exit);
+  --default-transition-timing-function: var(--zsd-x-zsd-motion-easing-hover);
+  --default-transition-duration: var(--zsd-x-zsd-motion-duration-fast);
+}
+
 @theme inline {
   --font-heading: var(--zsd-typography-headline-lg-font-family);
   --font-sans: var(--zsd-typography-body-md-font-family);
@@ -212,7 +225,7 @@
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation-duration: var(--zsd-x-zsd-motion-duration-slow);
-  animation-timing-function: var(--zsd-x-zsd-motion-easing-standard);
+  animation-timing-function: var(--zsd-x-zsd-motion-easing-enter);
 }
 
 /* ADR-0005: View Transitions (theme crossfade, page changes) are instant
