@@ -318,3 +318,46 @@
     animation: none !important;
   }
 }
+
+/* DESIGN.md › Tile: the rhombus loader (`Loader` in @/shared/ui/loader). Each
+ * lit tile fades in and out over the dark one, `choreography-max` a round, on
+ * the tile curve; its own delay sets its place in the wave. Under reduced
+ * motion the tiles stand lit. `loader-delayed` keeps it hidden for the first
+ * 300ms (LOADER_DELAY_MS), then fades it in, or shows it at once under reduced
+ * motion. */
+@keyframes loader-tile {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes loader-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@utility loader-tile {
+  opacity: 0;
+  animation: loader-tile var(--zsd-x-zsd-motion-choreography-max)
+    var(--zsd-x-zsd-motion-easing-layout) infinite;
+  @media (prefers-reduced-motion: reduce) {
+    opacity: 1;
+    animation: none;
+  }
+}
+
+@utility loader-delayed {
+  animation: loader-in var(--zsd-x-zsd-motion-duration-base)
+    var(--zsd-x-zsd-motion-easing-enter) 300ms both;
+  @media (prefers-reduced-motion: reduce) {
+    animation-duration: 0s;
+  }
+}
