@@ -22,6 +22,8 @@ export const ru: Messages = {
   "footer.copyEmail": "Скопировать почту",
   "footer.copied": "Скопировано",
   "footer.copyFailed": "Не удалось скопировать",
+  "footer.title": "Давайте поговорим",
+  "footer.top": "Наверх",
   "stub.soon": "Раздел скоро появится.",
   "notFound.title": "Страница не найдена",
   "notFound.text": "По этому адресу ничего нет.",

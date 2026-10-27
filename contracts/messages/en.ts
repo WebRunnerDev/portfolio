@@ -21,6 +21,8 @@ export const en = {
   "footer.copyEmail": "Copy email",
   "footer.copied": "Copied",
   "footer.copyFailed": "Couldn't copy",
+  "footer.title": "Let's talk",
+  "footer.top": "Back to top",
   "stub.soon": "This section is on its way.",
   "notFound.title": "Page not found",
   "notFound.text": "There is no page at this address.",
