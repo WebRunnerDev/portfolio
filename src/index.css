@@ -296,8 +296,12 @@
   }
   html {
     @apply font-sans;
-    /* Anchors and focused elements stay clear of the sticky header. */
-    scroll-padding-top: var(--zsd-x-zsd-layout-header-height);
+    /* Anchors and focused elements stay clear of the sticky header and its
+     * bottom border. */
+    scroll-padding-top: calc(
+      var(--zsd-x-zsd-layout-header-height) +
+        var(--zsd-x-zsd-border-width-default)
+    );
   }
 }
 
