@@ -23,7 +23,9 @@ test("the switcher keeps the path and the cookie wins on /", async ({
 
   await page.goto("/")
   await expect(page).toHaveURL(/\/kk$/)
-  await expect(page.getByText("Портфолио жақында ашылады.")).toBeVisible()
+  await expect(
+    page.getByRole("link", { name: "Түйіндемені ашу" })
+  ).toBeVisible()
 })
 
 test("hreflang lists every Lang and x-default", async ({ page }) => {

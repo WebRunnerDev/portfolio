@@ -1,7 +1,8 @@
 import type { Messages } from "./en"
 
 export const ru: Messages = {
-  "home.tagline": "Портфолио скоро появится.",
+  "home.cv": "Открыть резюме",
+  "home.projects": "Смотреть проекты",
   "header.menu": "Меню",
   "header.close": "Закрыть меню",
   "header.skip": "К содержимому",

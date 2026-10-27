@@ -1,12 +1,13 @@
-import { useT } from "@/shared/i18n"
+import { getRouteApi } from "@tanstack/react-router"
+
+import { useHeroTier } from "../model/use-hero-tier"
+import { Hero } from "./hero"
+
+const route = getRouteApi("/$lang/")
 
 export function HomePage() {
-  const t = useT()
+  const { profile } = route.useLoaderData()
+  const tier = useHeroTier()
 
-  return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-zsd-lg p-6">
-      <h1 className="text-2xl font-medium">WebRunner</h1>
-      <p className="text-zsd-on-surface-muted">{t("home.tagline")}</p>
-    </div>
-  )
+  return <Hero tier={tier} profile={profile} />
 }

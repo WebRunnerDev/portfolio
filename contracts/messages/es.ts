@@ -1,7 +1,8 @@
 import type { Messages } from "./en"
 
 export const es: Messages = {
-  "home.tagline": "El portafolio está en camino.",
+  "home.cv": "Ver el CV",
+  "home.projects": "Ver proyectos",
   "header.menu": "Menú",
   "header.close": "Cerrar menú",
   "header.skip": "Ir al contenido",
