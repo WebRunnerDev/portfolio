@@ -1,4 +1,4 @@
-import { Suspense, use, type CSSProperties } from "react"
+import { lazy, Suspense, use, type CSSProperties } from "react"
 import { Link } from "@tanstack/react-router"
 
 import type { Profile } from "@contracts/api/public"
@@ -25,10 +25,30 @@ const ACTIONS_START = 0.6
 const delay = (seconds: number) =>
   ({ "--hero-delay": `${seconds}s` }) as CSSProperties
 
-// The effect behind the text. `full` shows `lite` until the Kinetic Grid
-// lands (#117).
-function HeroEffect({ tier }: { tier: HeroTier }) {
-  return tier === "static" ? <HeroStatic /> : <HeroLite />
+// Lazy: the Kinetic Grid stays out of the initial JS (ADR-0006). If its
+// chunk doesn't load, `lite` stays.
+const HeroFull = lazy(() =>
+  import("./hero-full").then(
+    (m) => ({ default: m.HeroFull }),
+    () => ({ default: HeroLite })
+  )
+)
+
+// The effect behind the text. `full` shows `lite` while its chunk loads.
+function HeroEffect({
+  tier,
+  onFullFail,
+}: {
+  tier: HeroTier
+  onFullFail: () => void
+}) {
+  if (tier === "static") return <HeroStatic />
+  if (tier === "lite") return <HeroLite />
+  return (
+    <Suspense fallback={<HeroLite />}>
+      <HeroFull onFail={onFullFail} />
+    </Suspense>
+  )
 }
 
 // The real name and the headline from the Profile, once it loads; nothing
@@ -49,12 +69,15 @@ function HeroSubtitle({ profile }: { profile: Promise<HeroProfile | null> }) {
 // the subtitle and the two main actions over the effect of the Hero Tier.
 // One viewport tall less the header. The effect spans the whole hero up to
 // the viewport's edges and is never mirrored; the text follows the Direction.
+// `onFullFail` is called when `full` can't hold on this device after all.
 export function Hero({
   tier,
   profile,
+  onFullFail,
 }: {
   tier: HeroTier
   profile: Promise<HeroProfile | null>
+  onFullFail: () => void
 }) {
   const lang = useLang()
   const t = useT()
@@ -65,7 +88,7 @@ export function Hero({
       className="relative isolate flex min-h-[max(480px,calc(100svh-var(--zsd-x-zsd-layout-header-height)-var(--zsd-x-zsd-border-width-default)))] overflow-hidden"
     >
       <div aria-hidden="true" dir="ltr" className="absolute inset-0 -z-10">
-        <HeroEffect tier={tier} />
+        <HeroEffect tier={tier} onFullFail={onFullFail} />
       </div>
       <div className="mx-auto flex w-full max-w-(--zsd-x-zsd-layout-content-max) flex-col justify-center px-zsd-lg py-zsd-section md:px-zsd-xxl">
         <HeroBrand />
