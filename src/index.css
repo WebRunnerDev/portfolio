@@ -366,6 +366,24 @@
   }
 }
 
+/* docs/design-brief.md › Load choreography: on the home page the header's
+ * controls rise into place after `--header-delay` (`SiteHeader`). Clicks land
+ * while they move. Instant under reduced motion. */
+@keyframes header-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@utility header-in {
+  animation: header-in var(--zsd-x-zsd-motion-duration-slow)
+    var(--zsd-x-zsd-motion-easing-enter) var(--header-delay, 0s) backwards;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
 /* DESIGN.md › Motion: the full-screen menu (`MenuDialog` in @/widgets/menu,
  * timings in its lib/choreography.ts). The surface fades in; on close it
  * waits until the tiles are back in the logo (`--menu-fold-end`), so Radix
