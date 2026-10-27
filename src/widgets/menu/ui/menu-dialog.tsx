@@ -17,7 +17,7 @@ import {
 import { BrandLockup } from "@/shared/ui/logo"
 
 import { FOLD_END, rowDelay } from "../lib/choreography"
-import { MenuButton } from "./menu-button"
+import { BAR_BUTTON, MenuButton } from "./menu-button"
 import { MenuTiles } from "./menu-tiles"
 
 // A row rises from under its mask after the tiles (`menu-row-in`,
@@ -57,10 +57,10 @@ export function MenuDialog() {
             />
             <DialogClose asChild>
               <Button
-                variant="ghost"
+                variant="outline"
                 aria-label={t("header.close")}
                 title={t("header.close")}
-                className="ms-auto"
+                className={`ms-auto ${BAR_BUTTON}`}
               >
                 <X aria-hidden />
                 <span className="max-sm:hidden">{t("header.close")}</span>
