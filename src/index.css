@@ -361,3 +361,66 @@
     animation-duration: 0s;
   }
 }
+
+/* DESIGN.md › Motion: the full-screen menu (`MenuDialog` in @/widgets/menu,
+ * timings in its lib/choreography.ts). The surface fades in; on close it
+ * waits until the tiles are back in the logo (`--menu-fold-end`), so Radix
+ * keeps the menu mounted that long. Each row rises from under its mask after
+ * `--menu-delay` and drops at once on close. Instant under reduced motion. */
+@keyframes menu-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes menu-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes menu-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+}
+
+@keyframes menu-row-out {
+  to {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+}
+
+@utility menu-in {
+  animation: menu-in var(--zsd-x-zsd-motion-duration-fast)
+    var(--zsd-x-zsd-motion-easing-enter);
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@utility menu-out {
+  animation: menu-out var(--zsd-x-zsd-motion-duration-fast)
+    var(--zsd-x-zsd-motion-easing-exit) var(--menu-fold-end, 0s) forwards;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@utility menu-row-in {
+  animation: menu-row-in var(--zsd-x-zsd-motion-duration-slow)
+    var(--zsd-x-zsd-motion-easing-enter) var(--menu-delay, 0s) backwards;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@utility menu-row-out {
+  animation: menu-row-out var(--zsd-x-zsd-motion-duration-fast)
+    var(--zsd-x-zsd-motion-easing-exit) forwards;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
