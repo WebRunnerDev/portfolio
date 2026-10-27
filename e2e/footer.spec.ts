@@ -56,3 +56,30 @@ test("ar uses the EN strings", async ({ page }) => {
     page.getByRole("contentinfo").getByRole("button", { name: "Copy email" })
   ).toBeVisible()
 })
+
+// Issue #115: the footer is the contact section closing every page.
+test("the footer closes the page with a title and a way back up", async ({
+  page,
+}) => {
+  await page.goto("/de/blog")
+  const footer = page.getByRole("contentinfo")
+  await expect(
+    footer.getByRole("heading", { level: 2, name: "Lass uns reden" })
+  ).toBeVisible()
+  await footer.getByRole("link", { name: "Nach oben" }).click()
+  await expect(page.locator("main")).toBeFocused()
+  await expect(page.getByRole("banner")).toBeInViewport()
+  expect(await page.evaluate("window.scrollY")).toBe(0)
+})
+
+test("external contacts open in a new tab", async ({ page }) => {
+  await page.goto("/en")
+  const links = page
+    .getByRole("contentinfo")
+    .getByRole("link", { name: /Telegram|LinkedIn|GitHub/ })
+  await expect(links).toHaveCount(3)
+  for (const link of await links.all()) {
+    await expect(link).toHaveAttribute("target", "_blank")
+    await expect(link).toHaveAttribute("rel", "noreferrer")
+  }
+})

@@ -22,6 +22,8 @@ export const kk: Messages = {
   "footer.copyEmail": "Поштаны көшіру",
   "footer.copied": "Көшірілді",
   "footer.copyFailed": "Көшіру мүмкін болмады",
+  "footer.title": "Сөйлесейік",
+  "footer.top": "Жоғарыға",
   "stub.soon": "Бұл бөлім жақында ашылады.",
   "notFound.title": "Бет табылмады",
   "notFound.text": "Бұл мекенжайда бет жоқ.",

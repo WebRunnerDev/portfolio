@@ -23,6 +23,8 @@ export const es: Messages = {
   "footer.copyEmail": "Copiar correo",
   "footer.copied": "Copiado",
   "footer.copyFailed": "No se pudo copiar",
+  "footer.title": "Hablemos",
+  "footer.top": "Volver arriba",
   "stub.soon": "Esta sección está en camino.",
   "notFound.title": "Página no encontrada",
   "notFound.text": "No hay ninguna página en esta dirección.",

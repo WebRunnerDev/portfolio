@@ -296,8 +296,12 @@
   }
   html {
     @apply font-sans;
-    /* Anchors and focused elements stay clear of the sticky header. */
-    scroll-padding-top: var(--zsd-x-zsd-layout-header-height);
+    /* Anchors and focused elements stay clear of the sticky header and its
+     * bottom border. */
+    scroll-padding-top: calc(
+      var(--zsd-x-zsd-layout-header-height) +
+        var(--zsd-x-zsd-border-width-default)
+    );
   }
 }
 
@@ -359,6 +363,24 @@
     var(--zsd-x-zsd-motion-easing-enter) 300ms both;
   @media (prefers-reduced-motion: reduce) {
     animation-duration: 0s;
+  }
+}
+
+/* docs/design-brief.md › Load choreography: on the home page the header's
+ * controls rise into place after `--header-delay` (`SiteHeader`). Clicks land
+ * while they move. Instant under reduced motion. */
+@keyframes header-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@utility header-in {
+  animation: header-in var(--zsd-x-zsd-motion-duration-slow)
+    var(--zsd-x-zsd-motion-easing-enter) var(--header-delay, 0s) backwards;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
   }
 }
 

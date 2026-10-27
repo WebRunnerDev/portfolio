@@ -22,6 +22,8 @@ export const de: Messages = {
   "footer.copyEmail": "E-Mail kopieren",
   "footer.copied": "Kopiert",
   "footer.copyFailed": "Kopieren fehlgeschlagen",
+  "footer.title": "Lass uns reden",
+  "footer.top": "Nach oben",
   "stub.soon": "Dieser Bereich ist unterwegs.",
   "notFound.title": "Seite nicht gefunden",
   "notFound.text": "Unter dieser Adresse gibt es keine Seite.",
