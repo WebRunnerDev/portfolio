@@ -1,7 +1,8 @@
 import type { Messages } from "./en"
 
 export const de: Messages = {
-  "home.tagline": "Das Portfolio ist unterwegs.",
+  "home.cv": "Lebenslauf ansehen",
+  "home.projects": "Projekte ansehen",
   "header.menu": "Menü",
   "header.close": "Menü schließen",
   "header.skip": "Zum Inhalt springen",

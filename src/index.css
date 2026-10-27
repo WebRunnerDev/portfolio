@@ -446,3 +446,130 @@
     animation: none;
   }
 }
+
+/* docs/design-brief.md › Hero (`Hero` in src/pages/home). CSS, not Motion:
+ * the brand is the LCP element and must not wait for a script. The opacity
+ * in `hero-rise` is for LCP: Chrome skips text hidden under its mask at the
+ * first paint, but counts it whole once its opacity rises from 0.
+ * `hero-rise`: a word of the brand moves up from under its mask after
+ * `--hero-delay`; `hero-in`: the subtitle and the actions rise into place;
+ * `hero-gather`: a logo tile flies from its placement into the logo.
+ * Instant under reduced motion. */
+@keyframes hero-rise {
+  from {
+    opacity: 0;
+    transform: translateY(120%);
+  }
+}
+
+@keyframes hero-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes hero-gather {
+  from {
+    opacity: 0;
+  }
+  to {
+    transform: none;
+  }
+}
+
+@utility hero-rise {
+  animation: hero-rise var(--zsd-x-zsd-motion-duration-reveal)
+    var(--zsd-x-zsd-motion-easing-enter) var(--hero-delay, 0s) backwards;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@utility hero-in {
+  animation: hero-in var(--zsd-x-zsd-motion-duration-slow)
+    var(--zsd-x-zsd-motion-easing-enter) var(--hero-delay, 0s) backwards;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+/* The delay comes from the tile's placement (`LogoTiles`). */
+@utility hero-gather {
+  animation: hero-gather var(--zsd-x-zsd-motion-duration-slow)
+    var(--zsd-x-zsd-motion-easing-layout) both;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    transform: none !important;
+  }
+}
+
+/* The brand: `display-lg` on `xl`, down to `display-sm` at 320px. */
+@utility text-hero-brand {
+  font-family: var(--zsd-typography-display-lg-font-family);
+  font-size: clamp(
+    var(--zsd-typography-display-sm-font-size),
+    40px + 10vw,
+    var(--zsd-typography-display-lg-font-size)
+  );
+  font-weight: var(--zsd-typography-display-lg-font-weight);
+  line-height: var(--zsd-typography-display-lg-line-height);
+  letter-spacing: var(--zsd-typography-display-lg-letter-spacing);
+}
+
+/* The `lite` Hero Tier: the logo tiles spread from the logo and gather back,
+ * a wave from left to right; the rust copy on top lights up while they are
+ * out. The spread is each tile's placement (`LogoTiles`): the keyframes start
+ * from none and end on it, back and forth. `--hero-play` pauses them off
+ * screen and on a hidden tab. Never mirrored. */
+@keyframes hero-breathe {
+  from {
+    transform: none;
+  }
+}
+
+@keyframes hero-glow {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 0.4;
+  }
+}
+
+@keyframes hero-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@utility hero-fade {
+  animation: hero-fade var(--zsd-x-zsd-motion-duration-base)
+    var(--zsd-x-zsd-motion-easing-enter);
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@utility hero-breathe {
+  animation: hero-breathe calc(2 * var(--zsd-x-zsd-motion-choreography-max))
+    var(--zsd-x-zsd-motion-easing-layout) infinite alternate backwards;
+  animation-play-state: var(--hero-play, running);
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@utility hero-glow {
+  opacity: 0;
+  animation-name: hero-breathe, hero-glow;
+  animation-duration: calc(2 * var(--zsd-x-zsd-motion-choreography-max));
+  animation-timing-function: var(--zsd-x-zsd-motion-easing-layout);
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+  animation-fill-mode: backwards;
+  animation-play-state: var(--hero-play, running);
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}

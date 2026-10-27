@@ -1,6 +1,7 @@
 // Source of truth for UI keys: every other Lang must define exactly these.
 export const en = {
-  "home.tagline": "Portfolio is on its way.",
+  "home.cv": "View CV",
+  "home.projects": "See projects",
   "header.menu": "Menu",
   "header.close": "Close menu",
   "header.skip": "Skip to content",

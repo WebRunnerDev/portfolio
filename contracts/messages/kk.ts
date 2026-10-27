@@ -1,7 +1,8 @@
 import type { Messages } from "./en"
 
 export const kk: Messages = {
-  "home.tagline": "Портфолио жақында ашылады.",
+  "home.cv": "Түйіндемені ашу",
+  "home.projects": "Жобаларды көру",
   "header.menu": "Мәзір",
   "header.close": "Мәзірді жабу",
   "header.skip": "Мазмұнға өту",
