@@ -1,3 +1,4 @@
+import type { Heading, Parent, Root } from "mdast"
 import ReactMarkdown, { type Components, type ExtraProps } from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { cn } from "cn"
@@ -46,6 +47,23 @@ function dom<P extends ExtraProps>(props: P): Omit<P, "node"> {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { node, ...rest } = props
   return rest
+}
+
+function headingsOf(parent: Parent): Heading[] {
+  return parent.children.flatMap((child) => [
+    ...(child.type === "heading" ? [child] : []),
+    ...("children" in child ? headingsOf(child) : []),
+  ])
+}
+
+// Lifts the headings so the top one is `#`, whether the Markdown starts at
+// `#` or `##`: with the shift below, levels follow the page title unskipped.
+function remarkTopHeading() {
+  return (tree: Root) => {
+    const headings = headingsOf(tree)
+    const shift = Math.min(...headings.map((h) => h.depth)) - 1
+    for (const h of headings) h.depth = (h.depth - shift) as Heading["depth"]
+  }
 }
 
 // The page title is the only h1: the Markdown's headings go one level down.
@@ -183,7 +201,7 @@ export function Markdown({
       )}
     >
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={[remarkGfm, remarkTopHeading]}
         skipHtml
         components={COMPONENTS}
       >

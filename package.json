@@ -66,6 +66,7 @@
     "@feature-sliced/steiger-plugin": "^0.8.0",
     "@playwright/test": "^1.64.1",
     "@tanstack/router-plugin": "^1.168.46",
+    "@types/mdast": "^4.0.4",
     "@types/node": "^24",
     "@types/react": "^19",
     "@types/react-dom": "^19",
