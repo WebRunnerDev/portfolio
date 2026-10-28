@@ -5,6 +5,10 @@ const port = 4173
 // Access passed as in local dev (scripts/e2e-dev.mjs).
 const devPort = 5174
 const devSpecs = /admin-editor\.spec\.ts/
+// axe and the keyboard pass on the production build with content
+// (scripts/audit/server.mjs), which serves the dist/ built for `port`.
+const auditPort = 4175
+const auditSpecs = /a11y\.spec\.ts/
 
 export default defineConfig({
   testDir: "e2e",
@@ -18,7 +22,7 @@ export default defineConfig({
   projects: [
     {
       name: "chromium",
-      testIgnore: devSpecs,
+      testIgnore: [devSpecs, auditSpecs],
       use: { ...devices["Desktop Chrome"] },
     },
     {
@@ -27,6 +31,14 @@ export default defineConfig({
       use: {
         ...devices["Desktop Chrome"],
         baseURL: `http://localhost:${devPort}`,
+      },
+    },
+    {
+      name: "audit",
+      testMatch: auditSpecs,
+      use: {
+        ...devices["Desktop Chrome"],
+        baseURL: `http://localhost:${auditPort}`,
       },
     },
   ],
@@ -39,6 +51,13 @@ export default defineConfig({
     {
       command: `node scripts/e2e-dev.mjs ${devPort}`,
       url: `http://localhost:${devPort}/api/health`,
+      reuseExistingServer: !process.env.CI,
+      timeout: 180_000,
+    },
+    // After the first server: it needs that build.
+    {
+      command: `node scripts/audit/server.mjs ${auditPort}`,
+      url: `http://localhost:${auditPort}/api/health`,
       reuseExistingServer: !process.env.CI,
       timeout: 180_000,
     },
