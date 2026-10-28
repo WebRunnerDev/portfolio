@@ -83,7 +83,9 @@ ADR-0001: crawlers don't run JS, so `worker/meta/serve-page.ts` rewrites `index.
 | 429 | `too_many_requests` | The IP passed a rate limit (Rate limits below); `Retry-After` gives the seconds to wait |
 | 500 | `internal_error` | Unhandled exception; it goes to Workers Logs, the client gets no details |
 | 502 | `render_failed` | CV PDF generation: the Print CV didn't get ready or didn't print (CV PDF below) |
+| 502 | `translation_failed` | Translation draft: the Claude API failed, or its answer can't be used (Translation draft below) |
 | 503 | `browser_unavailable` | CV PDF generation: Browser Rendering gave no browser (CV PDF below) |
+| 503 | `translator_unavailable` | Translation draft: no `ANTHROPIC_API_KEY` on the Worker |
 
 **New endpoint:**
 
@@ -102,6 +104,7 @@ ADR-0001: crawlers don't run JS, so `worker/meta/serve-page.ts` rewrites `index.
 | `ADMIN_WRITE_RATE_LIMIT` | Other methods on `/api/admin/*` | 60 / 60 s | IP |
 | `UPLOAD_RATE_LIMIT` | `POST /api/admin/uploads`, `PUT /api/admin/cv-pdf/:lang` | 20 / 60 s | IP |
 | `CV_PDF_RATE_LIMIT` | `POST /api/admin/cv-pdf/:lang` (starts a browser) | 6 / 60 s | IP |
+| `TRANSLATE_RATE_LIMIT` | `POST /api/admin/translate` (a paid Claude API call) | 10 / 60 s | IP |
 
 - The IP is `CF-Connecting-IP`, which Cloudflare's edge sets on every request. Reads count per path, so the few calls a page makes don't add up; writes per IP, since their paths carry ids.
 - Counters are kept per Cloudflare location and the binding allows only 10 or 60 s periods, so the limits are approximate. `RATE_LIMIT_PERIOD` in `rate-limit.ts` must equal `period`: it is the `Retry-After`.
@@ -202,6 +205,17 @@ ADR-0003: one PDF per Lang, printed from the Print CV (`/{lang}/cv/print`, `docs
 - **Tests:** `worker/cv-pdf/cv-pdf.test.ts` puts a fake browser in with `vi.spyOn(browsers, "launch")` (`worker/cv-pdf/browser.ts`): `vi.mock` doesn't work in workerd.
 
 **Check after the deploy:** at `https://webrunner.dev/admin/cv-pdf` press **Generate** for EN and RU, then open each `/{lang}/cv.pdf`: one page, the text selects, links click, no phone.
+
+## Translation draft
+
+`POST /api/admin/translate` (`worker/api/routes/admin/translate.ts`, schemas in `contracts/api/translate.ts`) behind the Access check: `{ lang, fields: [{ name, value, markdown? }] }` with the EN values of one form in, `{ fields: { <name>: value } }` in `lang` (any Lang but EN) out. Nothing is saved: the admin's **Translation draft** button fills the form, the owner edits and saves it.
+
+- **Provider:** one Messages API call to Claude (`claude-sonnet-5-5`, `worker/translate/draft.ts`) through `@anthropic-ai/sdk`, chosen for the quality of `kk` and `ar`. Structured outputs give back the same fields, a list (bullets) as a list. Server-side fallbacks (`fallbacks: "default"`) retry a declined request on another model.
+- **Markdown:** before the call `protect()` (`worker/translate/markdown.ts`) puts a placeholder `⟦n⟧` in place of each code block, inline code, link target and URL; `restore()` puts them back. A placeholder lost or repeated fails the draft rather than garbling code or links.
+- **Names:** the prompt lists the names to keep as written: the Brand, the owner's EN name, every Technology and every EN company of the Experience (`worker/translate/names.ts`, read on each request).
+- **Key:** the secret `ANTHROPIC_API_KEY` (`npx wrangler secret put ANTHROPIC_API_KEY`; locally `.dev.vars`). It stays in the Worker. Without it: 503 `translator_unavailable`. An SDK error (auth, limits, network) or an unusable answer (refused, cut off, not the fields asked for, placeholders lost): 502 `translation_failed`, details in Workers Logs (`translate`).
+- **Rate limit:** `TRANSLATE_RATE_LIMIT`, 10 a minute per IP (Rate limits above).
+- **Tests:** `worker/translate/translate.test.ts` replaces the call with `vi.spyOn(claude, "send")`.
 
 ## RSS
 
