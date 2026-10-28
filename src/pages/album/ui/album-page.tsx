@@ -5,6 +5,7 @@ import { ArrowLeft } from "lucide-react"
 import type { Photo } from "@contracts/api/public"
 import { imageSrcSet, imageUrl } from "@contracts/media"
 import { useLang, useT, useTPlural } from "@/shared/i18n"
+import { sharedCover } from "@/shared/lib/view-transition"
 import { FallbackNotice, fallbackLang } from "@/shared/ui/fallback-notice"
 import { Loader } from "@/shared/ui/loader"
 
@@ -38,6 +39,11 @@ function rowSpan({ width, height }: Photo) {
 }
 
 const thumbnailId = (photo: Photo) => `photo-${photo.id}`
+
+// The card's cover grows into its photo when that is in the first row; one
+// further down would fly off the screen.
+const isCoverPhoto = (photo: Photo, index: number, coverKey?: string) =>
+  index < EAGER_PHOTOS && photo.key === coverKey
 
 // An Album's photos in D1's order under its title (CONTEXT.md › Album). A
 // photo without a caption is named by its place in the album. Each one is a
@@ -118,6 +124,8 @@ export function AlbumPage() {
                   className="block size-full outline-offset-2 focus-visible:outline-2 focus-visible:outline-ring"
                 >
                   <img
+                    {...(isCoverPhoto(photo, i, album.cover?.key) &&
+                      sharedCover("album", album.slug))}
                     src={imageUrl(photo.key, Math.min(640, photo.width))}
                     srcSet={imageSrcSet(photo.key, photo.width)}
                     sizes={PHOTO_SIZES}

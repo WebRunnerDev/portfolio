@@ -15,9 +15,9 @@ const MOTION_FAST =
 
 // The latest Posts (docs/design-brief.md › Home rhythm): dense and
 // chamber-sized, a list of three, the date and the title, no covers. Each
-// row links to its post; on hover a rust tile shows at its start and the
-// title moves 4px along the reading direction. Leads to the Blog. Not shown
-// without a published Post.
+// row links to its post; on hover and focus, as a card, a rust tile shows
+// at its start and the title moves 4px along the reading direction. Leads to
+// the Blog. Not shown without a published Post.
 export function PostsSection({ posts }: { posts: Promise<Post[]> }) {
   const lang = useLang()
   const t = useT()
@@ -43,7 +43,7 @@ export function PostsSection({ posts }: { posts: Promise<Post[]> }) {
             <Link
               to="/$lang/blog/$slug"
               params={{ lang, slug: post.slug }}
-              className={`group/post flex flex-col gap-x-zsd-xl gap-y-zsd-xs py-zsd-md sm:flex-row sm:items-baseline ${FOCUS_RING}`}
+              className={`group/card flex flex-col gap-x-zsd-xl gap-y-zsd-xs py-zsd-md sm:flex-row sm:items-baseline ${FOCUS_RING}`}
             >
               <time
                 dateTime={post.publishedAt}
@@ -54,11 +54,11 @@ export function PostsSection({ posts }: { posts: Promise<Post[]> }) {
               <span className="flex min-w-0 items-baseline gap-zsd-sm">
                 <span
                   aria-hidden="true"
-                  className={`size-2 shrink-0 rotate-45 bg-zsd-primary opacity-0 transition-opacity group-hover/post:opacity-100 ${MOTION_FAST}`}
+                  className={`size-2 shrink-0 rotate-45 bg-zsd-primary opacity-0 transition-opacity card-active:opacity-100 ${MOTION_FAST}`}
                 />
                 <span
                   lang={fallbackLang(post)}
-                  className={`min-w-0 font-heading text-zsd-headline-sm break-words text-zsd-on-surface transition-transform group-hover/post:translate-x-1 rtl:group-hover/post:-translate-x-1 ${MOTION_FAST}`}
+                  className={`min-w-0 font-heading text-zsd-headline-sm break-words text-zsd-on-surface transition-transform card-active:translate-x-1 rtl:card-active:-translate-x-1 ${MOTION_FAST}`}
                 >
                   {post.title}
                 </span>

@@ -358,3 +358,104 @@ test("the Case Study mirrors on /ar but its code doesn't, at 360px", async ({
     .evaluate((el) => el.scrollWidth - el.clientWidth)
   expect(overflow).toBe(0)
 })
+
+// Issue #119, DESIGN.md › Card: hover and keyboard focus look the same, a
+// tile fills the cut corner and the title moves along the reading direction.
+test("a card answers hover and keyboard focus alike", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "dark" })
+  await mockPublicApi(page)
+  await page.goto("/en/projects")
+  const plotops = cards(page).nth(0)
+  const link = plotops.getByRole("link", { name: "PlotOps" })
+  const tile = plotops.getByTestId("card-corner").locator("span")
+  const title = link.locator("span")
+  await expect(tile).toHaveCSS("scale", "0")
+
+  await plotops.hover()
+  await expect(tile).toHaveCSS("scale", "1.415")
+  await expect(title).toHaveCSS("translate", "4px")
+  // No shadow, not even in dark mode: the border shows the state.
+  await expect(plotops).toHaveCSS("filter", "none")
+
+  await page.mouse.move(0, 0)
+  await expect(tile).toHaveCSS("scale", "0")
+  await expect(title).toHaveCSS("translate", "none")
+
+  await link.focus()
+  await expect(tile).toHaveCSS("scale", "1.415")
+  await expect(title).toHaveCSS("translate", "4px")
+})
+
+test("the title of a card moves the other way in RTL", async ({ page }) => {
+  await mockPublicApi(page)
+  await page.goto("/ar/projects")
+  const plotops = cards(page).nth(0)
+  await plotops.getByRole("link", { name: "PlotOps" }).focus()
+  await expect(
+    plotops.getByRole("link", { name: "PlotOps" }).locator("span")
+  ).toHaveCSS("translate", "-4px")
+})
+
+type Transition = { types: string[]; cover: string | null }
+
+// Issue #119: each View Transition the router starts, its types and which
+// cover carries the shared name in the page being left.
+async function recordTransitions(page: Page) {
+  // No DOM types in e2e/: only what is used.
+  type Cover = { dataset: { sharedCover?: string } }
+  type Browser = {
+    transitions: Transition[]
+    getComputedStyle: (el: Cover) => { viewTransitionName: string }
+    document: {
+      querySelectorAll: (selector: string) => Iterable<Cover>
+      startViewTransition: (
+        arg?: { types?: string[] } | (() => void)
+      ) => unknown
+    }
+  }
+  await page.addInitScript(() => {
+    const browser = globalThis as unknown as Browser
+    const { document } = browser
+    const start = document.startViewTransition.bind(document)
+    browser.transitions = []
+    document.startViewTransition = (arg) => {
+      const named = [...document.querySelectorAll("[data-shared-cover]")].find(
+        (el) => browser.getComputedStyle(el).viewTransitionName === "card-cover"
+      )
+      browser.transitions.push({
+        types: typeof arg === "object" ? [...(arg.types ?? [])] : [],
+        cover: named?.dataset.sharedCover ?? null,
+      })
+      return start(arg)
+    }
+  })
+  return () =>
+    page.evaluate(() =>
+      (globalThis as unknown as Browser).transitions.filter(
+        (t) => t.types.length > 0
+      )
+    )
+}
+
+test("opening a card goes forward and shares its cover; Back goes back", async ({
+  page,
+}) => {
+  await mockPublicApi(page)
+  const transitions = await recordTransitions(page)
+  await page.goto("/en/projects")
+  await cards(page).nth(0).click()
+  await expect(page).toHaveURL(/\/en\/projects\/plotops$/)
+  await expect
+    .poll(transitions)
+    .toEqual([{ types: ["forward"], cover: "project:plotops" }])
+  await expect(
+    page.getByRole("main").locator('img[data-shared-cover="project:plotops"]')
+  ).toHaveCSS("view-transition-name", "card-cover")
+
+  await page.goBack()
+  await expect(page).toHaveURL(/\/en\/projects$/)
+  await expect.poll(transitions).toEqual([
+    { types: ["forward"], cover: "project:plotops" },
+    { types: ["back"], cover: "project:plotops" },
+  ])
+})

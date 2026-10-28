@@ -4,6 +4,8 @@ import { cn } from "cn"
 import type { Post } from "@contracts/api/public"
 import { IMAGE_WIDTHS, imageUrl } from "@contracts/media"
 import { useLang } from "@/shared/i18n"
+import { sharedCover } from "@/shared/lib/view-transition"
+import { CARD_TITLE_SHIFT, CardCorner } from "@/shared/ui/card"
 import { FallbackNotice, fallbackLang } from "@/shared/ui/fallback-notice"
 
 import { PostDate } from "./post-date"
@@ -19,16 +21,20 @@ const COVER_SIZES = "(min-width: 1024px) 384px, (min-width: 640px) 50vw, 100vw"
 const COVER_WIDTHS = IMAGE_WIDTHS.filter((w) => w <= 1280)
 
 // Decorative: the title next to it names the card. A post's cover has no
-// stored size, so the box is 16:9, as a Project's.
+// stored size, so the box is 16:9, as a Project's. It grows into the cover
+// of the post's page.
 function Cover({
   coverKey,
+  slug,
   priority,
 }: {
   coverKey: string
+  slug: string
   priority: boolean
 }) {
   return (
     <img
+      {...sharedCover("post", slug)}
       src={imageUrl(coverKey, 640)}
       srcSet={COVER_WIDTHS.map((w) => `${imageUrl(coverKey, w)} ${w}w`).join(
         ", "
@@ -65,18 +71,22 @@ export function PostCard({
   return (
     <article
       data-testid="post-card"
-      className="group/card focus-chamfer-md relative h-full hover:elevation-accent has-[a.card-link:focus-visible]:elevation-accent"
+      className="group/card focus-chamfer-md relative h-full"
     >
       {/* DESIGN.md › Shapes: the outer layer draws the chamfered border. */}
       <div
         className={cn(
-          "h-full bg-zsd-outline-muted p-px chamfer-md group-hover/card:bg-zsd-primary",
+          "h-full bg-zsd-outline-muted p-px chamfer-md card-active:bg-zsd-primary",
           MOTION_FAST
         )}
       >
         <div className="flex h-full flex-col gap-zsd-md bg-zsd-surface-raised p-zsd-xl chamfer-md">
           {post.coverKey && (
-            <Cover coverKey={post.coverKey} priority={priority} />
+            <Cover
+              coverKey={post.coverKey}
+              slug={post.slug}
+              priority={priority}
+            />
           )}
           <PostDate post={post} />
           <h2
@@ -88,7 +98,7 @@ export function PostCard({
               params={{ lang, slug: post.slug }}
               className="card-link outline-none after:absolute after:inset-0"
             >
-              {post.title}
+              <span className={CARD_TITLE_SHIFT}>{post.title}</span>
             </Link>
           </h2>
           <FallbackNotice fallback={post.fallback} />
@@ -107,6 +117,7 @@ export function PostCard({
           />
         </div>
       </div>
+      <CardCorner />
     </article>
   )
 }

@@ -4,6 +4,8 @@ import { cn } from "cn"
 import type { Project } from "@contracts/api/public"
 import { IMAGE_WIDTHS, imageUrl } from "@contracts/media"
 import { useLang } from "@/shared/i18n"
+import { sharedCover } from "@/shared/lib/view-transition"
+import { CARD_TITLE_SHIFT, CardCorner } from "@/shared/ui/card"
 import { FallbackNotice, fallbackLang } from "@/shared/ui/fallback-notice"
 import { Logo } from "@/shared/ui/logo"
 
@@ -22,11 +24,13 @@ const COVER_WIDTHS = IMAGE_WIDTHS.filter((w) => w <= 1280)
 
 function Cover({
   coverKey,
+  slug,
   priority,
   linked,
   sizes,
 }: {
   coverKey: string | null
+  slug: string
   priority: boolean
   linked: boolean
   sizes: string
@@ -40,16 +44,18 @@ function Cover({
         <Logo
           className={cn(
             "size-16 text-zsd-outline-muted",
-            linked && "group-hover/card:text-zsd-primary",
+            linked && "card-active:text-zsd-primary",
             MOTION_FAST
           )}
         />
       </div>
     )
   }
-  // Decorative: the title next to it names the card.
+  // Decorative: the title next to it names the card. With a Case Study it
+  // grows into the cover of its page.
   return (
     <img
+      {...(linked && sharedCover("project", slug))}
       src={imageUrl(coverKey, 640)}
       srcSet={COVER_WIDTHS.map((w) => `${imageUrl(coverKey, w)} ${w}w`).join(
         ", "
@@ -92,17 +98,13 @@ export function ProjectCard({
   return (
     <article
       data-testid="project-card"
-      className={cn(
-        "group/card relative h-full",
-        linked &&
-          "focus-chamfer-md hover:elevation-accent has-[a.card-link:focus-visible]:elevation-accent"
-      )}
+      className={cn("group/card relative h-full", linked && "focus-chamfer-md")}
     >
       {/* DESIGN.md › Shapes: the outer layer draws the chamfered border. */}
       <div
         className={cn(
           "h-full bg-zsd-outline-muted p-px chamfer-md",
-          linked && "group-hover/card:bg-zsd-primary",
+          linked && "card-active:bg-zsd-primary",
           MOTION_FAST
         )}
       >
@@ -115,6 +117,7 @@ export function ProjectCard({
           <div className={cn(wide && "shrink-0 lg:w-3/5")}>
             <Cover
               coverKey={project.coverKey}
+              slug={project.slug}
               priority={priority}
               linked={linked}
               sizes={sizes}
@@ -132,7 +135,7 @@ export function ProjectCard({
                     params={{ lang, slug: project.slug }}
                     className="card-link outline-none after:absolute after:inset-0"
                   >
-                    {project.title}
+                    <span className={CARD_TITLE_SHIFT}>{project.title}</span>
                   </Link>
                 ) : (
                   project.title
@@ -155,6 +158,7 @@ export function ProjectCard({
           </div>
         </div>
       </div>
+      {linked && <CardCorner />}
     </article>
   )
 }

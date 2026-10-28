@@ -5,6 +5,7 @@ import { CircleAlert, CircleCheck, ExternalLink, Loader2 } from "lucide-react"
 import { LANGS, langDirection } from "@contracts/lang"
 import { useDirection } from "@/shared/lib/direction"
 import { cn } from "@/shared/lib/utils"
+import { CARD_TITLE_SHIFT, CardCorner } from "@/shared/ui/card"
 import { Button } from "@/shared/ui/kit"
 import { Loader } from "@/shared/ui/loader"
 import { Logo } from "@/shared/ui/logo"
@@ -721,7 +722,7 @@ function CardsSection() {
     <Section
       id="cards"
       title="Cards and badges"
-      lead="The whole card is one link. Hover turns the border rust; in dark mode the accent shadow appears."
+      lead="The whole card is one link. Hover and keyboard focus turn the border rust, fill the cut corner with a tile and move the title along the reading direction. No shadow."
     >
       <div className="grid gap-zsd-xl sm:grid-cols-2 lg:grid-cols-3">
         <ProjectCard
@@ -772,14 +773,10 @@ function ProjectCard({
   active?: boolean
 }) {
   return (
-    <article
-      className={cn(
-        "group/card focus-chamfer-md relative hover:elevation-accent has-[a:focus-visible]:elevation-accent"
-      )}
-    >
+    <article className={cn("group/card focus-chamfer-md relative")}>
       <div
         className={cn(
-          "h-full bg-border p-px chamfer-md group-hover/card:bg-zsd-primary",
+          "h-full bg-border p-px chamfer-md card-active:bg-zsd-primary",
           MOTION_FAST
         )}
       >
@@ -791,7 +788,7 @@ function ProjectCard({
                 href="#cards"
                 className="card-link outline-none after:absolute after:inset-0"
               >
-                {title}
+                <span className={CARD_TITLE_SHIFT}>{title}</span>
               </a>
             </h3>
             {active && <Badge success>Active</Badge>}
@@ -816,6 +813,7 @@ function ProjectCard({
           </a>
         </div>
       </div>
+      <CardCorner />
     </article>
   )
 }
@@ -826,7 +824,7 @@ function TileCover() {
       className="flex aspect-video items-center justify-center bg-zsd-surface"
       aria-hidden
     >
-      <Logo className="size-16 text-zsd-outline-muted group-hover/card:text-zsd-primary" />
+      <Logo className="size-16 text-zsd-outline-muted card-active:text-zsd-primary" />
     </div>
   )
 }

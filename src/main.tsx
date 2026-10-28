@@ -4,11 +4,13 @@ import { RouterProvider, createRouter } from "@tanstack/react-router"
 
 import "./index.css"
 import { routeTree } from "./app/routeTree.gen"
+import { pageTransitionTypes } from "@/shared/lib/view-transition"
 import { LOADER_DELAY_MS } from "@/shared/ui/loader"
 import { PageLoading } from "@/shared/ui/page-state"
 
 // ADR-0005: page changes run in a View Transition; without the API they are
-// instant. index.css sets the animation.
+// instant. `pageTransitionTypes` names the direction and the shared cover,
+// index.css sets the animation.
 // Loader data stays fresh as long as the Public API's `max-age`: going back to
 // a page within a minute doesn't ask again. A new Lang is a new cache entry.
 // Back puts the scroll where it was: closing the Lightbox with Back leaves
@@ -17,7 +19,7 @@ import { PageLoading } from "@/shared/ui/page-state"
 // PageLoading) after LOADER_DELAY_MS: a faster answer never flashes a Loader.
 const router = createRouter({
   routeTree,
-  defaultViewTransition: true,
+  defaultViewTransition: { types: pageTransitionTypes },
   defaultStaleTime: 60_000,
   scrollRestoration: true,
   defaultPendingMs: LOADER_DELAY_MS,

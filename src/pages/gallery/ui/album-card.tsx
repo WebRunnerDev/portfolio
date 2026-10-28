@@ -4,6 +4,8 @@ import { cn } from "cn"
 import type { Album, AlbumCover } from "@contracts/api/public"
 import { imageSrcSet, imageUrl } from "@contracts/media"
 import { useLang, useTPlural } from "@/shared/i18n"
+import { sharedCover } from "@/shared/lib/view-transition"
+import { CARD_TITLE_SHIFT, CardCorner } from "@/shared/ui/card"
 import { FallbackNotice, fallbackLang } from "@/shared/ui/fallback-notice"
 import { Logo } from "@/shared/ui/logo"
 
@@ -16,9 +18,11 @@ const MOTION_FAST =
 
 function Cover({
   cover,
+  slug,
   priority,
 }: {
   cover: AlbumCover | null
+  slug: string
   priority: boolean
 }) {
   if (!cover) {
@@ -29,7 +33,7 @@ function Cover({
       >
         <Logo
           className={cn(
-            "size-16 text-zsd-outline-muted group-hover/card:text-zsd-primary",
+            "size-16 text-zsd-outline-muted card-active:text-zsd-primary",
             MOTION_FAST
           )}
         />
@@ -38,8 +42,10 @@ function Cover({
   }
   // Decorative: the title next to it names the card. `width`/`height` give
   // the box its size before the file loads; the crop keeps the grid even.
+  // It grows into its photo on the Album's page.
   return (
     <img
+      {...sharedCover("album", slug)}
       src={imageUrl(cover.key, 640)}
       srcSet={imageSrcSet(cover.key, cover.width)}
       sizes={COVER_SIZES}
@@ -72,17 +78,17 @@ export function AlbumCard({
   return (
     <article
       data-testid="album-card"
-      className="group/card focus-chamfer-md relative h-full hover:elevation-accent has-[a.card-link:focus-visible]:elevation-accent"
+      className="group/card focus-chamfer-md relative h-full"
     >
       {/* DESIGN.md › Shapes: the outer layer draws the chamfered border. */}
       <div
         className={cn(
-          "h-full bg-zsd-outline-muted p-px chamfer-md group-hover/card:bg-zsd-primary",
+          "h-full bg-zsd-outline-muted p-px chamfer-md card-active:bg-zsd-primary",
           MOTION_FAST
         )}
       >
         <div className="flex h-full flex-col gap-zsd-md bg-zsd-surface-raised p-zsd-xl chamfer-md">
-          <Cover cover={album.cover} priority={priority} />
+          <Cover cover={album.cover} slug={album.slug} priority={priority} />
           <h2
             lang={fallbackLang(album)}
             className="min-w-0 font-heading text-zsd-headline-sm break-words text-zsd-on-surface"
@@ -92,7 +98,7 @@ export function AlbumCard({
               params={{ lang, slug: album.slug }}
               className="card-link outline-none after:absolute after:inset-0"
             >
-              {album.title}
+              <span className={CARD_TITLE_SHIFT}>{album.title}</span>
             </Link>
           </h2>
           <FallbackNotice fallback={album.fallback} />
@@ -101,6 +107,7 @@ export function AlbumCard({
           </p>
         </div>
       </div>
+      <CardCorner />
     </article>
   )
 }

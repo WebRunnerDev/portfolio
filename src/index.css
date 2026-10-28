@@ -236,6 +236,20 @@
   }
 }
 
+/* DESIGN.md › Card: a card answers hover and keyboard focus alike. The card
+ * is `group/card`: a link itself, or the element that holds its `.card-link`.
+ * Hover counts only where a pointer can hover, as with Tailwind's `hover:`. */
+@custom-variant card-active {
+  @media (hover: hover) {
+    :where(.group\/card):hover & {
+      @slot;
+    }
+  }
+  :where(.group\/card):is(:focus-visible, :has(.card-link:focus-visible)) & {
+    @slot;
+  }
+}
+
 /* A Shiki token in a code block (shared/ui/markdown): both themes' colours
  * come as variables, the theme class picks one, so switching repaints only. */
 @utility shiki-token {
@@ -313,12 +327,69 @@
   animation-timing-function: var(--zsd-x-zsd-motion-easing-enter);
 }
 
-/* ADR-0005: View Transitions (theme crossfade, page changes) are instant
- * under reduced motion. */
+/* DESIGN.md › Motion: going deeper (`forward`, from pageTransitionTypes in
+ * @/shared/lib/view-transition) the old page leaves toward the start and the
+ * new one comes from the end; `back` the other way. Along the reading
+ * direction, so mirrored under dir="rtl". */
+@keyframes page-out {
+  to {
+    opacity: 0;
+    translate: calc(-1 * var(--page-shift)) 0;
+  }
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    translate: var(--page-shift) 0;
+  }
+}
+
+html:active-view-transition-type(forward) {
+  --page-shift: 1.5rem;
+}
+html:active-view-transition-type(back) {
+  --page-shift: -1.5rem;
+}
+html[dir="rtl"]:active-view-transition-type(forward) {
+  --page-shift: -1.5rem;
+}
+html[dir="rtl"]:active-view-transition-type(back) {
+  --page-shift: 1.5rem;
+}
+
+html:active-view-transition-type(forward, back) {
+  &::view-transition-old(root) {
+    animation: var(--zsd-x-zsd-motion-duration-base)
+      var(--zsd-x-zsd-motion-easing-exit) both page-out;
+  }
+  &::view-transition-new(root) {
+    animation: var(--zsd-x-zsd-motion-duration-slow)
+      var(--zsd-x-zsd-motion-easing-enter) both page-in;
+  }
+}
+
+/* The cover of the card opened (or returned to) grows into the page's cover
+ * and back. Both crop to the box as it changes. */
+::view-transition-group(card-cover) {
+  animation-duration: var(--zsd-x-zsd-motion-duration-slow);
+  animation-timing-function: var(--zsd-x-zsd-motion-easing-enter);
+}
+::view-transition-old(card-cover),
+::view-transition-new(card-cover) {
+  height: 100%;
+  object-fit: cover;
+  animation-duration: var(--zsd-x-zsd-motion-duration-slow);
+  animation-timing-function: var(--zsd-x-zsd-motion-easing-enter);
+}
+
+/* DESIGN.md › Motion: under reduced motion a page change only fades; nothing
+ * moves (the theme switch doesn't start a transition then). */
 @media (prefers-reduced-motion: reduce) {
-  ::view-transition-group(*),
-  ::view-transition-old(*),
-  ::view-transition-new(*) {
+  html:active-view-transition-type(forward, back) {
+    --page-shift: 0px;
+  }
+  ::view-transition-group(*) {
     animation: none !important;
   }
 }

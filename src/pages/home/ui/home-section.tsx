@@ -70,13 +70,13 @@ export function HomeSection({
           <Link
             to={link}
             params={{ lang }}
-            className={`group/more inline-flex min-h-zsd-control-height items-center gap-zsd-sm font-zsd-label-md text-zsd-label-md text-zsd-primary-text underline-offset-4 hover:underline ${FOCUS_RING}`}
+            className={`group/more inline-flex min-h-zsd-control-height items-center gap-zsd-sm font-zsd-label-md text-zsd-label-md text-zsd-primary-text underline-offset-4 hover:underline focus-visible:underline ${FOCUS_RING}`}
           >
             {linkText}
             <ArrowRight
               aria-hidden
               strokeWidth={1.5}
-              className="size-4 transition-transform duration-(--zsd-x-zsd-motion-duration-fast) ease-zsd-hover group-hover/more:translate-x-1 motion-reduce:transition-none rtl:rotate-180 rtl:group-hover/more:-translate-x-1"
+              className="size-4 transition-transform duration-(--zsd-x-zsd-motion-duration-fast) ease-zsd-hover group-hover/more:translate-x-1 group-focus-visible/more:translate-x-1 motion-reduce:transition-none rtl:rotate-180 rtl:group-hover/more:-translate-x-1 rtl:group-focus-visible/more:-translate-x-1"
             />
           </Link>
         </Reveal>

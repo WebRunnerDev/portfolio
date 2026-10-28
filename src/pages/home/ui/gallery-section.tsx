@@ -5,13 +5,15 @@ import { cn } from "cn"
 import type { Album } from "@contracts/api/public"
 import { imageSrcSet, imageUrl } from "@contracts/media"
 import { useLang, useT, useTPlural } from "@/shared/i18n"
+import { sharedCover } from "@/shared/lib/view-transition"
+import { CARD_TITLE_SHIFT, CardCorner } from "@/shared/ui/card"
 import { fallbackLang } from "@/shared/ui/fallback-notice"
 import { Reveal } from "@/shared/ui/reveal"
 
 import { HomeSection } from "./home-section"
 
 const MOTION_FAST =
-  "duration-(--zsd-x-zsd-motion-duration-fast) ease-zsd-hover motion-reduce:transition-none"
+  "transition-colors duration-(--zsd-x-zsd-motion-duration-fast) ease-zsd-hover motion-reduce:transition-none"
 
 // The strip starts where the content box does and runs to the viewport's
 // end edge: the content's padding, plus half of what the viewport has over
@@ -21,8 +23,8 @@ const STRIP_START =
 
 // The Gallery (docs/design-brief.md › Home rhythm): airy, one strip of
 // Album covers that runs past the content's end edge and scrolls in its own
-// region. Each cover links to its Album. Leads to the Gallery. Not shown
-// without an Album with photos.
+// region. Each cover links to its Album and answers hover and focus as a
+// card. Leads to the Gallery. Not shown without an Album with photos.
 export function GallerySection({ albums }: { albums: Promise<Album[]> }) {
   const lang = useLang()
   const t = useT()
@@ -55,14 +57,16 @@ export function GallerySection({ albums }: { albums: Promise<Album[]> }) {
             <Link
               to="/$lang/gallery/$slug"
               params={{ lang, slug: album.slug }}
-              className="group/album focus-chamfer-md relative block"
+              className="group/card focus-chamfer-md relative block"
             >
               <span
-                className={`block bg-zsd-outline-muted p-px transition-colors chamfer-md group-hover/album:bg-zsd-primary ${MOTION_FAST}`}
+                className={`block bg-zsd-outline-muted p-px chamfer-md card-active:bg-zsd-primary ${MOTION_FAST}`}
               >
                 {album.cover && (
-                  // Decorative: the title under it names the link.
+                  // Decorative: the title under it names the link. It grows
+                  // into its photo on the Album's page.
                   <img
+                    {...sharedCover("album", album.slug)}
                     src={imageUrl(album.cover.key, 640)}
                     srcSet={imageSrcSet(album.cover.key, album.cover.width)}
                     sizes="(min-width: 640px) 384px, 288px"
@@ -75,11 +79,12 @@ export function GallerySection({ albums }: { albums: Promise<Album[]> }) {
                   />
                 )}
               </span>
+              <CardCorner />
               <span
                 lang={fallbackLang(album)}
-                className={`mt-zsd-md block font-heading text-zsd-headline-sm break-words text-zsd-on-surface transition-transform group-hover/album:translate-x-1 rtl:group-hover/album:-translate-x-1 ${MOTION_FAST}`}
+                className="mt-zsd-md block font-heading text-zsd-headline-sm break-words text-zsd-on-surface"
               >
-                {album.title}
+                <span className={CARD_TITLE_SHIFT}>{album.title}</span>
               </span>
               <span className="mt-zsd-xs block text-zsd-body-sm text-zsd-on-surface-muted">
                 {tp("album.photos", album.photoCount)}
