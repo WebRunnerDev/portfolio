@@ -12,6 +12,7 @@ const API_LIMIT = 100
 const ADMIN_WRITE_LIMIT = 60
 const UPLOAD_LIMIT = 20
 const CV_PDF_LIMIT = 6
+const TRANSLATE_LIMIT = 10
 
 // Every test sends from its own IP, so counts don't carry over.
 let lastOctet = 0
@@ -95,6 +96,21 @@ describe("rate limit on /api/*", { timeout: 30_000 }, () => {
       body: "x",
     })
     expect(upload.status).toBe(401)
+  })
+
+  it("limits translation drafts on their own, before the Access check", async () => {
+    const ip = nextIp()
+    const draft = () =>
+      request("/api/admin/translate", ip, { method: "POST", body: "{}" })
+    const passed = await statuses(TRANSLATE_LIMIT, draft)
+    expect(passed.every((status) => status === 401)).toBe(true)
+    await expectLimited(await draft())
+    // Other admin writes still have their own count.
+    const write = await request("/api/admin/posts/1", ip, {
+      method: "PATCH",
+      body: "{}",
+    })
+    expect(write.status).toBe(401)
   })
 
   it("limits admin writes per IP across paths, but not reads", async () => {

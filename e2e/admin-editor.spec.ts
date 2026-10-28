@@ -310,3 +310,62 @@ test("uploads a Track that the music player then plays", async ({
     .poll(() => page.evaluate("document.querySelector('audio').currentTime"))
     .toBeGreaterThan(0)
 })
+
+// The Claude API call is the Worker's; here the browser gets the answer from
+// a route, so the test covers the form, not the translation.
+test("fills a Translation with a draft from EN, unsaved, and shows a failure", async ({
+  page,
+}) => {
+  const slug = `draft-${Date.now()}`
+  await page.goto("/admin/projects")
+  await page.getByRole("button", { name: "New project" }).click()
+  const dialog = page.getByRole("dialog")
+  await dialog.getByLabel("Title").fill("Draft me")
+  await dialog.getByLabel("Slug").fill(slug)
+  await dialog.getByLabel("Description").fill("A project to translate")
+  await dialog.getByRole("button", { name: "Create" }).click()
+  await expect(dialog).toBeHidden()
+  await page
+    .getByRole("row", { name: new RegExp(slug) })
+    .getByRole("link", { name: "Draft me" })
+    .click()
+
+  // EN has no such button: it is what gets translated.
+  const panel = page.getByRole("tabpanel")
+  await expect(
+    panel.getByRole("button", { name: "Translation draft" })
+  ).toHaveCount(0)
+
+  let sent: unknown
+  await page.route("**/api/admin/translate", async (route) => {
+    sent = route.request().postDataJSON()
+    await route.fulfill({
+      json: { fields: { title: "Черновик", description: "Проект" } },
+    })
+  })
+  await page.getByRole("tab", { name: /^ru/ }).click()
+  await panel.getByRole("button", { name: "Translation draft" }).click()
+  await expect(panel.getByLabel("Title")).toHaveValue("Черновик")
+  await expect(panel.getByLabel("Description")).toHaveValue("Проект")
+  await expect(panel.getByText("Unsaved changes")).toBeVisible()
+  expect(sent).toEqual({
+    lang: "ru",
+    fields: [
+      { name: "title", value: "Draft me", markdown: false },
+      { name: "description", value: "A project to translate", markdown: false },
+    ],
+  })
+
+  // A filled form asks before it is replaced; a failure is said in words.
+  await page.unroute("**/api/admin/translate")
+  await page.route("**/api/admin/translate", (route) =>
+    route.fulfill({ status: 502, json: { error: "translation_failed" } })
+  )
+  await panel.getByRole("button", { name: "Translation draft" }).click()
+  await page
+    .getByRole("alertdialog")
+    .getByRole("button", { name: "Replace" })
+    .click()
+  await expect(panel.getByRole("alert")).toContainText("No draft")
+  await expect(panel.getByLabel("Title")).toHaveValue("Черновик")
+})
