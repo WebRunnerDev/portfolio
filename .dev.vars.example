@@ -3,3 +3,8 @@
 # Lets /api/admin/* through without Cloudflare Access, as this email. Works only
 # when the request host is localhost (worker/README.md › Admin access).
 # ACCESS_DEV_EMAIL=you@example.com
+
+# Claude API key for the admin's "Translation draft" (worker/README.md ›
+# Translation draft). In production a secret: `npx wrangler secret put
+# ANTHROPIC_API_KEY`. Empty: the button answers that no translator is set up.
+ANTHROPIC_API_KEY=

@@ -28,7 +28,15 @@ function bucket(env: Env, method: string, path: string, ip: string) {
   if (isCvPdfRender(method, path)) {
     return { limiter: env.CV_PDF_RATE_LIMIT, key: ip }
   }
+  if (isTranslate(method, path)) {
+    return { limiter: env.TRANSLATE_RATE_LIMIT, key: ip }
+  }
   return { limiter: env.ADMIN_WRITE_RATE_LIMIT, key: ip }
+}
+
+// Each one is a paid Claude API call: a limit of its own.
+function isTranslate(method: string, path: string) {
+  return method === "POST" && /^\/api\/admin\/translate\/?$/.test(path)
 }
 
 // Runs before the Access check, so it also limits requests without a token.

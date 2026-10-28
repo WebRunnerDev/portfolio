@@ -16,6 +16,8 @@ export const API_ERROR_CODES = [
   "internal_error",
   "render_failed",
   "browser_unavailable",
+  "translation_failed",
+  "translator_unavailable",
 ] as const
 
 export const ApiErrorSchema = v.object({ error: v.picklist(API_ERROR_CODES) })
