@@ -14,6 +14,7 @@ import {
   ProjectDetailSchema,
   ProjectSchema,
   TechnologySchema,
+  TrackSchema,
   type CvForm,
 } from "@contracts/api/public"
 import { ApiErrorSchema, type ApiErrorCode } from "@contracts/api/errors"
@@ -133,3 +134,7 @@ export const getAlbums = (lang: Lang, options?: Options) =>
 // 404 for an unknown slug.
 export const getAlbum = (lang: Lang, slug: string, options?: Options) =>
   get(lang, `albums/${encodeURIComponent(slug)}`, AlbumDetailSchema, options)
+
+// In playlist order.
+export const getTracks = (lang: Lang, options?: Options) =>
+  get(lang, "tracks", v.array(TrackSchema), options)

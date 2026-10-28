@@ -91,7 +91,8 @@ export function SiteFooter() {
             </ul>
           </Reveal>
         </div>
-        <div className="flex flex-wrap items-center justify-between gap-zsd-md border-t border-border py-zsd-md text-zsd-body-sm text-zsd-on-surface-muted">
+        {/* Room at the bottom for the music player's button over the corner. */}
+        <div className="flex flex-wrap items-center justify-between gap-zsd-md border-t border-border pt-zsd-md pb-[calc(var(--zsd-spacing-control-height)+var(--zsd-spacing-xl))] text-zsd-body-sm text-zsd-on-surface-muted">
           <p dir="ltr" className="flex items-center gap-zsd-sm">
             <span
               aria-hidden
