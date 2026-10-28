@@ -4,6 +4,7 @@ import { ArrowLeft, Share2 } from "lucide-react"
 import { IMAGE_WIDTHS, imageUrl } from "@contracts/media"
 import { pageUrl } from "@contracts/meta"
 import { useLang, useT } from "@/shared/i18n"
+import { sharedCover } from "@/shared/lib/view-transition"
 import {
   FallbackNotice,
   fallbackDir,
@@ -70,8 +71,10 @@ export function PostPage() {
           <FallbackNotice fallback={post.fallback} text="post.fallback" />
           <PostTags tags={post.tags} activeTag={undefined} />
           {coverKey && (
-            // Decorative: the title names the page.
+            // Decorative: the title names the page. The card's cover grows
+            // into it.
             <img
+              {...sharedCover("post", post.slug)}
               src={imageUrl(coverKey, 1280)}
               srcSet={IMAGE_WIDTHS.map(
                 (w) => `${imageUrl(coverKey, w)} ${w}w`

@@ -8,6 +8,7 @@ import {
   ProjectTechnologies,
 } from "@/entities/project"
 import { useLang, useT } from "@/shared/i18n"
+import { sharedCover } from "@/shared/lib/view-transition"
 import { FallbackNotice, fallbackLang } from "@/shared/ui/fallback-notice"
 import { Markdown } from "@/shared/ui/markdown"
 
@@ -59,8 +60,10 @@ export function ProjectPage() {
           <ProjectLinks project={project} />
         </div>
         {coverKey && (
-          // Decorative: the title names the page.
+          // Decorative: the title names the page. The card's cover grows
+          // into it.
           <img
+            {...sharedCover("project", project.slug)}
             src={imageUrl(coverKey, 1280)}
             srcSet={IMAGE_WIDTHS.map(
               (w) => `${imageUrl(coverKey, w)} ${w}w`
