@@ -53,7 +53,17 @@ export {
   NativeSelectOptGroup,
   NativeSelectOption,
 } from "./native-select"
+export {
+  Popover,
+  PopoverAnchor,
+  PopoverContent,
+  PopoverDescription,
+  PopoverHeader,
+  PopoverTitle,
+  PopoverTrigger,
+} from "./popover"
 export { Skeleton } from "./skeleton"
+export { Slider } from "./slider"
 export {
   Table,
   TableBody,
