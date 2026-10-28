@@ -434,30 +434,30 @@ test("on /ar the arrows and swipes follow the reading direction", async ({
   await page.setViewportSize({ width: 390, height: 844 })
   await mockPublicApi(page)
   await page.goto("/ar/gallery/trips?photo=3")
-  await expect(counter(page)).toHaveText("Photo 3 of 6")
+  await expect(counter(page)).toHaveText("الصورة 3 من 6")
 
   // ← goes forward in RTL, → back.
   await page.keyboard.press("ArrowLeft")
-  await expect(counter(page)).toHaveText("Photo 4 of 6")
+  await expect(counter(page)).toHaveText("الصورة 4 من 6")
   await page.keyboard.press("ArrowRight")
-  await expect(counter(page)).toHaveText("Photo 3 of 6")
+  await expect(counter(page)).toHaveText("الصورة 3 من 6")
 
   // A swipe to the right brings the next photo in RTL, to the left the
   // previous one; a short one does nothing.
   await swipe(page, 120)
-  await expect(counter(page)).toHaveText("Photo 4 of 6")
+  await expect(counter(page)).toHaveText("الصورة 4 من 6")
   await expect(page).toHaveURL(/\?photo=4$/)
   await swipe(page, -120)
-  await expect(counter(page)).toHaveText("Photo 3 of 6")
+  await expect(counter(page)).toHaveText("الصورة 3 من 6")
   await swipe(page, 20)
-  await expect(counter(page)).toHaveText("Photo 3 of 6")
+  await expect(counter(page)).toHaveText("الصورة 3 من 6")
 
   // Previous sits on the right, its chevron turned; the photo isn't mirrored.
   const previous = await page
-    .getByRole("button", { name: "Previous photo" })
+    .getByRole("button", { name: "الصورة السابقة" })
     .boundingBox()
   const next = await page
-    .getByRole("button", { name: "Next photo" })
+    .getByRole("button", { name: "الصورة التالية" })
     .boundingBox()
   expect(previous!.x).toBeGreaterThan(next!.x)
   await expect(lightbox(page).getByRole("img")).toHaveCSS("transform", "none")

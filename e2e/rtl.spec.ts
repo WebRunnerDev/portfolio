@@ -4,7 +4,7 @@ import { expect, test, type Page } from "@playwright/test"
 async function header(page: Page) {
   const banner = page.getByRole("banner")
   const logo = banner.getByRole("img", { name: "WebRunner" })
-  const menu = banner.getByRole("button", { name: /menu/i })
+  const menu = banner.getByRole("button", { name: /menu|القائمة/i })
   await expect(menu).toBeEnabled()
   const logoBox = (await logo.boundingBox())!
   const menuBox = (await menu.boundingBox())!
@@ -32,7 +32,7 @@ test("/ar/ mirrors the header and menu but not the logo", async ({ page }) => {
   await expect(dialog).toHaveCSS("direction", "rtl")
   // The close button takes the trigger's place: the inline end, on the left.
   const closeBox = (await dialog
-    .getByRole("button", { name: /close/i })
+    .getByRole("button", { name: "إغلاق القائمة" })
     .boundingBox())!
   expect(closeBox.x).toBeLessThan(200)
   // The active marker is an inline-start border: on the right in RTL.

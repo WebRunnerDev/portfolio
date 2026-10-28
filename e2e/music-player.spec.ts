@@ -60,8 +60,8 @@ async function mockApi(page: Page, { tracks = TRACKS } = {}) {
   return media
 }
 
-const playerButton = (page: Page) =>
-  page.getByTestId("music-player").getByRole("button", { name: "Music" })
+const playerButton = (page: Page, name = "Music") =>
+  page.getByTestId("music-player").getByRole("button", { name })
 
 async function openPanel(page: Page) {
   await playerButton(page).click()
@@ -208,10 +208,13 @@ test("on /ar the player stays in the bottom right corner", async ({ page }) => {
   await page.goto("/ar")
   const player = page.getByTestId("music-player")
   await expect(player).toHaveAttribute("dir", "ltr")
-  const box = (await playerButton(page).boundingBox())!
+  const box = (await playerButton(page, "الموسيقى").boundingBox())!
   expect(box.x + box.width).toBeGreaterThan(390 - 24)
   expect(box.y + box.height).toBeGreaterThan(844 - 24)
-  await expect(playerButton(page)).toHaveCSS("view-transition-name", "none")
+  await expect(playerButton(page, "الموسيقى")).toHaveCSS(
+    "view-transition-name",
+    "none"
+  )
   await expect(player).toHaveCSS("view-transition-name", "music-player")
 })
 

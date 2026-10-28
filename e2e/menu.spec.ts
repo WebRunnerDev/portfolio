@@ -2,9 +2,9 @@ import { expect, test, type Page } from "@playwright/test"
 
 // Issue #114: the menu's tiles spread from the header logo, its rows rise one
 // after another; closing runs it backwards. Radix keeps the focus handling.
-const trigger = (page: Page) =>
-  page.getByRole("banner").getByRole("button", { name: "Menu" })
-const menu = (page: Page) => page.getByRole("dialog", { name: "Menu" })
+const trigger = (page: Page, name = "Menu") =>
+  page.getByRole("banner").getByRole("button", { name })
+const menu = (page: Page, name = "Menu") => page.getByRole("dialog", { name })
 
 // What the menu's animations move, without the transitions of its controls
 // (e2e has no DOM types).
@@ -128,15 +128,17 @@ test("reduced motion opens and closes the menu at once", async ({ page }) => {
 
 test("on /ar/ the layout mirrors, the tiles don't", async ({ page }) => {
   await page.goto("/ar/cv")
-  await expect(trigger(page)).toBeEnabled()
-  await trigger(page).click()
+  await expect(trigger(page, "القائمة")).toBeEnabled()
+  await trigger(page, "القائمة").click()
   // The set of tiles, once it has spread.
-  const tiles = menu(page).getByTestId("menu-tiles")
+  const tiles = menu(page, "القائمة").getByTestId("menu-tiles")
   await expect(tiles).toHaveCSS("transform", "none")
   await expect(tiles).toHaveCSS("direction", "rtl")
   // The spread tiles sit at the inline end: on the left in RTL.
   expect((await tiles.boundingBox())!.x).toBe(0)
   // The close button takes the trigger's place: the inline end, on the left.
-  const close = menu(page).getByRole("button", { name: "Close menu" })
+  const close = menu(page, "القائمة").getByRole("button", {
+    name: "إغلاق القائمة",
+  })
   expect((await close.boundingBox())!.x).toBeLessThan(200)
 })
