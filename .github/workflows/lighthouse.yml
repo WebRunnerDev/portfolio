@@ -1,8 +1,18 @@
 name: Lighthouse
 
-# Runs Lighthouse CI (mobile) against the Workers Builds Preview of the PR.
-# Warning only: budgets don't fail the job and the job is not required.
-# Stage 4 makes it blocking (docs/plan.md).
+# Lighthouse CI (mobile, lighthouserc.json) on every public page and /ar.
+# Blocking: a budget below its threshold fails the job, and `lighthouse` is a
+# required check of `main` (docs/plan.md, stage 6, item 8).
+#
+# Where it measures (issue #124): the production build of the PR, here in CI,
+# served by `vite preview` through the Worker over a local D1 and R2 filled from
+# scripts/audit/seed.sql (scripts/audit/server.mjs). Not the Workers Builds
+# Preview: Previews sit behind Cloudflare Access, and their shared D1 has no
+# content (nor tables until someone migrates it), so the pages there are empty
+# or a login screen. Not production after the deploy either: that runs after
+# the merge and could not stop the PR. Lighthouse simulates a mobile 4G
+# connection, so a local server gives the same budgets; edge latency is what
+# this does not see.
 
 on:
   pull_request:
@@ -13,43 +23,24 @@ concurrency:
 
 permissions:
   contents: read
-  checks: read
-  pull-requests: read
-
-env:
-  WORKER_NAME: webrunner
-  WORKERS_SUBDOMAIN: zhasulan-abdigaliev
 
 jobs:
   lighthouse:
     runs-on: ubuntu-latest
-    # Fork PRs get no Preview.
-    if: github.event.pull_request.head.repo.full_name == github.repository
-    continue-on-error: true
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 24
-      - id: preview
-        run: node .github/scripts/preview-url.mjs
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          HEAD_REF: ${{ github.head_ref }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-      - if: steps.preview.outputs.url
-        run: >-
-          npx --yes @lhci/cli@0.15.1 autorun
-          --collect.url=${{ steps.preview.outputs.url }}/en
-          --collect.url=${{ steps.preview.outputs.url }}/en/cv
-          --collect.url=${{ steps.preview.outputs.url }}/en/projects
-      - if: steps.preview.outputs.url
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      # Starts scripts/audit/server.mjs itself (collect.startServerCommand).
+      - run: npx --yes @lhci/cli@0.15.1 autorun
+      - if: always()
         run: node .github/scripts/lighthouse-summary.mjs
-        env:
-          PREVIEW_URL: ${{ steps.preview.outputs.url }}
-      - if: steps.preview.outputs.url
+      - if: always()
         uses: actions/upload-artifact@v7
         with:
           name: lighthouse
