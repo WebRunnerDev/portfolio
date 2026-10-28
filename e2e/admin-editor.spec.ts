@@ -10,6 +10,15 @@ const COVER = Buffer.from(
   "base64"
 )
 
+// `seconds` of silent MP3: MPEG-1 Layer III frames at 128 kbps and 44.1 kHz,
+// 417 bytes and 1152 samples each, all zero after the header.
+function silentMp3(seconds: number) {
+  const frames = Math.round((seconds * 44100) / 1152)
+  const mp3 = Buffer.alloc(frames * 417)
+  for (let i = 0; i < frames; i++) mp3.writeUInt32BE(0xfffb9000, i * 417)
+  return mp3
+}
+
 test("creates a project with EN and RU Translations and a cover", async ({
   page,
   request,
@@ -256,4 +265,48 @@ test("drops and pastes images into a post's body", async ({ page }) => {
 
   await panel.getByRole("button", { name: "Save EN" }).click()
   await expect(panel.getByText("Saved", { exact: true })).toBeVisible()
+})
+
+test("uploads a Track that the music player then plays", async ({
+  page,
+  request,
+}) => {
+  const title = `Graphite ${Date.now()}`
+  await page.goto("/admin/tracks")
+  await page.getByRole("button", { name: "New track" }).click()
+  const dialog = page.getByRole("dialog")
+  await dialog.getByLabel("Title").fill(title)
+  await dialog.getByLabel("Artist").fill("Lowlands")
+  await dialog.getByLabel("Source").fill("https://pixabay.com/music/")
+  await dialog.getByLabel("License").fill("Pixabay Content License")
+  await dialog.getByLabel("File").setInputFiles({
+    name: "graphite.mp3",
+    mimeType: "audio/mpeg",
+    buffer: silentMp3(3),
+  })
+  // The length comes from the file.
+  await expect(dialog.getByLabel("Length, seconds")).toHaveValue("3")
+  await dialog.getByRole("button", { name: "Create" }).click()
+  await expect(dialog).toBeHidden()
+  await expect(
+    page.getByRole("row", { name: new RegExp(title) })
+  ).toContainText("0:03")
+
+  const tracks = await (await request.get("/api/public/en/tracks")).json()
+  const track = tracks.find((track: { title: string }) => track.title === title)
+  expect(track).toMatchObject({ artist: "Lowlands", durationSeconds: 3 })
+  expect(track.key).toMatch(/^audio\/.+\.mp3$/)
+
+  // The public site plays it from R2.
+  await page.goto("/en")
+  await page
+    .getByTestId("music-player")
+    .getByRole("button", { name: "Music" })
+    .click()
+  const panel = page.getByTestId("player-panel")
+  await panel.getByRole("button", { name: new RegExp(title) }).click()
+  await expect(panel.getByRole("button", { name: "Pause" })).toBeVisible()
+  await expect
+    .poll(() => page.evaluate("document.querySelector('audio').currentTime"))
+    .toBeGreaterThan(0)
 })
