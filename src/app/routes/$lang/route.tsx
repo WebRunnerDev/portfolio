@@ -7,6 +7,7 @@ import { LangHead } from "@/shared/i18n"
 import { SiteFooter } from "@/widgets/footer"
 import { SiteHeader } from "@/widgets/header"
 import { SiteMenu } from "@/widgets/menu"
+import { MusicPlayer } from "@/widgets/music-player"
 
 // Every page lives under a Lang; an unknown one redirects to EN, same path.
 // An unknown path under a Lang renders NotFoundPage inside the layout.
@@ -32,6 +33,8 @@ export const Route = createFileRoute("/$lang")({
           </main>
           <SiteFooter />
         </div>
+        {/* Outside the <Outlet>: the music goes on across page changes. */}
+        <MusicPlayer />
       </MotionProvider>
     </DirectionProvider>
   ),

@@ -518,6 +518,63 @@ html:active-view-transition-type(forward, back) {
   }
 }
 
+/* DESIGN.md › Tile: the music player (`MusicPlayer` in @/widgets/music-player).
+ * While the music plays each logo tile of the corner button rises and falls,
+ * on its own beat (the placement's negative delay); paused, the class goes
+ * and the tiles stand in the logo. The panel rises from the button and its
+ * rows follow after `--player-delay`; on close it fades at once. Never
+ * mirrored. Still under reduced motion. */
+@keyframes player-tile {
+  to {
+    transform: translateY(-1.5px);
+  }
+}
+
+@keyframes player-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes player-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@utility player-tile {
+  animation: player-tile var(--zsd-x-zsd-motion-duration-slow)
+    var(--zsd-x-zsd-motion-easing-layout) infinite alternate;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@utility player-in {
+  animation: player-in var(--zsd-x-zsd-motion-duration-base)
+    var(--zsd-x-zsd-motion-easing-enter);
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@utility player-out {
+  animation: player-out var(--zsd-x-zsd-motion-duration-fast)
+    var(--zsd-x-zsd-motion-easing-exit) forwards;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@utility player-row-in {
+  animation: player-in var(--zsd-x-zsd-motion-duration-slow)
+    var(--zsd-x-zsd-motion-easing-enter) var(--player-delay, 0s) backwards;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
 /* docs/design-brief.md › Hero (`Hero` in src/pages/home). CSS, not Motion:
  * the brand is the LCP element and must not wait for a script. The opacity
  * in `hero-rise` is for LCP: Chrome skips text hidden under its mask at the

@@ -43,6 +43,13 @@ export const es: Messages = {
   "load.failed":
     "No se pudieron cargar los datos. Revisa la conexión e inténtalo de nuevo.",
   "load.retry": "Reintentar",
+  "player.label": "Música",
+  "player.play": "Reproducir",
+  "player.pause": "Pausa",
+  "player.previous": "Pista anterior",
+  "player.next": "Pista siguiente",
+  "player.volume": "Volumen",
+  "player.tracks": "Pistas",
   "cv.experience": "Experiencia",
   "cv.projects": "Proyectos",
   "cv.technologies": "Tecnologías",

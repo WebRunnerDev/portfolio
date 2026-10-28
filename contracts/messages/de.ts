@@ -42,6 +42,13 @@ export const de: Messages = {
   "load.failed":
     "Die Daten konnten nicht geladen werden. Bitte die Verbindung prüfen und erneut versuchen.",
   "load.retry": "Erneut versuchen",
+  "player.label": "Musik",
+  "player.play": "Abspielen",
+  "player.pause": "Pause",
+  "player.previous": "Vorheriger Titel",
+  "player.next": "Nächster Titel",
+  "player.volume": "Lautstärke",
+  "player.tracks": "Titel",
   "cv.experience": "Berufserfahrung",
   "cv.projects": "Projekte",
   "cv.technologies": "Technologien",

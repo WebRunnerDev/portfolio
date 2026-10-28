@@ -42,6 +42,13 @@ export const kk: Messages = {
   "load.failed":
     "Деректерді жүктеу мүмкін болмады. Байланысты тексеріп, қайталап көріңіз.",
   "load.retry": "Қайталау",
+  "player.label": "Музыка",
+  "player.play": "Ойнату",
+  "player.pause": "Кідірту",
+  "player.previous": "Алдыңғы трек",
+  "player.next": "Келесі трек",
+  "player.volume": "Дыбыс деңгейі",
+  "player.tracks": "Тректер",
   "cv.experience": "Жұмыс тәжірибесі",
   "cv.projects": "Жобалар",
   "cv.technologies": "Технологиялар",

@@ -42,6 +42,13 @@ export const ru: Messages = {
   "load.failed":
     "Не удалось загрузить данные. Проверьте соединение и попробуйте ещё раз.",
   "load.retry": "Повторить",
+  "player.label": "Музыка",
+  "player.play": "Играть",
+  "player.pause": "Пауза",
+  "player.previous": "Предыдущий трек",
+  "player.next": "Следующий трек",
+  "player.volume": "Громкость",
+  "player.tracks": "Треки",
   "cv.experience": "Опыт работы",
   "cv.projects": "Проекты",
   "cv.technologies": "Технологии",
