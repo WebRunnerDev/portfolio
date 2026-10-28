@@ -83,6 +83,12 @@
       "namespace_id": "1004",
       "simple": { "limit": 6, "period": 60 },
     },
+    // POST /api/admin/translate, per IP: each one is a paid Claude API call.
+    {
+      "name": "TRANSLATE_RATE_LIMIT",
+      "namespace_id": "1005",
+      "simple": { "limit": 10, "period": 60 },
+    },
   ],
   // Workers Builds runs `wrangler preview` for non-main branches, which needs
   // this block. Previews inherit everything above except what is listed here.
