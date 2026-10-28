@@ -15,6 +15,21 @@ async function cores(page: Page, count: number) {
   }, count)
 }
 
+// Errors the page logs, except failed requests: without D1 (CI) the API
+// answers 500, which says nothing about the effect.
+function consoleErrors(page: Page) {
+  const errors: string[] = []
+  page.on("console", (message) => {
+    if (
+      message.type() === "error" &&
+      !message.text().startsWith("Failed to load resource")
+    ) {
+      errors.push(message.text())
+    }
+  })
+  return errors
+}
+
 async function mockProfile(page: Page) {
   await page.route("**/api/public/*/profile", (route) =>
     route.fulfill({
@@ -78,10 +93,7 @@ test("the lite tier runs the logo tiles and pauses off screen", async ({
 test("the full tier draws the Kinetic Grid and pauses off screen", async ({
   page,
 }) => {
-  const errors: string[] = []
-  page.on("console", (message) => {
-    if (message.type() === "error") errors.push(message.text())
-  })
+  const errors = consoleErrors(page)
   await cores(page, 8)
   await page.goto("/en")
   // `lite` while the FPS probe runs, then the grid.
@@ -112,10 +124,7 @@ test("the full tier draws the Kinetic Grid and pauses off screen", async ({
 test("the full tier falls back to lite when the canvas is lost", async ({
   page,
 }) => {
-  const errors: string[] = []
-  page.on("console", (message) => {
-    if (message.type() === "error") errors.push(message.text())
-  })
+  const errors = consoleErrors(page)
   await cores(page, 8)
   await page.goto("/en")
   await expect(effect(page)).toHaveAttribute("data-effect", "full", {
