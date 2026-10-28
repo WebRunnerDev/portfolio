@@ -28,9 +28,13 @@ describe("translatePlural", () => {
   })
 
   it("has every category in every dictionary", () => {
-    // Arabic uses all six: zero, one, two, few, many, other.
-    for (const count of [0, 1, 2, 3, 11, 100]) {
-      expect(translatePlural("ar", "album.photos", count)).toMatch(/^\d+ /)
-    }
+    // Arabic uses all six: zero, one, two, few, many, other. Zero, one and
+    // two are words without the number; the rest keep Western digits.
+    const forms = [0, 1, 2, 3, 11, 100].map((count) =>
+      translatePlural("ar", "album.photos", count)
+    )
+    expect(new Set(forms.slice(0, 4)).size).toBe(4)
+    for (const form of forms) expect(form).not.toContain("{count}")
+    for (const form of forms.slice(3)) expect(form).toMatch(/^\d+ /)
   })
 })
