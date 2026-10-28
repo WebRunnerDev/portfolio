@@ -9,6 +9,10 @@ import {
   ValidationErrorSchema,
   type ApiErrorCode,
 } from "@contracts/api/errors"
+import {
+  TranslateResponseSchema,
+  type TranslateRequest,
+} from "@contracts/api/translate"
 import type { Lang } from "@contracts/lang"
 
 // Client of /api/admin/* (worker/README.md › Admin API). Every call either
@@ -211,4 +215,13 @@ export async function uploadCvPdf(lang: Lang, file: File) {
     CvPdfSchema,
     await request(`/cv-pdf/${lang}`, { method: "PUT", body: file })
   )
+}
+
+// /translate (worker/README.md › Translation draft): the EN fields in another
+// Lang, unsaved. One Claude API call: takes a few seconds, more for a post.
+export async function translateDraft(body: TranslateRequest) {
+  return parsed(
+    TranslateResponseSchema,
+    await request("/translate", json("POST", body))
+  ).fields
 }

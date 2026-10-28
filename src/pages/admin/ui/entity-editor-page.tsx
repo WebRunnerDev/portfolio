@@ -9,6 +9,7 @@ import {
 } from "react"
 import { getRouteApi, Link, useBlocker } from "@tanstack/react-router"
 import { cn } from "cn"
+import type { DraftLang } from "@contracts/api/translate"
 import { LANGS, langDirection, type Lang } from "@contracts/lang"
 
 import {
@@ -28,6 +29,7 @@ import {
 } from "@/shared/ui/kit"
 
 import {
+  translateDraft,
   deleteTranslation,
   deleteUpload,
   getRow,
@@ -53,6 +55,7 @@ import {
   type FormValue,
   type FormValues,
 } from "../lib/form"
+import { draftFields, withDraft } from "../lib/draft"
 import { cellText, rowTitle } from "../lib/row"
 import {
   findEntity,
@@ -65,6 +68,7 @@ import { ApiErrorNotice } from "./api-error-notice"
 import type { Gallery } from "./cover-input"
 import { FieldInput } from "./field-input"
 import { GallerySection } from "./gallery-section"
+import { TranslationDraftButton } from "./translation-draft-button"
 import { UnknownEntity } from "./unknown-entity"
 import { useSaving } from "./use-saving"
 
@@ -240,6 +244,16 @@ function RowEditor({
     }))
   }
 
+  // Fills the form of `lang` from the EN form as it is now, saved or not.
+  async function draftTranslation(lang: DraftLang) {
+    const fields = draftFields(entity, translations.en)
+    const draft = await translateDraft({ lang, fields })
+    setTranslations((current) => ({
+      ...current,
+      [lang]: withDraft(entity, current[lang], draft),
+    }))
+  }
+
   async function removeTranslation(lang: Lang) {
     await deleteTranslation(path, lang)
     setSaved((current) => {
@@ -351,12 +365,26 @@ function RowEditor({
                   }
                   send={() => saveTranslation(lang)}
                   actions={
-                    removable(lang) && (
-                      <RemoveTranslationButton
-                        lang={lang}
-                        onConfirm={() => removeTranslation(lang)}
-                      />
-                    )
+                    <>
+                      {lang !== "en" && (
+                        <TranslationDraftButton
+                          lang={lang}
+                          empty={
+                            draftFields(entity, translations.en).length === 0
+                          }
+                          replaces={
+                            completeness(entity, translations[lang]).filled > 0
+                          }
+                          onDraft={() => draftTranslation(lang)}
+                        />
+                      )}
+                      {removable(lang) && (
+                        <RemoveTranslationButton
+                          lang={lang}
+                          onConfirm={() => removeTranslation(lang)}
+                        />
+                      )}
+                    </>
                   }
                 />
               </TabsContent>

@@ -20,6 +20,10 @@ const MESSAGES: Partial<Record<AdminApiError["code"], string>> = {
     "No browser: Browser Rendering refused (its limits), or locally wrangler couldn't start Chrome. Try again in a minute, or upload a PDF by hand.",
   render_failed:
     "No PDF: the Print CV didn't get ready, or the browser didn't print it. Open the Print CV to check it loads; details are in Workers Logs (cv-pdf-render). Locally, Chrome from wrangler doesn't print at all: upload a PDF by hand.",
+  translator_unavailable:
+    "No translator: the Worker has no ANTHROPIC_API_KEY. Set it with `wrangler secret put ANTHROPIC_API_KEY` (locally in .dev.vars).",
+  translation_failed:
+    "No draft: the Claude API failed or answered something unusable. Try again in a minute; details are in Workers Logs (translate).",
   bad_response:
     "The API answered something unexpected. Details are in the console.",
 }
