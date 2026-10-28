@@ -4,6 +4,32 @@ import { expect, test, type Page } from "@playwright/test"
 const hero = (page: Page) => page.locator("section[data-tier]")
 const effect = (page: Page) => hero(page).locator("[data-effect]")
 
+// The device hints tier detection reads: 2 cores make `lite`, 8 a `full`
+// candidate (the FPS probe still has to pass).
+async function cores(page: Page, count: number) {
+  await page.addInitScript((count) => {
+    Object.defineProperty(navigator, "hardwareConcurrency", {
+      get: () => count,
+    })
+    Object.defineProperty(navigator, "deviceMemory", { get: () => 8 })
+  }, count)
+}
+
+// Errors the page logs, except failed requests: without D1 (CI) the API
+// answers 500, which says nothing about the effect.
+function consoleErrors(page: Page) {
+  const errors: string[] = []
+  page.on("console", (message) => {
+    if (
+      message.type() === "error" &&
+      !message.text().startsWith("Failed to load resource")
+    ) {
+      errors.push(message.text())
+    }
+  })
+  return errors
+}
+
 async function mockProfile(page: Page) {
   await page.route("**/api/public/*/profile", (route) =>
     route.fulfill({
@@ -47,9 +73,9 @@ test("reduced motion gets the static tier, an image in place", async ({
 test("the lite tier runs the logo tiles and pauses off screen", async ({
   page,
 }) => {
+  await cores(page, 2)
   await page.goto("/en")
-  // `full` shows `lite` until #117.
-  await expect(hero(page)).toHaveAttribute("data-tier", /^(lite|full)$/)
+  await expect(hero(page)).toHaveAttribute("data-tier", "lite")
   await expect(effect(page)).toHaveAttribute("data-effect", "lite")
   await expect(effect(page)).toHaveAttribute("data-playing", "true")
   await expect(effect(page).locator("img")).toHaveCount(0)
@@ -62,6 +88,69 @@ test("the lite tier runs the logo tiles and pauses off screen", async ({
     "animation-play-state",
     "paused"
   )
+})
+
+test("the full tier draws the Kinetic Grid and pauses off screen", async ({
+  page,
+}) => {
+  const errors = consoleErrors(page)
+  await cores(page, 8)
+  await page.goto("/en")
+  // `lite` while the FPS probe runs, then the grid.
+  await expect(hero(page)).toHaveAttribute("data-tier", "full", {
+    timeout: 10_000,
+  })
+  const canvas = effect(page)
+  await expect(canvas).toHaveAttribute("data-effect", "full")
+  await expect(canvas).toHaveAttribute("data-playing", "true")
+  // Drawn at DPR 1 over the whole hero, and not blank.
+  const box = (await hero(page).boundingBox())!
+  await expect(canvas).toHaveJSProperty("width", Math.round(box.width))
+  const drawn = await page.evaluate(`(() => {
+    const canvas = document.querySelector("[data-effect=full]")
+    const { data } = canvas
+      .getContext("2d")
+      .getImageData(0, 0, canvas.width, canvas.height)
+    return data.some((value, i) => i % 4 === 3 && value > 0)
+  })()`)
+  expect(drawn).toBe(true)
+
+  await page.addStyleTag({ content: "main { padding-bottom: 200vh }" })
+  await page.mouse.wheel(0, 3000)
+  await expect(canvas).toHaveAttribute("data-playing", "false")
+  expect(errors).toEqual([])
+})
+
+test("the full tier falls back to lite when the canvas is lost", async ({
+  page,
+}) => {
+  const errors = consoleErrors(page)
+  await cores(page, 8)
+  await page.goto("/en")
+  await expect(effect(page)).toHaveAttribute("data-effect", "full", {
+    timeout: 10_000,
+  })
+  await effect(page).dispatchEvent("contextlost")
+  await expect(hero(page)).toHaveAttribute("data-tier", "lite")
+  await expect(effect(page)).toHaveAttribute("data-effect", "lite")
+  expect(errors).toEqual([])
+})
+
+test("the full tier falls back to lite when the frame rate drops", async ({
+  page,
+}) => {
+  await cores(page, 8)
+  await page.goto("/en")
+  await expect(effect(page)).toHaveAttribute("data-effect", "full", {
+    timeout: 10_000,
+  })
+  // A device that can't keep up: 20 frames a second from now on.
+  await page.evaluate(`window.requestAnimationFrame = (tick) =>
+    setTimeout(() => tick(performance.now()), 50)`)
+  await expect(hero(page)).toHaveAttribute("data-tier", "lite", {
+    timeout: 10_000,
+  })
+  await expect(effect(page)).toHaveAttribute("data-effect", "lite")
 })
 
 test("the brand ends in place and is read as one word", async ({ page }) => {
@@ -101,6 +190,8 @@ test("no Profile: the hero shows without a subtitle and nothing shifts", async (
 test("in RTL the effect and the brand don't mirror, the text does", async ({
   page,
 }) => {
+  // `lite`: its logo sits at one side, so a mirror would show.
+  await cores(page, 2)
   await page.setViewportSize({ width: 1280, height: 800 })
   await page.goto("/en")
   const ltrEffect = (await effect(page).boundingBox())!

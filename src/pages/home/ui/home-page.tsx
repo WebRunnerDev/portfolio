@@ -7,7 +7,7 @@ const route = getRouteApi("/$lang/")
 
 export function HomePage() {
   const { profile } = route.useLoaderData()
-  const tier = useHeroTier()
+  const { tier, fallBack } = useHeroTier()
 
-  return <Hero tier={tier} profile={profile} />
+  return <Hero tier={tier} profile={profile} onFullFail={fallBack} />
 }

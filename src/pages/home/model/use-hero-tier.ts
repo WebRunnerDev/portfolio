@@ -14,9 +14,11 @@ const initialTier = (): HeroTier =>
   detectTier() === "static" ? "static" : "lite"
 
 // The Hero Tier of this device (ADR-0006). Turning reduced motion on or off
-// detects it again.
+// detects it again. `fallBack` drops `full` to `lite` for the rest of the
+// visit: the frame rate fell while it ran, or the canvas was lost.
 export function useHeroTier() {
   const [tier, setTier] = React.useState(initialTier)
+  const failed = React.useRef(false)
 
   React.useEffect(() => {
     const query = window.matchMedia(REDUCED_MOTION)
@@ -25,8 +27,8 @@ export function useHeroTier() {
     const update = () => {
       probe?.abort()
       const detected = detectTier()
-      if (detected !== "full") {
-        setTier(detected)
+      if (detected !== "full" || failed.current) {
+        setTier(detected === "full" ? "lite" : detected)
         return
       }
       setTier("lite")
@@ -45,5 +47,10 @@ export function useHeroTier() {
     }
   }, [])
 
-  return tier
+  const fallBack = React.useCallback(() => {
+    failed.current = true
+    setTier((tier) => (tier === "full" ? "lite" : tier))
+  }, [])
+
+  return { tier, fallBack }
 }

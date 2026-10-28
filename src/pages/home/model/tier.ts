@@ -36,27 +36,41 @@ export function detectTier(): HeroTier {
   return "full"
 }
 
+// Counts frames in windows of `duration` ms and reports each window's rate.
+// Feed it the timestamps of requestAnimationFrame.
+export function fpsMeter(duration: number, report: (fps: number) => void) {
+  let start = -1
+  let last = -1
+  let frames = 0
+  return (now: number) => {
+    if (start < 0 || now - last > FRAME_GAP_MS) {
+      start = now
+      frames = 0
+    } else {
+      frames++
+    }
+    last = now
+    if (now - start >= duration) {
+      report((frames * 1000) / (now - start))
+      start = now
+      frames = 0
+    }
+  }
+}
+
 // Frames per second over `duration` ms of requestAnimationFrame.
 export function probeFps(duration = PROBE_MS, signal?: AbortSignal) {
   return new Promise<number>((resolve, reject) => {
-    let start = -1
-    let last = -1
-    let frames = 0
     let id = 0
+    let done = false
+    const count = fpsMeter(duration, (fps) => {
+      done = true
+      resolve(fps)
+    })
     const tick = (now: number) => {
       if (signal?.aborted) return
-      if (start < 0 || now - last > FRAME_GAP_MS) {
-        start = now
-        frames = 0
-      } else {
-        frames++
-      }
-      last = now
-      if (now - start >= duration) {
-        resolve((frames * 1000) / (now - start))
-        return
-      }
-      id = requestAnimationFrame(tick)
+      count(now)
+      if (!done) id = requestAnimationFrame(tick)
     }
     id = requestAnimationFrame(tick)
     signal?.addEventListener("abort", () => {

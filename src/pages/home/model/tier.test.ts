@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 
-import { detectTier, probeFps } from "./tier"
+import { detectTier, fpsMeter, probeFps } from "./tier"
 
 function device({
   reduced = false,
@@ -98,5 +98,36 @@ describe("probeFps", () => {
     const probe = probeFps(2000, controller.signal)
     controller.abort()
     await expect(probe).rejects.toThrow()
+  })
+})
+
+describe("fpsMeter", () => {
+  // Feeds the meter frames `every` ms apart for `duration` ms.
+  function run(count: (now: number) => void, every: number, duration: number) {
+    for (let now = 0; now <= duration; now += every) count(now)
+  }
+
+  it("reports every window while it runs", () => {
+    const report = vi.fn()
+    run(fpsMeter(2000, report), 16, 6000)
+    expect(report).toHaveBeenCalledTimes(3)
+    expect(report.mock.calls[0][0]).toBeCloseTo(62.5, 0)
+  })
+
+  it("reports a drop in the frame rate", () => {
+    const report = vi.fn()
+    const count = fpsMeter(2000, report)
+    run(count, 16, 2000)
+    for (let now = 2050; now <= 4000; now += 50) count(now)
+    expect(report.mock.lastCall?.[0]).toBeCloseTo(20, 0)
+  })
+
+  it("starts over after a pause instead of reading it as slow", () => {
+    const report = vi.fn()
+    const count = fpsMeter(2000, report)
+    run(count, 16, 1000)
+    for (let now = 9000; now <= 11_100; now += 16) count(now)
+    expect(report).toHaveBeenCalledTimes(1)
+    expect(report.mock.calls[0][0]).toBeCloseTo(62.5, 0)
   })
 })
