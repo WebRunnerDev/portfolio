@@ -24,10 +24,12 @@ function Cover({
   coverKey,
   priority,
   linked,
+  sizes,
 }: {
   coverKey: string | null
   priority: boolean
   linked: boolean
+  sizes: string
 }) {
   if (!coverKey) {
     return (
@@ -52,7 +54,7 @@ function Cover({
       srcSet={COVER_WIDTHS.map((w) => `${imageUrl(coverKey, w)} ${w}w`).join(
         ", "
       )}
-      sizes={COVER_SIZES}
+      sizes={sizes}
       width={1280}
       height={720}
       alt=""
@@ -65,16 +67,24 @@ function Cover({
   )
 }
 
-// A Project's card (CONTEXT.md › Project), on the Projects page and, later,
-// for the Featured ones on the home page. With a Case Study the whole card is
-// one link named by its title (DESIGN.md › Card); GitHub and the demo sit
-// above it. `priority` loads the cover at once: the first card's is the LCP.
+// A Project's card (CONTEXT.md › Project), on the Projects page and for the
+// Featured ones on the home page. With a Case Study the whole card is one
+// link named by its title (DESIGN.md › Card); GitHub and the demo sit above
+// it. `priority` loads the cover at once: the first card's is the LCP.
+// `heading` is the title's level under the page's own headings; `wide` puts
+// the cover beside the text from `lg`, with `sizes` to match.
 export function ProjectCard({
   project,
   priority = false,
+  heading: Heading = "h2",
+  wide = false,
+  sizes = COVER_SIZES,
 }: {
   project: Project
   priority?: boolean
+  heading?: "h2" | "h3"
+  wide?: boolean
+  sizes?: string
 }) {
   const lang = useLang()
   const linked = project.hasCaseStudy
@@ -96,43 +106,53 @@ export function ProjectCard({
           MOTION_FAST
         )}
       >
-        <div className="flex h-full flex-col gap-zsd-md bg-zsd-surface-raised p-zsd-xl chamfer-md">
-          <Cover
-            coverKey={project.coverKey}
-            priority={priority}
-            linked={linked}
-          />
-          <div className="flex flex-wrap items-start justify-between gap-zsd-sm">
-            <h2
-              lang={fallbackLang(project)}
-              className="min-w-0 font-heading text-zsd-headline-sm break-words text-zsd-on-surface"
-            >
-              {linked ? (
-                <Link
-                  to="/$lang/projects/$slug"
-                  params={{ lang, slug: project.slug }}
-                  className="card-link outline-none after:absolute after:inset-0"
-                >
-                  {project.title}
-                </Link>
-              ) : (
-                project.title
-              )}
-            </h2>
-            <ProjectStatus status={project.status} />
+        <div
+          className={cn(
+            "flex h-full flex-col gap-zsd-md bg-zsd-surface-raised p-zsd-xl chamfer-md",
+            wide && "lg:flex-row lg:gap-zsd-xl"
+          )}
+        >
+          <div className={cn(wide && "shrink-0 lg:w-3/5")}>
+            <Cover
+              coverKey={project.coverKey}
+              priority={priority}
+              linked={linked}
+              sizes={sizes}
+            />
           </div>
-          <FallbackNotice fallback={project.fallback} />
-          <p
-            lang={fallbackLang(project)}
-            className="text-zsd-body-sm text-zsd-on-surface-muted"
-          >
-            {project.description}
-          </p>
-          <ProjectTechnologies
-            technologies={project.technologies}
-            className="mt-auto"
-          />
-          <ProjectLinks project={project} />
+          <div className="flex min-w-0 flex-1 flex-col gap-zsd-md">
+            <div className="flex flex-wrap items-start justify-between gap-zsd-sm">
+              <Heading
+                lang={fallbackLang(project)}
+                className="min-w-0 font-heading text-zsd-headline-sm break-words text-zsd-on-surface"
+              >
+                {linked ? (
+                  <Link
+                    to="/$lang/projects/$slug"
+                    params={{ lang, slug: project.slug }}
+                    className="card-link outline-none after:absolute after:inset-0"
+                  >
+                    {project.title}
+                  </Link>
+                ) : (
+                  project.title
+                )}
+              </Heading>
+              <ProjectStatus status={project.status} />
+            </div>
+            <FallbackNotice fallback={project.fallback} />
+            <p
+              lang={fallbackLang(project)}
+              className="text-zsd-body-sm text-zsd-on-surface-muted"
+            >
+              {project.description}
+            </p>
+            <ProjectTechnologies
+              technologies={project.technologies}
+              className="mt-auto"
+            />
+            <ProjectLinks project={project} />
+          </div>
         </div>
       </div>
     </article>
