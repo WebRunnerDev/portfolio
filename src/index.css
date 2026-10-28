@@ -236,6 +236,20 @@
   }
 }
 
+/* DESIGN.md › Card: a card answers hover and keyboard focus alike. The card
+ * is `group/card`: a link itself, or the element that holds its `.card-link`.
+ * Hover counts only where a pointer can hover, as with Tailwind's `hover:`. */
+@custom-variant card-active {
+  @media (hover: hover) {
+    :where(.group\/card):hover & {
+      @slot;
+    }
+  }
+  :where(.group\/card):is(:focus-visible, :has(.card-link:focus-visible)) & {
+    @slot;
+  }
+}
+
 /* A Shiki token in a code block (shared/ui/markdown): both themes' colours
  * come as variables, the theme class picks one, so switching repaints only. */
 @utility shiki-token {

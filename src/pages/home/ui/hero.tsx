@@ -105,10 +105,10 @@ export function Hero({
             to="/$lang/cv"
             params={{ lang }}
             style={delay(ACTIONS_START)}
-            className="group/btn focus-chamfer-sm relative hero-in hover:elevation-accent focus-visible:elevation-accent"
+            className="group/btn focus-chamfer-sm relative hero-in hover:elevation-accent focus-visible:elevation-accent active:elevation-accent"
           >
             <span
-              className={`flex h-zsd-control-height items-center bg-zsd-primary px-zsd-lg font-zsd-label-md text-zsd-label-md text-zsd-on-primary chamfer-sm group-hover/btn:bg-zsd-primary-hover ${MOTION_FAST}`}
+              className={`flex h-zsd-control-height items-center bg-zsd-primary px-zsd-lg font-zsd-label-md text-zsd-label-md text-zsd-on-primary chamfer-sm group-hover/btn:bg-zsd-primary-hover group-focus-visible/btn:bg-zsd-primary-hover group-active/btn:bg-zsd-primary-hover ${MOTION_FAST}`}
             >
               {t("home.cv")}
             </span>
@@ -117,7 +117,7 @@ export function Hero({
             to="/$lang/projects"
             params={{ lang }}
             style={delay(ACTIONS_START + STAGGER.item)}
-            className={`inline-flex h-zsd-control-height hero-in items-center border border-zsd-outline bg-zsd-surface px-zsd-lg font-zsd-label-md text-zsd-label-md text-zsd-on-surface hover:bg-zsd-surface-raised ${FOCUS_RING} ${MOTION_FAST}`}
+            className={`inline-flex h-zsd-control-height hero-in items-center border border-zsd-outline bg-zsd-surface px-zsd-lg font-zsd-label-md text-zsd-label-md text-zsd-on-surface hover:bg-zsd-surface-raised focus-visible:bg-zsd-surface-raised active:bg-zsd-surface-raised ${FOCUS_RING} ${MOTION_FAST}`}
           >
             {t("home.projects")}
           </Link>
