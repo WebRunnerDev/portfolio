@@ -50,10 +50,12 @@ test("copy failure is reported", async ({ page }) => {
   await expect(footer.getByRole("status")).toHaveText("Kopieren fehlgeschlagen")
 })
 
-test("ar uses the EN strings", async ({ page }) => {
+test("ar has its own strings", async ({ page }) => {
   await page.goto("/ar")
   await expect(
-    page.getByRole("contentinfo").getByRole("button", { name: "Copy email" })
+    page
+      .getByRole("contentinfo")
+      .getByRole("button", { name: "نسخ البريد الإلكتروني" })
   ).toBeVisible()
 })
 

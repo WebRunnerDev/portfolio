@@ -399,7 +399,7 @@ test("the Fallback on /ar reads left to right, the arrow mirrors", async ({
   await expect(body).toHaveAttribute("dir", "ltr")
   await expect(body.locator("h2")).toHaveCSS("direction", "ltr")
 
-  const arrow = main.getByRole("link", { name: "All posts" }).locator("svg")
+  const arrow = main.getByRole("link", { name: "كل التدوينات" }).locator("svg")
   await expect(arrow).toHaveCSS("rotate", "180deg")
 
   const overflow = await page
