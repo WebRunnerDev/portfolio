@@ -1,40 +1,44 @@
 import type { ComponentProps } from "react"
 
-import { Button } from "@/shared/ui/kit"
+import { BarButton } from "@/shared/ui/bar-button"
 
-// `button-secondary` at the full target height; icon-only below `sm`, square,
-// to fit 320px. The close button of the menu bar takes the same place.
-export const BAR_BUTTON =
-  "h-zsd-control-height gap-zsd-sm border-input px-zsd-md font-zsd-label-md text-zsd-label-md max-sm:w-zsd-control-height max-sm:px-0"
+const LINE =
+  "block h-[1.5px] w-full bg-current transition-transform duration-(--zsd-x-zsd-motion-duration-base) ease-zsd-enter motion-reduce:transition-none"
 
-// Three tiles rising along a diagonal, as in the logo. Not directional, so
-// not mirrored.
-function TilesIcon() {
+// Two hairlines, the lower one shorter and flush right; on hover
+// and focus it runs out to full length. Not directional, so not mirrored.
+function LinesIcon() {
   return (
-    <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden>
-      <path d="M5 11.5L8.5 15L5 18.5L1.5 15Z" />
-      <path d="M10 6.5L13.5 10L10 13.5L6.5 10Z" />
-      <path d="M15 1.5L18.5 5L15 8.5L11.5 5Z" />
-    </svg>
+    <span aria-hidden className="flex w-4 flex-col gap-[5px]">
+      <span className={LINE} />
+      <span
+        className={`${LINE} origin-right scale-x-[0.55] group-hover/button:scale-x-100 group-focus-visible/button:scale-x-100`}
+      />
+    </span>
   )
 }
 
-// The menu trigger, and the Suspense fallback while the menu loads, so the
-// header doesn't shift.
+// Two hairlines crossed, the same weight as the menu's.
+export function CrossIcon() {
+  return (
+    <span aria-hidden className="relative block size-4">
+      <span className={`${LINE} absolute top-1/2 -mt-px rotate-45`} />
+      <span className={`${LINE} absolute top-1/2 -mt-px -rotate-45`} />
+    </span>
+  )
+}
+
+// The menu trigger, and the stand-in while the menu loads, so the header
+// doesn't shift. Icon-only below `sm`; the close button of the menu bar takes
+// the same place.
 export function MenuButton({
   label,
   ...props
-}: ComponentProps<typeof Button> & { label: string }) {
+}: ComponentProps<typeof BarButton> & { label: string }) {
   return (
-    <Button
-      variant="outline"
-      aria-label={label}
-      title={label}
-      className={BAR_BUTTON}
-      {...props}
-    >
-      <TilesIcon />
+    <BarButton square aria-label={label} title={label} {...props}>
       <span className="max-sm:hidden">{label}</span>
-    </Button>
+      <LinesIcon />
+    </BarButton>
   )
 }

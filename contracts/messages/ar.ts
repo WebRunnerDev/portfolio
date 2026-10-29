@@ -108,5 +108,4 @@ export const ar: Messages = {
   "themeSwitcher.label": "المظهر",
   "themeSwitcher.light": "فاتح",
   "themeSwitcher.dark": "داكن",
-  "themeSwitcher.system": "حسب النظام",
 }

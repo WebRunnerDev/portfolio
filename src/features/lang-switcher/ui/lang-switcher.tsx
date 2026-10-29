@@ -1,30 +1,25 @@
 import { Link } from "@tanstack/react-router"
 
-import { LANGS, type Lang } from "@contracts/lang"
+import { LANGS } from "@contracts/lang"
 import { useLang, useT } from "@/shared/i18n"
 import { cn } from "@/shared/lib/utils"
 
+import { LANG_NAMES } from "../model/lang-names"
 import { rememberLang } from "../model/remember-lang"
-
-// Endonyms: each Lang is named in itself, whatever the current Lang is.
-const LANG_NAMES: Record<Lang, string> = {
-  en: "English",
-  ru: "Русский",
-  kk: "Қазақша",
-  es: "Español",
-  de: "Deutsch",
-  ar: "العربية",
-}
 
 // Links to the current page in every Lang; path, search and hash are kept.
 // The name is the code shown plus the endonym, so it says what voice control
-// users see (WCAG 2.5.3, label in name).
+// users see (WCAG 2.5.3, label in name). A row of codes for the menu, the
+// current one in rust after a tile; the header has `LangMenu`.
 export function LangSwitcher({ className }: { className?: string }) {
   const lang = useLang()
   const t = useT()
 
   return (
-    <nav aria-label={t("langSwitcher.label")} className={cn("flex", className)}>
+    <nav
+      aria-label={t("langSwitcher.label")}
+      className={cn("flex h-zsd-control-height", className)}
+    >
       {LANGS.map((l) => (
         <Link
           key={l}
@@ -38,11 +33,11 @@ export function LangSwitcher({ className }: { className?: string }) {
           aria-current={l === lang ? "page" : undefined}
           onClick={() => rememberLang(l)}
           className={cn(
-            "flex h-zsd-control-height min-w-zsd-control-height items-center justify-center px-zsd-sm font-zsd-label-mono text-zsd-label-mono uppercase",
+            "flex h-full min-w-zsd-control-height items-center justify-center gap-zsd-xs px-zsd-sm font-zsd-label-mono text-zsd-label-mono uppercase",
             "outline-offset-[-2px] focus-visible:outline-2 focus-visible:outline-ring",
             "transition-colors duration-(--zsd-x-zsd-motion-duration-fast) ease-zsd-hover motion-reduce:transition-none",
             l === lang
-              ? "text-zsd-primary-text shadow-[inset_0_-2px_0_var(--zsd-colors-primary)]"
+              ? "text-zsd-primary-text before:size-1.5 before:rotate-45 before:bg-zsd-primary"
               : "text-zsd-on-surface-muted hover:text-zsd-on-surface"
           )}
         >

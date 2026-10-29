@@ -73,7 +73,10 @@ const FOCUSED = `(() => {
       getComputedStyle(at, "::before").clipPath !== "none"
   }
   return {
-    id: label + [...(element.parentElement?.children ?? [])].indexOf(element),
+    // The whole markup: controls built on one component share a long start.
+    id:
+      element.outerHTML +
+      [...(element.parentElement?.children ?? [])].indexOf(element),
     label,
     visible: rect.width > 0 && rect.height > 0,
     ring:

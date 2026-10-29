@@ -1,13 +1,12 @@
 import { useRef, useState, type CSSProperties } from "react"
 import { Link } from "@tanstack/react-router"
-import { X } from "lucide-react"
 
 import { LangSwitcher } from "@/features/lang-switcher"
 import { ThemeSwitcher } from "@/features/theme-switcher"
 import { isHome, SECTIONS } from "@/shared/config"
 import { useLang, useT } from "@/shared/i18n"
+import { BarButton } from "@/shared/ui/bar-button"
 import {
-  Button,
   Dialog,
   DialogClose,
   DialogContent,
@@ -17,7 +16,7 @@ import {
 import { BrandLockup } from "@/shared/ui/logo"
 
 import { FOLD_END, rowDelay } from "../lib/choreography"
-import { BAR_BUTTON, MenuButton } from "./menu-button"
+import { CrossIcon, MenuButton } from "./menu-button"
 import { MenuTiles } from "./menu-tiles"
 
 // A row rises from under its mask after the tiles (`menu-row-in`,
@@ -57,15 +56,15 @@ export function MenuDialog({ defaultOpen = false }: { defaultOpen?: boolean }) {
               logo={<span ref={slot} className="size-6 shrink-0" />}
             />
             <DialogClose asChild>
-              <Button
-                variant="outline"
+              <BarButton
+                square
                 aria-label={t("header.close")}
                 title={t("header.close")}
-                className={`ms-auto ${BAR_BUTTON}`}
+                className="ms-auto"
               >
-                <X aria-hidden />
                 <span className="max-sm:hidden">{t("header.close")}</span>
-              </Button>
+                <CrossIcon />
+              </BarButton>
             </DialogClose>
           </div>
         </div>
@@ -97,12 +96,13 @@ export function MenuDialog({ defaultOpen = false }: { defaultOpen?: boolean }) {
               ))}
             </ul>
           </nav>
-          {/* The header shows these from `lg`; below it they live here. */}
+          {/* The header shows these from `lg`; below it they live here, the
+              codes' text in line with the links'. */}
           <div
             style={row(SECTIONS.length)}
-            className={`flex flex-wrap items-center gap-zsd-lg lg:hidden ${ROW}`}
+            className={`flex flex-wrap items-center gap-zsd-lg ps-zsd-md lg:hidden ${ROW}`}
           >
-            <LangSwitcher className="flex-wrap" />
+            <LangSwitcher />
             <ThemeSwitcher />
           </div>
         </div>

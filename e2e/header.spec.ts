@@ -67,3 +67,26 @@ test.describe("with reduced motion", () => {
     expect(await headerAnimations(page)).toEqual([])
   })
 })
+
+test("the Lang menu hangs from the header and marks the current Lang", async ({
+  page,
+}) => {
+  await page.goto("/ru/projects")
+  const trigger = page
+    .getByRole("banner")
+    .getByRole("button", { name: "Язык: RU" })
+  await trigger.click()
+  const menu = page.getByRole("menu")
+  await expect(menu.getByRole("menuitem")).toHaveCount(6)
+  await expect(menu.getByRole("menuitem", { name: "Русский" })).toHaveAttribute(
+    "aria-current",
+    "page"
+  )
+  const header = (await page.getByRole("banner").boundingBox())!
+  const box = (await menu.boundingBox())!
+  // Sub-pixel layout: within a pixel of the header's bottom edge.
+  expect(Math.abs(box.y - (header.y + header.height))).toBeLessThanOrEqual(1)
+  await page.keyboard.press("Escape")
+  await expect(menu).toBeHidden()
+  await expect(trigger).toBeFocused()
+})

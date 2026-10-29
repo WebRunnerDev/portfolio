@@ -107,5 +107,4 @@ export const kk: Messages = {
   "themeSwitcher.label": "Тақырып",
   "themeSwitcher.light": "Ашық",
   "themeSwitcher.dark": "Қараңғы",
-  "themeSwitcher.system": "Жүйелік",
 }

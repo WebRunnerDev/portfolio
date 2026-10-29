@@ -108,5 +108,4 @@ export const es: Messages = {
   "themeSwitcher.label": "Tema",
   "themeSwitcher.light": "Claro",
   "themeSwitcher.dark": "Oscuro",
-  "themeSwitcher.system": "Sistema",
 }
