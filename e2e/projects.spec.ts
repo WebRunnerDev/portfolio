@@ -300,6 +300,8 @@ test("the Case Study highlights its code in both themes", async ({ page }) => {
   await page.goto("/en/projects/plotops")
 
   const code = page.getByRole("main").locator("pre")
+  // Shiki loads once the block comes near the viewport.
+  await code.scrollIntoViewIfNeeded()
   await expect(code).toHaveAttribute("data-highlighted", "")
   await expect(code).toHaveAttribute("dir", "ltr")
   await expect(code).toContainText("const plots = await db.select()")
@@ -346,6 +348,8 @@ test("the Case Study mirrors on /ar but its code doesn't, at 360px", async ({
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl")
 
   const code = page.getByRole("main").locator("pre")
+  // Shiki loads once the block comes near the viewport.
+  await code.scrollIntoViewIfNeeded()
   await expect(code).toHaveAttribute("data-highlighted", "")
   await expect(code).toHaveAttribute("dir", "ltr")
   await expect(code).toHaveCSS("direction", "ltr")

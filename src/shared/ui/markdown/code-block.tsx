@@ -1,14 +1,19 @@
-import { useEffect, useState, type CSSProperties } from "react"
+import { useEffect, useRef, useState, type CSSProperties } from "react"
 
 import type { Token } from "./highlighter"
 import { isHighlighted } from "./languages"
 
+// How far below the viewport a block starts loading Shiki: about a screen,
+// so a reader scrolling down meets it coloured.
+const NEAR = "0px 0px 100% 0px"
+
 // A fenced code block: its text and the language after the fence, if any.
 // Code is never mirrored (ADR-0007) and scrolls in its own region, which takes
 // focus so the keyboard can scroll it (DESIGN.md › Responsive behavior).
-// A known language is highlighted with Shiki, loaded only now; until then (and
-// for any other language) the block is the same text uncoloured, so nothing
-// moves. Each token carries both themes' colours as CSS variables and
+// A known language is highlighted with Shiki, loaded only once the block comes
+// near the viewport (#142: not with the page); until then (and for any other
+// language) the block is the same text uncoloured, so nothing moves. Each
+// token carries both themes' colours as CSS variables and
 // `.shiki-token` picks one by the theme class, so a theme switch repaints
 // without highlighting again.
 export function CodeBlock({
@@ -23,9 +28,29 @@ export function CodeBlock({
     language: string
     lines: Token[][]
   } | null>(null)
+  const pre = useRef<HTMLPreElement>(null)
+  const [near, setNear] = useState(false)
 
   useEffect(() => {
-    if (!language || !isHighlighted(language)) return
+    const element = pre.current
+    if (!element || typeof IntersectionObserver === "undefined") {
+      setNear(true)
+      return
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return
+        setNear(true)
+        observer.disconnect()
+      },
+      { rootMargin: NEAR }
+    )
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    if (!near || !language || !isHighlighted(language)) return
     let current = true
     import("./highlighter")
       .then(({ highlight }) => highlight(code, language))
@@ -37,7 +62,7 @@ export function CodeBlock({
     return () => {
       current = false
     }
-  }, [code, language])
+  }, [near, code, language])
 
   const lines =
     highlighted?.code === code && highlighted.language === language
@@ -46,6 +71,7 @@ export function CodeBlock({
 
   return (
     <pre
+      ref={pre}
       dir="ltr"
       tabIndex={0}
       data-language={language}
