@@ -34,6 +34,39 @@ function cloudflareWebAnalytics(token: string | undefined): Plugin {
   }
 }
 
+// Font files every page's first paint needs, preloaded from index.html (#142):
+// they'd otherwise start only once the CSS has matched them to text, after
+// the app has rendered, and repaint the LCP element. Headings and the hero's
+// brand are Tektur; the Latin subset covers every Lang's page titles but ar's.
+function fontPreloads(names: RegExp[]): Plugin {
+  return {
+    name: "font-preloads",
+    apply: "build",
+    transformIndexHtml: {
+      order: "post",
+      handler(_html, { bundle }) {
+        if (!bundle) return
+        return Object.values(bundle)
+          .filter(
+            ({ type, fileName }) =>
+              type === "asset" && names.some((name) => name.test(fileName))
+          )
+          .map(({ fileName }) => ({
+            tag: "link",
+            attrs: {
+              rel: "preload",
+              as: "font",
+              type: "font/woff2",
+              crossorigin: true,
+              href: `/${fileName}`,
+            },
+            injectTo: "head" as const,
+          }))
+      },
+    },
+  }
+}
+
 // contracts/route-preloads.ts: a modulepreload in index.html for each chunk a
 // page's route component needs beyond the entry's own, marked with the
 // routes that need it; the Worker keeps those of the page it serves. The
@@ -119,6 +152,7 @@ export default defineConfig({
       }),
     cloudflareWebAnalytics(process.env.CF_WEB_ANALYTICS_TOKEN),
     routePreloads(),
+    fontPreloads([/^assets\/tektur-latin-wght-normal-[\w-]+\.woff2$/]),
   ],
   resolve: {
     alias: {
