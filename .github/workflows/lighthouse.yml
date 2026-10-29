@@ -2,7 +2,10 @@ name: Lighthouse
 
 # Lighthouse CI (mobile, lighthouserc.json) on every public page and /ar.
 # Blocking: a budget below its threshold fails the job, and `lighthouse` is a
-# required check of `main` (docs/plan.md, stage 6, item 8).
+# required check of `main` (docs/plan.md, stage 6, item 8). Accessibility,
+# best practices and SEO hold the budget (≥ 90); performance, LCP and initial
+# JS are a ratchet at today's level, per page group, until #142 brings them
+# to the budget (≥ 90, LCP < 2.5 s, JS ≤ 150 KB).
 #
 # Where it measures (issue #124): the production build of the PR, here in CI,
 # served by `vite preview` through the Worker over a local D1 and R2 filled from
