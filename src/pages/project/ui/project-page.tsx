@@ -79,11 +79,10 @@ export function ProjectPage() {
         )}
       </header>
       <Markdown
+        tree={caseStudy}
         lang={textLang}
         className="mt-zsd-section max-w-(--zsd-x-zsd-layout-prose-max) lg:mt-zsd-section-lg"
-      >
-        {caseStudy}
-      </Markdown>
+      />
     </article>
   )
 }

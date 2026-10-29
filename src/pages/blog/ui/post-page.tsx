@@ -90,12 +90,11 @@ export function PostPage() {
           )}
         </header>
         <Markdown
+          tree={post.body}
           lang={textLang}
           dir={textDir}
           className="mt-zsd-section lg:mt-zsd-section-lg"
-        >
-          {post.body}
-        </Markdown>
+        />
         <footer className="mt-zsd-section border-t border-zsd-outline-muted pt-zsd-xl">
           <Button asChild variant="outline">
             <a

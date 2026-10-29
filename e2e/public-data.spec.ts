@@ -91,7 +91,12 @@ async function mockPublicApi(
       const found = data.projects.find((p) => p.slug === slug)
       return found
         ? route.fulfill({
-            json: { ...found, caseStudy: found.hasCaseStudy ? "# Case" : null },
+            json: {
+              ...found,
+              caseStudy: found.hasCaseStudy
+                ? [{ tag: "h2", children: ["Case"] }]
+                : null,
+            },
           })
         : route.fulfill({ status: 404, json: { error: "not_found" } })
     }

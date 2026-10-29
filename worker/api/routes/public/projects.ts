@@ -1,5 +1,6 @@
 import { Hono } from "hono"
 import type { Project, ProjectDetail, Technology } from "@contracts/api/public"
+import { markdownTree } from "@contracts/markdown/parse"
 import type { Lang } from "@contracts/lang"
 import { apiError, methodNotAllowed } from "../../errors"
 import {
@@ -51,13 +52,18 @@ function toProject(row: ProjectRow): Project {
   }
 }
 
+// A Project as D1 has it: the Case Study still Markdown.
+export type ProjectRecord = Omit<ProjectDetail, "caseStudy"> & {
+  caseStudy: string | null
+}
+
 // The Project at `slug` on a Lang, with its Case Study; null for an unknown
 // slug. Meta Injection of its page reads it too.
 export async function readProject(
   db: D1Database,
   lang: Lang,
   slug: string
-): Promise<ProjectDetail | null> {
+): Promise<ProjectRecord | null> {
   const row = await db
     .prepare(`${SELECT_PROJECT} WHERE p.slug = ?2`)
     .bind(lang, slug)
@@ -79,7 +85,10 @@ export const projects = new Hono<PublicEnv>()
   .get("/:slug", async (c) => {
     const found = await readProject(c.env.DB, c.var.lang, c.req.param("slug"))
     if (!found) return apiError(c, 404, "not_found")
-    return c.json(found satisfies ProjectDetail)
+    // Rendered here, so the page needs neither a Markdown parser nor Shiki.
+    const caseStudy =
+      found.caseStudy === null ? null : await markdownTree(found.caseStudy)
+    return c.json({ ...found, caseStudy } satisfies ProjectDetail)
   })
   .all("/", methodNotAllowed("GET, HEAD"))
   .all("/:slug", methodNotAllowed("GET, HEAD"))

@@ -1,18 +1,27 @@
-import type { Heading, Parent, Root } from "mdast"
-import ReactMarkdown, { type Components, type ExtraProps } from "react-markdown"
-import remarkGfm from "remark-gfm"
+import type { ReactNode } from "react"
 import { cn } from "cn"
 
+import type {
+  MarkdownElement,
+  MarkdownNode,
+  MarkdownTree,
+} from "@contracts/markdown/tree"
 import { IMAGE_WIDTHS, imageUrl } from "@contracts/media"
 
 import { CodeBlock } from "./code-block"
-
-type Node = NonNullable<ExtraProps["node"]>
 
 const BLOCK = "mt-zsd-md first:mt-0"
 
 const HEADING =
   "mt-zsd-xl font-heading break-words text-zsd-on-surface first:mt-0"
+
+const HEADINGS = {
+  h2: "text-zsd-headline-md",
+  h3: "text-zsd-headline-sm",
+  h4: "text-zsd-body-lg font-semibold",
+  h5: "text-zsd-body-md font-semibold",
+  h6: "text-zsd-body-md font-semibold",
+}
 
 const LINK =
   "text-zsd-primary-text underline underline-offset-4 outline-offset-2 hover:decoration-2 focus-visible:outline-2 focus-visible:outline-ring"
@@ -36,157 +45,220 @@ function mediaKey(src: unknown) {
   }
 }
 
-function textOf(node: Node | Node["children"][number]): string {
-  if (node.type === "text") return node.value
-  if (node.type === "element") return node.children.map(textOf).join("")
-  return ""
+function text(value: string | boolean | undefined) {
+  return typeof value === "string" ? value : undefined
 }
 
-// react-markdown hands each component its hast `node`: no DOM attribute.
-function dom<P extends ExtraProps>(props: P): Omit<P, "node"> {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { node, ...rest } = props
-  return rest
-}
+function element(node: MarkdownElement, key: number): ReactNode {
+  const attrs = node.attrs ?? {}
+  const children = node.children && nodes(node.children)
+  const id = text(attrs.id)
 
-function headingsOf(parent: Parent): Heading[] {
-  return parent.children.flatMap((child) => [
-    ...(child.type === "heading" ? [child] : []),
-    ...("children" in child ? headingsOf(child) : []),
-  ])
-}
-
-// Lifts the headings so the top one is `#`, whether the Markdown starts at
-// `#` or `##`: with the shift below, levels follow the page title unskipped.
-function remarkTopHeading() {
-  return (tree: Root) => {
-    const headings = headingsOf(tree)
-    const shift = Math.min(...headings.map((h) => h.depth)) - 1
-    for (const h of headings) h.depth = (h.depth - shift) as Heading["depth"]
+  switch (node.tag) {
+    case "h2":
+    case "h3":
+    case "h4":
+    case "h5":
+    case "h6": {
+      const Tag = node.tag
+      return (
+        <Tag key={key} id={id} className={cn(HEADING, HEADINGS[Tag])}>
+          {children}
+        </Tag>
+      )
+    }
+    case "p":
+      return (
+        <p key={key} className={BLOCK}>
+          {children}
+        </p>
+      )
+    case "ul":
+      return (
+        <ul key={key} className={cn(BLOCK, "list-disc ps-zsd-xl")}>
+          {children}
+        </ul>
+      )
+    case "ol":
+      return (
+        <ol
+          key={key}
+          start={attrs.start ? Number(attrs.start) : undefined}
+          className={cn(BLOCK, "list-decimal ps-zsd-xl")}
+        >
+          {children}
+        </ol>
+      )
+    case "li":
+      return (
+        <li
+          key={key}
+          id={id}
+          className="mt-zsd-xs [&>ol]:mt-zsd-xs [&>ul]:mt-zsd-xs"
+        >
+          {children}
+        </li>
+      )
+    case "blockquote":
+      return (
+        <blockquote
+          key={key}
+          className={cn(
+            BLOCK,
+            "border-s-2 border-zsd-outline ps-zsd-lg text-zsd-on-surface-muted"
+          )}
+        >
+          {children}
+        </blockquote>
+      )
+    case "hr":
+      return <hr key={key} className="my-zsd-xl border-zsd-outline-muted" />
+    case "br":
+      return <br key={key} />
+    // Other sites open in a new tab, without access to this one.
+    case "a": {
+      const href = text(attrs.href)
+      return isExternal(href) ? (
+        <a
+          key={key}
+          id={id}
+          href={href}
+          title={text(attrs.title)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={LINK}
+        >
+          {children}
+        </a>
+      ) : (
+        <a
+          key={key}
+          id={id}
+          href={href}
+          title={text(attrs.title)}
+          className={LINK}
+        >
+          {children}
+        </a>
+      )
+    }
+    // Uploads (`/media/<key>`) go through Cloudflare Images. The CSP allows no
+    // other origin, so an image from elsewhere is only its alt text.
+    case "img": {
+      const alt = text(attrs.alt) ?? ""
+      const media = mediaKey(attrs.src)
+      if (!media) return alt ? <span key={key}>{alt}</span> : null
+      return (
+        <img
+          key={key}
+          src={imageUrl(media, 960)}
+          srcSet={IMAGE_WIDTHS.map((w) => `${imageUrl(media, w)} ${w}w`).join(
+            ", "
+          )}
+          sizes={IMAGE_SIZES}
+          alt={alt}
+          title={text(attrs.title)}
+          loading="lazy"
+          decoding="async"
+          className="block h-auto max-w-full"
+        />
+      )
+    }
+    // Inline code; blocks are `pre` nodes of their own.
+    case "code":
+      return (
+        <code
+          key={key}
+          dir="ltr"
+          className="bg-zsd-surface-raised px-1 font-zsd-code-md text-[0.875em] break-words"
+        >
+          {children}
+        </code>
+      )
+    // A task list's box: shown, not a control.
+    case "input":
+      return (
+        <input
+          key={key}
+          type="checkbox"
+          defaultChecked={attrs.checked === true}
+          disabled
+          className="me-zsd-xs align-middle"
+        />
+      )
+    // A wide table scrolls in its own region, like code.
+    case "table":
+      return (
+        <div key={key} tabIndex={0} className={cn(BLOCK, "overflow-x-auto")}>
+          <table className="w-full border-collapse text-zsd-body-sm">
+            {children}
+          </table>
+        </div>
+      )
+    case "th":
+      return (
+        <th
+          key={key}
+          className="border border-zsd-outline-muted bg-zsd-surface-raised px-zsd-sm py-zsd-xs text-start font-semibold"
+        >
+          {children}
+        </th>
+      )
+    case "td":
+      return (
+        <td
+          key={key}
+          className="border border-zsd-outline-muted px-zsd-sm py-zsd-xs"
+        >
+          {children}
+        </td>
+      )
+    case "section":
+      return (
+        <section key={key} id={id} className={BLOCK}>
+          {children}
+        </section>
+      )
+    default: {
+      // em, strong, del, sup, thead, tbody, tr: as they are.
+      const Tag = node.tag
+      return (
+        <Tag key={key} id={id}>
+          {children}
+        </Tag>
+      )
+    }
   }
 }
 
-// The page title is the only h1: the Markdown's headings go one level down.
-function heading(level: 2 | 3 | 4 | 5 | 6, size: string): Components["h1"] {
-  const Tag = `h${level}` as const
-  return function Heading(props) {
-    return <Tag {...dom(props)} className={cn(HEADING, size)} />
-  }
+function nodes(list: MarkdownNode[]): ReactNode[] {
+  return list.map((node, key) => {
+    if (typeof node === "string") return node
+    if (node.tag === "pre") {
+      return (
+        <CodeBlock
+          key={key}
+          code={node.code}
+          language={node.language}
+          lines={node.lines}
+        />
+      )
+    }
+    return element(node, key)
+  })
 }
 
-const COMPONENTS: Components = {
-  h1: heading(2, "text-zsd-headline-md"),
-  h2: heading(3, "text-zsd-headline-sm"),
-  h3: heading(4, "text-zsd-body-lg font-semibold"),
-  h4: heading(5, "text-zsd-body-md font-semibold"),
-  h5: heading(6, "text-zsd-body-md font-semibold"),
-  h6: heading(6, "text-zsd-body-md font-semibold"),
-  p: (props) => <p className={BLOCK} {...dom(props)} />,
-  ul: (props) => (
-    <ul className={cn(BLOCK, "list-disc ps-zsd-xl")} {...dom(props)} />
-  ),
-  ol: (props) => (
-    <ol className={cn(BLOCK, "list-decimal ps-zsd-xl")} {...dom(props)} />
-  ),
-  li: (props) => (
-    <li
-      className="mt-zsd-xs [&>ol]:mt-zsd-xs [&>ul]:mt-zsd-xs"
-      {...dom(props)}
-    />
-  ),
-  blockquote: (props) => (
-    <blockquote
-      className={cn(
-        BLOCK,
-        "border-s-2 border-zsd-outline ps-zsd-lg text-zsd-on-surface-muted"
-      )}
-      {...dom(props)}
-    />
-  ),
-  hr: () => <hr className="my-zsd-xl border-zsd-outline-muted" />,
-  // Other sites open in a new tab, without access to this one.
-  a: (props) =>
-    isExternal(props.href) ? (
-      <a
-        {...dom(props)}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={LINK}
-      />
-    ) : (
-      <a {...dom(props)} className={LINK} />
-    ),
-  // Uploads (`/media/<key>`) go through Cloudflare Images. The CSP allows no
-  // other origin, so an image from elsewhere is only its alt text.
-  img: ({ src, alt = "" }) => {
-    const key = mediaKey(src)
-    if (!key) return alt ? <span>{alt}</span> : null
-    return (
-      <img
-        src={imageUrl(key, 960)}
-        srcSet={IMAGE_WIDTHS.map((w) => `${imageUrl(key, w)} ${w}w`).join(", ")}
-        sizes={IMAGE_SIZES}
-        alt={alt}
-        loading="lazy"
-        decoding="async"
-        className="block h-auto max-w-full"
-      />
-    )
-  },
-  pre: ({ node }) => {
-    const code = node?.children.find(
-      (child) => child.type === "element" && child.tagName === "code"
-    )
-    if (code?.type !== "element") return null
-    const language = (code.properties.className as string[] | undefined)
-      ?.find((name) => name.startsWith("language-"))
-      ?.slice("language-".length)
-    return (
-      <CodeBlock code={textOf(code).replace(/\n$/, "")} language={language} />
-    )
-  },
-  // Inline code; blocks render through `pre`.
-  code: (props) => (
-    <code
-      dir="ltr"
-      className="bg-zsd-surface-raised px-1 font-zsd-code-md text-[0.875em] break-words"
-      {...dom(props)}
-    />
-  ),
-  // A wide table scrolls in its own region, like code.
-  table: (props) => (
-    <div tabIndex={0} className={cn(BLOCK, "overflow-x-auto")}>
-      <table
-        className="w-full border-collapse text-zsd-body-sm"
-        {...dom(props)}
-      />
-    </div>
-  ),
-  th: (props) => (
-    <th
-      className="border border-zsd-outline-muted bg-zsd-surface-raised px-zsd-sm py-zsd-xs text-start font-semibold"
-      {...dom(props)}
-    />
-  ),
-  td: (props) => (
-    <td
-      className="border border-zsd-outline-muted px-zsd-sm py-zsd-xs"
-      {...dom(props)}
-    />
-  ),
-}
-
-// Markdown from D1 (Case Studies, Posts) as React elements, with GFM
-// tables, task lists and autolinks. Raw HTML is dropped and URLs other than
-// http(s), mailto and relative ones are emptied, so the Markdown can't inject
-// markup or scripts.
+// A Markdown tree (`markdownTree`, @contracts/markdown/parse) as React
+// elements: Case Studies and Posts, rendered on the Worker, and the admin's
+// preview. The tree holds no raw HTML and no unsafe URL; this only gives each
+// element the site's look.
 export function Markdown({
-  children,
+  tree,
   lang,
   dir,
   className,
 }: {
-  children: string
+  tree: MarkdownTree
   lang?: string
   dir?: "ltr" | "rtl"
   className?: string
@@ -200,13 +272,7 @@ export function Markdown({
         className
       )}
     >
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm, remarkTopHeading]}
-        skipHtml
-        components={COMPONENTS}
-      >
-        {children}
-      </ReactMarkdown>
+      {nodes(tree)}
     </div>
   )
 }

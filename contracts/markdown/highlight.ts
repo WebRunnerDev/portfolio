@@ -1,12 +1,14 @@
-// Shiki, loaded by `CodeBlock` only when a page has code. The core, the JS
-// RegExp engine (no WASM) and the two themes come in this chunk; each language
-// is a chunk of its own, loaded the first time a block asks for it.
+// Shiki, for the code blocks of `markdownTree` (on the Worker, and in the
+// admin's preview). The core, the JS RegExp engine (no WASM) and the two
+// themes; each language is a chunk of its own, loaded the first time a block
+// asks for it.
 import { createHighlighterCore, type HighlighterCore } from "@shikijs/core"
 import { createJavaScriptRegexEngine } from "@shikijs/engine-javascript"
 import githubDarkDefault from "@shikijs/themes/github-dark-default"
 import githubLightHighContrast from "@shikijs/themes/github-light-high-contrast"
 
 import { languageModule } from "./languages"
+import type { Token } from "./tree"
 
 const THEMES = {
   light: githubLightHighContrast,
@@ -20,8 +22,6 @@ const THEMES = {
 const COLOR_REPLACEMENTS = {
   [THEMES.light.name!]: { "#66707b": "#59636e" },
 }
-
-export type Token = { content: string; light?: string; dark?: string }
 
 let highlighter: Promise<HighlighterCore> | undefined
 

@@ -107,7 +107,8 @@ export function projectMeta(
     title: string
     description: string
     coverKey: string | null
-    caseStudy: string | null
+    // Markdown on the Worker, its tree on the page: only its presence counts.
+    caseStudy: unknown
   } | null
 ): PageMeta | null {
   if (project?.caseStudy == null) return null

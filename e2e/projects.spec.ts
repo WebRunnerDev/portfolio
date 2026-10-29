@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test"
 
+import { markdownTree } from "../contracts/markdown/parse"
+
 // Issues #69 and #70: the Projects page as a card grid and the Case Study page,
 // against an in-memory /api/public/* (the D1 behind `vite preview` is empty).
 // Only PlotOps has a Case Study; on RU, PlotOps and AITU AMS only have their
@@ -85,6 +87,8 @@ const fallbackPlotOps = {
 }
 
 async function mockPublicApi(page: Page, { empty = false } = {}) {
+  // The Worker sends the Case Study rendered.
+  const caseStudy = await markdownTree(CASE_STUDY)
   // Cloudflare Images only runs on the zone.
   await page.route("**/cdn-cgi/image/**", (route) =>
     route.fulfill({ status: 404 })
@@ -104,7 +108,7 @@ async function mockPublicApi(page: Page, { empty = false } = {}) {
           json: {
             ...found,
             ...(lang === "ru" && slug === "plotops" && fallbackPlotOps),
-            caseStudy: found.hasCaseStudy ? CASE_STUDY : null,
+            caseStudy: found.hasCaseStudy ? caseStudy : null,
           },
         })
       : route.fulfill({ status: 404, json: { error: "not_found" } })
@@ -287,10 +291,14 @@ test("a project without a Case Study and an unknown slug are a 404", async ({
   }
 })
 
-// Issue #97: Shiki, its engine and themes are one chunk, each language another.
-const SHIKI = /\/assets\/(highlighter|typescript)-[\w-]+\.js$/
+// Issue #97: Shiki, its engine and themes are one chunk, each language
+// another. #142: only the admin's preview loads them; the Worker highlights
+// the public pages.
+const SHIKI = /\/assets\/(highlight|typescript)-[\w-]+\.js$/
 
-test("the Case Study highlights its code in both themes", async ({ page }) => {
+test("the Case Study shows its code highlighted in both themes", async ({
+  page,
+}) => {
   await page.emulateMedia({ colorScheme: "light" })
   const shiki: string[] = []
   page.on("request", (request) => {
@@ -300,22 +308,20 @@ test("the Case Study highlights its code in both themes", async ({ page }) => {
   await page.goto("/en/projects/plotops")
 
   const code = page.getByRole("main").locator("pre")
-  // Shiki loads once the block comes near the viewport.
-  await code.scrollIntoViewIfNeeded()
   await expect(code).toHaveAttribute("data-highlighted", "")
   await expect(code).toHaveAttribute("dir", "ltr")
   await expect(code).toContainText("const plots = await db.select()")
   const keyword = code.locator(".shiki-token", { hasText: /^const$/ })
   await expect(keyword).toHaveCSS("color", "rgb(160, 17, 31)")
 
-  // The theme switch repaints the tokens without loading or highlighting again.
+  // The theme switch only repaints the tokens.
   await page.emulateMedia({ colorScheme: "dark" })
   await expect(page.locator("html")).toHaveClass(/\bdark\b/)
   await expect(keyword).toHaveCSS("color", "rgb(255, 123, 114)")
-  expect(shiki).toHaveLength(2)
+  expect(shiki).toEqual([])
 })
 
-test("a page without code doesn't load Shiki", async ({ page }) => {
+test("a page without code doesn't load Shiki either", async ({ page }) => {
   const shiki: string[] = []
   page.on("request", (request) => {
     if (SHIKI.test(request.url())) shiki.push(request.url())
@@ -348,8 +354,6 @@ test("the Case Study mirrors on /ar but its code doesn't, at 360px", async ({
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl")
 
   const code = page.getByRole("main").locator("pre")
-  // Shiki loads once the block comes near the viewport.
-  await code.scrollIntoViewIfNeeded()
   await expect(code).toHaveAttribute("data-highlighted", "")
   await expect(code).toHaveAttribute("dir", "ltr")
   await expect(code).toHaveCSS("direction", "ltr")

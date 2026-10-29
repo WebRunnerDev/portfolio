@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { highlight } from "./highlighter"
+import { highlight } from "./highlight"
 import { LANGUAGE_NAMES } from "./languages"
 
 // The block's background, `surface-raised` in DESIGN.md.
