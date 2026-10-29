@@ -49,7 +49,7 @@
 
 На Free Bot Fight Mode нельзя обойти skip-правилом WAF. Что он затрагивает:
 
-- **Workers Builds** и **Lighthouse CI** — нет: сборка в зону не ходит, Lighthouse проверяет Preview на `*.workers.dev`, а не на webrunner.dev.
+- **Workers Builds** и **Lighthouse CI** — нет: сборка в зону не ходит, Lighthouse проверяет сборку локально в CI, а не webrunner.dev.
 - **Verified Bots** (превью ссылок в Telegram, поисковики) пропускаются. Проверено: превью `https://webrunner.dev/en` в Telegram строится.
 - **Browser Rendering** (CV PDF, этап 3) Cloudflare помечает как бот, поэтому его запросы к зоне могут блокироваться. Для этапа 3: Worker передаёт HTML в `page.setContent()`, а не открывает `webrunner.dev/{lang}/cv/print`, и запрос не проходит через зону. Если всё же нужен переход по URL и он блокируется — выключить Bot Fight Mode и записать это здесь.
 

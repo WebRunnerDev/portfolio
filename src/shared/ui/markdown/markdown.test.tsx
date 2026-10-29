@@ -73,6 +73,13 @@ describe("Markdown", () => {
     expect(html).not.toContain("<h1")
   })
 
+  it("starts at h2 whatever level its top heading has", () => {
+    const html = render("## Problem\n\n> ### Note\n\n#### Detail")
+    expect(html).toMatch(/<h2 [^>]*>Problem<\/h2>/)
+    expect(html).toMatch(/<h3 [^>]*>Note<\/h3>/)
+    expect(html).toMatch(/<h4 [^>]*>Detail<\/h4>/)
+  })
+
   it("renders GFM tables in their own scroll region", () => {
     const html = render("| A | B |\n| - | - |\n| 1 | 2 |")
     expect(html).toMatch(

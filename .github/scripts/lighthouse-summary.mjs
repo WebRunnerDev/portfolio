@@ -1,14 +1,24 @@
 // Writes the Lighthouse CI results (representative runs) as a table to the job
-// summary, marking values outside the budgets in lighthouserc.json.
-import { appendFileSync, readFileSync } from "node:fs"
+// summary, marking values outside the thresholds of their page in
+// lighthouserc.json (`assertMatrix`).
+import { appendFileSync, existsSync, readFileSync } from "node:fs"
 
-const { GITHUB_STEP_SUMMARY, PREVIEW_URL } = process.env
+const { GITHUB_STEP_SUMMARY } = process.env
 
 const readJson = (path) => JSON.parse(readFileSync(path, "utf8"))
-const { assertions } = readJson("lighthouserc.json").ci.assert
-const budget = (key) => assertions[key][1]
+const { assertMatrix } = readJson("lighthouserc.json").ci.assert
+const thresholds = (url) =>
+  Object.assign(
+    {},
+    ...assertMatrix
+      .filter((entry) => new RegExp(entry.matchingUrlPattern).test(url))
+      .map((entry) => entry.assertions)
+  )
 
-const manifest = readJson(".lighthouseci/reports/manifest.json")
+const MANIFEST = ".lighthouseci/reports/manifest.json"
+// No reports when the run broke before collecting.
+if (!existsSync(MANIFEST)) process.exit(0)
+const manifest = readJson(MANIFEST)
 const categories = ["performance", "accessibility", "best-practices", "seo"]
 
 const mark = (ok) => (ok ? "" : " ⚠️")
@@ -18,6 +28,8 @@ const rows = manifest
   .map((run) => {
     const lhr = readJson(run.jsonPath)
     const path = new URL(run.url).pathname
+    const assertions = thresholds(run.url)
+    const budget = (key) => assertions[key][1]
     const scores = categories.map((category) => {
       const score = run.summary[category]
       return `${Math.round(score * 100)}${mark(score >= budget(`categories:${category}`).minScore)}`
@@ -49,7 +61,8 @@ const table = [header, header.map(() => "---"), ...rows]
 
 appendFileSync(
   GITHUB_STEP_SUMMARY,
-  `## Lighthouse (mobile) — ${PREVIEW_URL}\n\n${table}\n\n` +
-    "Warning only. Budgets: categories ≥ 90, LCP < 2.5 s, initial JS ≤ 150 KB. " +
+  `## Lighthouse (mobile)\n\n${table}\n\n` +
+    "A value marked ⚠️ fails the job. Performance thresholds sit at today's level " +
+    "until #142 brings them to the budget (≥ 90, LCP < 2.5 s, initial JS ≤ 150 KB). " +
     "Full reports are in the `lighthouse` artifact.\n"
 )

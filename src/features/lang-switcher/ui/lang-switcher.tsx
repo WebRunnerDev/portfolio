@@ -17,6 +17,8 @@ const LANG_NAMES: Record<Lang, string> = {
 }
 
 // Links to the current page in every Lang; path, search and hash are kept.
+// The name is the code shown plus the endonym, so it says what voice control
+// users see (WCAG 2.5.3, label in name).
 export function LangSwitcher({ className }: { className?: string }) {
   const lang = useLang()
   const t = useT()
@@ -33,7 +35,6 @@ export function LangSwitcher({ className }: { className?: string }) {
           hrefLang={l}
           lang={l}
           title={LANG_NAMES[l]}
-          aria-label={LANG_NAMES[l]}
           aria-current={l === lang ? "page" : undefined}
           onClick={() => rememberLang(l)}
           className={cn(
@@ -46,6 +47,7 @@ export function LangSwitcher({ className }: { className?: string }) {
           )}
         >
           {l}
+          <span className="sr-only"> {LANG_NAMES[l]}</span>
         </Link>
       ))}
     </nav>

@@ -234,7 +234,7 @@ ADR-0003: one PDF per Lang, printed from the Print CV (`/{lang}/cv/print`, `docs
 
 `npm test` runs two Vitest projects (`vite.config.ts`): `unit` in Node and `worker`, which runs `worker/**/*.test.ts` in workerd through `@cloudflare/vitest-plugin` with the bindings from `wrangler.jsonc`. D1 is local and every test file starts with the schema from `migrations/` (`worker/test/apply-migrations.ts`). Call the Worker with `exports.default.fetch()` from `cloudflare:workers`, bindings are `env` from the same module. `npx vitest --project worker` runs only these.
 
-`npm run test:e2e` runs Playwright against `vite preview` and, for the Admin editor, against `vite dev` with its own local D1 and R2 in `.wrangler/e2e` and the Access dev bypass (`scripts/e2e-dev.mjs`, `docs/agents/fsd.md` › Admin).
+`npm run test:e2e` runs Playwright against `vite preview`, for the accessibility checks against `vite preview` over seeded content (`scripts/audit/server.mjs`, `.wrangler/audit`) and, for the Admin editor, against `vite dev` with its own local D1 and R2 in `.wrangler/e2e` and the Access dev bypass (`scripts/e2e-dev.mjs`, `docs/agents/fsd.md` › Admin).
 
 `fsModuleCache` is off for the `worker` project: with Vitest 5 on Windows the cached modules come as OS paths that workerd can't read.
 
@@ -279,8 +279,9 @@ Git hooks (Husky, installed by `npm install`): pre-commit runs `lint-staged.conf
 
 GitHub Actions never deploys:
 
-- `.github/workflows/ci.yml`, on every PR and push to `main`: `check` (`npm audit`, lint, typecheck, `wrangler types --check`, Prettier, Vitest, Playwright), `gitleaks` (secrets in the pushed commits) and, on PRs, `commitlint` (Conventional Commits; config in `commitlint.config.js`). The `main` ruleset requires `check` and `gitleaks`, so only green code reaches production.
-- `.github/workflows/lighthouse.yml`, on PRs: waits for the `Workers Builds: webrunner` check, then runs Lighthouse CI (mobile, `lighthouserc.json`) on `/en` and `/en/cv` of the Preview. Warning only: budgets (categories ≥ 90, LCP < 2.5 s, initial JS ≤ 150 KB) show up as ⚠️ in the job summary, reports are in the `lighthouse` artifact.
+- `.github/workflows/ci.yml`, on every PR and push to `main`: `check` (`npm audit`, lint, typecheck, `wrangler types --check`, Prettier, Vitest, Playwright), `gitleaks` (secrets in the pushed commits) and, on PRs, `commitlint` (Conventional Commits; config in `commitlint.config.js`). The `main` ruleset requires `check`, `gitleaks` and `lighthouse`, so only green code reaches production.
+- `.github/workflows/lighthouse.yml`, on PRs: `lighthouse` runs Lighthouse CI (mobile, `lighthouserc.json`) on every public page and `/ar`, against the production build served in CI by `scripts/audit/server.mjs` (`vite preview` over a local D1 and R2 filled from `scripts/audit/seed.sql`). Not on the Preview: Previews are behind Access and their D1 is empty; the workflow comment has the reasoning. Blocking: a missed threshold fails the job and is marked ⚠️ in the job summary; reports are in the `lighthouse` artifact. Accessibility, best practices and SEO hold the budget (≥ 90). Performance, LCP and initial JS are a ratchet at today's level (pages with Markdown apart, they load Shiki) until #142 brings them to the budget (≥ 90, LCP < 2.5 s, initial JS ≤ 150 KB): raise them, never lower them.
+- Accessibility: `e2e/a11y.spec.ts` (Playwright project `audit`, against the same server) runs axe (WCAG 2.2 A/AA, contrast included) on every public page in both themes and on `/ar`, and fails on any `serious` or `critical` violation; it also tabs through each page and checks that every stop is on screen and shows a focus ring. It runs in `check` with the other e2e tests.
 - `.github/workflows/codeql.yml`, on PRs, pushes to `main` and every Monday: CodeQL (`javascript-typescript`). Findings are in Security › Code scanning; not a required check.
 
 Dependencies:
