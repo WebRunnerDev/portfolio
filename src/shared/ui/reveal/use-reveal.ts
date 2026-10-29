@@ -1,7 +1,6 @@
 import * as React from "react"
-import { useReducedMotionConfig } from "motion/react"
 
-import { DURATION } from "@/shared/lib/motion"
+import { DURATION, usePrefersReducedMotion } from "@/shared/lib/motion"
 
 // The bottom tenth of the viewport doesn't count: an element starts once it
 // is clearly on screen, not while its first pixel scrolls in.
@@ -10,11 +9,11 @@ const ROOT_MARGIN = "0px 0px -10% 0px"
 // Starts a reveal once, when the element enters the viewport. `animated` is
 // false under reduced motion and without IntersectionObserver: render the
 // end state. The content never stays hidden: if the animation hasn't started
-// by the end of the choreography (Motion's features failed to load, a
-// background tab), `animated` turns false and the content shows as is.
+// by the end of the choreography (a background tab), `animated` turns false
+// and the content shows as is.
 export function useReveal<T extends Element>() {
   const ref = React.useRef<T>(null)
-  const reduced = useReducedMotionConfig() ?? false
+  const reduced = usePrefersReducedMotion()
   const [inView, setInView] = React.useState(false)
   const [stalled, setStalled] = React.useState(false)
   const started = React.useRef(false)

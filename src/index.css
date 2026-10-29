@@ -575,6 +575,43 @@ html:active-view-transition-type(forward, back) {
   }
 }
 
+/* DESIGN.md › Motion: the Reveal primitives (@/shared/ui/reveal). Until its
+ * element enters the viewport, a block waits faded and off its place
+ * (`reveal-out`, `--reveal-x`/`--reveal-y`) and a part of a RevealText under
+ * its mask (`reveal-under`); then they settle, `--reveal-delay` late. Reduced
+ * motion never gets here: the primitives render the end state. */
+@keyframes reveal-in {
+  from {
+    opacity: 0;
+    transform: translate(var(--reveal-x, 0), var(--reveal-y, 0));
+  }
+}
+
+@keyframes reveal-rise {
+  from {
+    transform: translateY(120%);
+  }
+}
+
+@utility reveal-out {
+  opacity: 0;
+  transform: translate(var(--reveal-x, 0), var(--reveal-y, 0));
+}
+
+@utility reveal-in {
+  animation: reveal-in var(--zsd-x-zsd-motion-duration-reveal)
+    var(--zsd-x-zsd-motion-easing-enter) var(--reveal-delay, 0s) backwards;
+}
+
+@utility reveal-under {
+  transform: translateY(120%);
+}
+
+@utility reveal-rise {
+  animation: reveal-rise var(--zsd-x-zsd-motion-duration-reveal)
+    var(--zsd-x-zsd-motion-easing-enter) var(--reveal-delay, 0s) backwards;
+}
+
 /* docs/design-brief.md › Hero (`Hero` in src/pages/home). CSS, not Motion:
  * the brand is the LCP element and must not wait for a script. The opacity
  * in `hero-rise` is for LCP: Chrome skips text hidden under its mask at the
