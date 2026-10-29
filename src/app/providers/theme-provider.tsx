@@ -5,10 +5,9 @@ import {
   ThemeContext,
   THEME_STORAGE_KEY,
   writeTheme,
+  type ResolvedTheme,
   type Theme,
 } from "@/shared/lib/theme"
-
-type ResolvedTheme = "dark" | "light"
 
 type ThemeProviderProps = {
   children: React.ReactNode
@@ -89,6 +88,16 @@ export function ThemeProvider({
   const [theme, setThemeState] = React.useState<Theme>(
     () => readTheme(storageKey) ?? defaultTheme
   )
+
+  const [systemTheme, setSystemTheme] =
+    React.useState<ResolvedTheme>(getSystemTheme)
+
+  React.useEffect(() => {
+    const mediaQuery = window.matchMedia(COLOR_SCHEME_QUERY)
+    const handleChange = () => setSystemTheme(getSystemTheme())
+    mediaQuery.addEventListener("change", handleChange)
+    return () => mediaQuery.removeEventListener("change", handleChange)
+  }, [])
 
   const setTheme = React.useCallback(
     (nextTheme: Theme) => {
@@ -219,9 +228,10 @@ export function ThemeProvider({
   const value = React.useMemo(
     () => ({
       theme,
+      resolvedTheme: forcedTheme ?? (theme === "system" ? systemTheme : theme),
       setTheme,
     }),
-    [theme, setTheme]
+    [theme, forcedTheme, systemTheme, setTheme]
   )
 
   return (

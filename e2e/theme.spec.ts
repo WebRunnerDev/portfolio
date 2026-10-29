@@ -20,43 +20,38 @@ test("follows the system theme by default", async ({ page }) => {
   await page.emulateMedia({ colorScheme: "dark" })
   await page.goto("/en")
   await expect(page.locator("html")).toHaveClass(/\bdark\b/)
-  await expect(
-    page.getByRole("radio", { name: "System", checked: true })
-  ).toBeVisible()
+  const toggle = page.getByRole("button", { name: "Dark" })
+  await expect(toggle).toHaveAttribute("aria-pressed", "true")
 
   await page.emulateMedia({ colorScheme: "light" })
   await expect(page.locator("html")).toHaveClass(/\blight\b/)
+  await expect(toggle).toHaveAttribute("aria-pressed", "false")
 })
 
-test("switcher works from the keyboard and persists", async ({ page }) => {
+// Light and dark only: no "system" option to pick.
+test("the toggle works from the keyboard and persists", async ({ page }) => {
   await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" })
   await page.goto("/en")
 
-  const group = page.getByRole("radiogroup", { name: "Theme" })
-  await expect(group).toBeVisible()
-  await group.getByRole("radio", { name: "System" }).focus()
-
-  // Roving focus: arrows move focus, Space checks. Radix moves focus a tick
-  // after the key, so wait for it before the next one.
-  await page.keyboard.press("ArrowLeft")
-  const dark = group.getByRole("radio", { name: "Dark" })
-  await expect(dark).toBeFocused()
-  await page.keyboard.press("Space")
-  await expect(dark).toHaveAttribute("aria-checked", "true")
+  const toggle = page.getByRole("button", { name: "Dark" })
+  await expect(toggle).toHaveAttribute("aria-pressed", "false")
+  await toggle.focus()
+  await page.keyboard.press("Enter")
+  await expect(toggle).toHaveAttribute("aria-pressed", "true")
   await expect(page.locator("html")).toHaveClass(/\bdark\b/)
   await expect(page.locator("body")).toHaveCSS("background-color", DARK_SURFACE)
 
   await page.reload()
   await expect(page.locator("html")).toHaveClass(/\bdark\b/)
-  await expect(
-    page.getByRole("radio", { name: "Dark", checked: true })
-  ).toBeVisible()
+  await expect(page.getByRole("button", { name: "Dark" })).toHaveAttribute(
+    "aria-pressed",
+    "true"
+  )
 })
 
 test("labels follow the Lang", async ({ page }) => {
   await page.goto("/ru")
-  const group = page.getByRole("radiogroup", { name: "Тема" })
-  await expect(group.getByRole("radio", { name: "Тёмная" })).toBeVisible()
+  await expect(page.getByRole("button", { name: "Тёмная" })).toBeVisible()
 })
 
 test("works when storage is blocked", async ({ page }) => {
@@ -71,9 +66,10 @@ test("works when storage is blocked", async ({ page }) => {
   await page.goto("/en")
 
   await expect(page.getByRole("heading", { name: "WebRunner" })).toBeVisible()
-  await page.getByRole("radio", { name: "Dark" }).click()
+  const toggle = page.getByRole("button", { name: "Dark" })
+  await toggle.click()
   await expect(page.locator("html")).toHaveClass(/\bdark\b/)
-  await page.getByRole("radio", { name: "Light" }).click()
+  await toggle.click()
   await expect(page.locator("body")).toHaveCSS(
     "background-color",
     LIGHT_SURFACE

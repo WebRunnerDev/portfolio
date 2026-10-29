@@ -107,5 +107,4 @@ export const de: Messages = {
   "themeSwitcher.label": "Farbschema",
   "themeSwitcher.light": "Hell",
   "themeSwitcher.dark": "Dunkel",
-  "themeSwitcher.system": "System",
 }

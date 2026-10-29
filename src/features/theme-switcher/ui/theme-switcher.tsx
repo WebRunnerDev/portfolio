@@ -1,50 +1,46 @@
-import { Monitor, Moon, Sun, type LucideIcon } from "lucide-react"
+import { useT } from "@/shared/i18n"
+import { useTheme } from "@/shared/lib/theme"
+import { BarButton } from "@/shared/ui/bar-button"
 
-import { useT, type MessageKey } from "@/shared/i18n"
-import { cn } from "@/shared/lib/utils"
-import { isTheme, THEMES, useTheme, type Theme } from "@/shared/lib/theme"
-import { ToggleGroup, ToggleGroupItem } from "@/shared/ui/kit"
-
-const OPTIONS: Record<Theme, { icon: LucideIcon; label: MessageKey }> = {
-  light: { icon: Sun, label: "themeSwitcher.light" },
-  dark: { icon: Moon, label: "themeSwitcher.dark" },
-  system: { icon: Monitor, label: "themeSwitcher.system" },
+// A logo tile, outlined, one half filled: light and dark on one rhombus. A
+// switch turns it over (`easing-layout`), so the filled half changes side.
+// Never mirrored.
+function ModeIcon({ dark }: { dark: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      aria-hidden
+      className={`size-5 transition-transform duration-(--zsd-x-zsd-motion-duration-slow) ease-zsd-layout motion-reduce:transition-none ${dark ? "rotate-180" : ""}`}
+    >
+      <path
+        d="M10 2.5L17.5 10L10 17.5L2.5 10Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
+      <path d="M10 2.5L2.5 10L10 17.5Z" fill="currentColor" />
+    </svg>
+  )
 }
 
-// A radio group: Tab reaches the checked option, arrows move between them.
+// One toggle between light and dark, pressed in dark. A first visit follows
+// the OS ("system" until the visitor picks one); the toggle shows what is on
+// screen.
 export function ThemeSwitcher({ className }: { className?: string }) {
-  const { theme, setTheme } = useTheme()
+  const { resolvedTheme, setTheme } = useTheme()
   const t = useT()
+  const dark = resolvedTheme === "dark"
 
   return (
-    <ToggleGroup
-      type="single"
-      value={theme}
-      // Radix sends "" when the checked item is pressed again; keep the theme.
-      onValueChange={(value) => isTheme(value) && setTheme(value)}
-      aria-label={t("themeSwitcher.label")}
-      spacing={0}
-      className={cn("rounded-none border border-zsd-outline", className)}
+    <BarButton
+      icon
+      aria-pressed={dark}
+      aria-label={t("themeSwitcher.dark")}
+      title={t(dark ? "themeSwitcher.light" : "themeSwitcher.dark")}
+      onClick={() => setTheme(dark ? "light" : "dark")}
+      className={className}
     >
-      {THEMES.map((value) => {
-        const { icon: Icon, label } = OPTIONS[value]
-        return (
-          <ToggleGroupItem
-            key={value}
-            value={value}
-            aria-label={t(label)}
-            title={t(label)}
-            className={cn(
-              "size-zsd-control-height rounded-none! text-zsd-on-surface-muted hover:bg-transparent hover:text-zsd-on-surface",
-              "outline-offset-[-2px] focus-visible:ring-0 focus-visible:outline-2 focus-visible:outline-ring",
-              "transition-colors duration-(--zsd-x-zsd-motion-duration-fast) ease-zsd-hover motion-reduce:transition-none",
-              "data-[state=on]:bg-transparent data-[state=on]:text-zsd-primary-text data-[state=on]:shadow-[inset_0_-2px_0_var(--zsd-colors-primary)]"
-            )}
-          >
-            <Icon aria-hidden />
-          </ToggleGroupItem>
-        )
-      })}
-    </ToggleGroup>
+      <ModeIcon dark={dark} />
+    </BarButton>
   )
 }

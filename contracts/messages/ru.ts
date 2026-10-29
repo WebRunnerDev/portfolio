@@ -107,5 +107,4 @@ export const ru: Messages = {
   "themeSwitcher.label": "Тема",
   "themeSwitcher.light": "Светлая",
   "themeSwitcher.dark": "Тёмная",
-  "themeSwitcher.system": "Системная",
 }

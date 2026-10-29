@@ -109,13 +109,11 @@ test.describe("at 360px", () => {
   test("the menu holds the Lang and mode controls", async ({ page }) => {
     await page.goto("/kk/blog")
     const banner = page.getByRole("banner")
-    await expect(banner.getByRole("radiogroup")).toBeHidden()
+    await expect(banner.getByRole("button", { name: "Қараңғы" })).toBeHidden()
     await banner.getByRole("button", { name: "Мәзір" }).click()
 
     const menu = page.getByRole("dialog", { name: "Мәзір" })
-    await expect(
-      menu.getByRole("radiogroup", { name: "Тақырып" })
-    ).toBeVisible()
+    await expect(menu.getByRole("button", { name: "Қараңғы" })).toBeVisible()
     await menu.getByRole("link", { name: "Deutsch" }).click()
     await expect(page).toHaveURL(/\/de\/blog$/)
     const overflow = await horizontalOverflow(page)
