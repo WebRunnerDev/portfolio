@@ -84,7 +84,8 @@ test("the Lang menu hangs from the header and marks the current Lang", async ({
   )
   const header = (await page.getByRole("banner").boundingBox())!
   const box = (await menu.boundingBox())!
-  expect(Math.round(box.y)).toBe(Math.round(header.y + header.height))
+  // Sub-pixel layout: within a pixel of the header's bottom edge.
+  expect(Math.abs(box.y - (header.y + header.height))).toBeLessThanOrEqual(1)
   await page.keyboard.press("Escape")
   await expect(menu).toBeHidden()
   await expect(trigger).toBeFocused()
