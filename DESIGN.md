@@ -294,6 +294,14 @@ Read the paths in `x-zsd.implementation` before UI changes.
 Change the tokens of the shadcn components in `src/shared/ui/kit`, not their markup.
 Record unresolved choices in `x-zsd.unresolved`.
 
+### Performance budget
+
+Every public page holds Lighthouse mobile ≥ 90 in each category, LCP ≤ 2.5 s, and JS ≤ 150 KB transferred, counting all the page load fetches.
+The `lighthouse` check enforces it on each PR against `lighthouserc.json` and blocks the merge.
+Check a new library, font, or effect against the budget before you add it.
+Load heavy code outside the initial JS: the hero tiers in ADR 0006 show how.
+Prefer CSS and Web Animations to a motion library (ADR 0010).
+
 ## Colors
 
 `x-zsd.modes.dark` gives the dark values.
@@ -426,6 +434,7 @@ Use `alert-error` when a task fails. State what failed and give a recovery actio
 - Do not use rust for large fills or for body text in dark mode.
 - Do not mirror the logo, the hero, the music player, or code blocks.
 - Do not use a custom cursor or a smooth scroll library.
+- Do not add an animation library, WebGL, video, or a new font without checking the performance budget.
 
 ## Motion
 

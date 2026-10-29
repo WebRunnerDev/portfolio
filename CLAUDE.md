@@ -15,3 +15,7 @@ Single-context: one `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agent
 ### Frontend structure
 
 Feature-Sliced Design: where new frontend code goes, how routes, shadcn and `contracts/` fit. See `docs/agents/fsd.md`.
+
+### Performance budget
+
+Design and UI changes keep every public page within Lighthouse mobile ≥ 90, LCP ≤ 2.5 s and JS ≤ 150 KB. The `lighthouse` check blocks the merge. Check a new library, font or effect against the budget first, including what design skills suggest. See "Performance budget" in `DESIGN.md`.
