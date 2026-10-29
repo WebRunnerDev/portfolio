@@ -17,7 +17,8 @@ test("the switcher keeps the path and the cookie wins on /", async ({
   page,
 }) => {
   await page.goto("/en/design")
-  await page.getByRole("link", { name: "Қазақша" }).click()
+  await page.getByRole("button", { name: "Language: EN" }).click()
+  await page.getByRole("menuitem", { name: "Қазақша" }).click()
   await expect(page).toHaveURL(/\/kk\/design$/)
   await expect(page.locator("html")).toHaveAttribute("lang", "kk")
 

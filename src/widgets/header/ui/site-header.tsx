@@ -1,7 +1,7 @@
 import { useState, type CSSProperties, type ReactNode } from "react"
 import { Link, useMatchRoute } from "@tanstack/react-router"
 
-import { LangSwitcher } from "@/features/lang-switcher"
+import { LangMenu } from "@/features/lang-switcher"
 import { ThemeSwitcher } from "@/features/theme-switcher"
 import { isHome, SECTIONS } from "@/shared/config"
 import { useLang, useT } from "@/shared/i18n"
@@ -67,13 +67,19 @@ export function SiteHeader({ menu }: { menu: ReactNode }) {
             <span className="truncate">{t(current.label)}</span>
           </span>
         )}
-        <div className="ms-auto flex shrink-0 items-center gap-zsd-md">
+        {/* Bare type on the bar, `xs` apart; a hairline sets the menu off
+            from the settings, as the one after the brand does. */}
+        <div className="ms-auto -me-zsd-sm flex shrink-0 items-center gap-zsd-xs">
           <span style={control(0)} className={`max-lg:hidden ${controlClass}`}>
-            <LangSwitcher />
+            <LangMenu />
           </span>
           <span style={control(1)} className={`max-lg:hidden ${controlClass}`}>
             <ThemeSwitcher />
           </span>
+          <span
+            aria-hidden
+            className="mx-zsd-sm h-4 w-px bg-zsd-outline-muted max-lg:hidden"
+          />
           <span style={control(2)} className={controlClass}>
             {menu}
           </span>

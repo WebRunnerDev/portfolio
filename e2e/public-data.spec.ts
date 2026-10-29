@@ -149,7 +149,8 @@ test("projects load per Lang and link to their Case Study", async ({
   // Only the project with a Case Study has a page.
   await expect(list.getByRole("link", { name: "AITU AMS" })).toHaveCount(0)
 
-  await page.getByRole("link", { name: "Русский" }).click()
+  await page.getByRole("button", { name: "Language: EN" }).click()
+  await page.getByRole("menuitem", { name: "Русский" }).click()
   await expect(page).toHaveURL(/\/ru\/projects$/)
   await expect(list.getByRole("heading", { name: "ПлотОпс" })).toBeVisible()
   await expect(notice(page)).toHaveCount(1)

@@ -518,6 +518,48 @@ html:active-view-transition-type(forward, back) {
   }
 }
 
+/* DESIGN.md › Motion: the Lang menu of the header (`LangDropdown` in
+ * @/features/lang-switcher). It drops a step from under the header's border
+ * and its rows follow after `--lang-delay`; on close it fades at once.
+ * Instant under reduced motion. */
+@keyframes lang-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes lang-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@utility lang-menu-in {
+  animation: lang-menu-in var(--zsd-x-zsd-motion-duration-base)
+    var(--zsd-x-zsd-motion-easing-enter);
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@utility lang-menu-out {
+  animation: menu-out var(--zsd-x-zsd-motion-duration-fast)
+    var(--zsd-x-zsd-motion-easing-exit) forwards;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@utility lang-row-in {
+  animation: lang-row-in var(--zsd-x-zsd-motion-duration-slow)
+    var(--zsd-x-zsd-motion-easing-enter) var(--lang-delay, 0s) backwards;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
 /* DESIGN.md › Tile: the music player (`MusicPlayer` in @/widgets/music-player).
  * While the music plays each logo tile of the corner button rises and falls,
  * on its own beat (the placement's negative delay); paused, the class goes
