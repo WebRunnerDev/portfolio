@@ -63,6 +63,12 @@ createServer((req, res) => {
       headers: { ...req.headers, "accept-encoding": "identity" },
     },
     (answer) => {
+      // The browser gave up on it (Lighthouse leaves pages mid-load): piping
+      // into a closed response throws and would stop the server.
+      if (res.destroyed) {
+        answer.resume()
+        return
+      }
       const accepts = req.headers["accept-encoding"] ?? ""
       const type = answer.headers["content-type"] ?? ""
       const encoder =
@@ -89,7 +95,8 @@ createServer((req, res) => {
     }
   )
   upstream.on("error", () => {
-    res.writeHead(502).end()
+    if (!res.headersSent) res.writeHead(502)
+    res.end()
   })
   pipeline(req, upstream, () => {})
 }).listen(port)
