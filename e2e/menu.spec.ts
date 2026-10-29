@@ -27,9 +27,12 @@ type Clickable = {
 const TIMING_KEYS = ["offset", "computedOffset", "easing", "composite"]
 
 // Opens the menu and lists its animations two frames later, before the
-// short ones end.
-const openAndList = (page: Page) =>
-  trigger(page).evaluate(async (element, timingKeys) => {
+// short ones end. The menu loads when the pointer reaches its button (#142):
+// the button Radix gives it says it opens a dialog.
+const openAndList = async (page: Page) => {
+  await trigger(page).hover()
+  await expect(trigger(page)).toHaveAttribute("aria-haspopup", "dialog")
+  return trigger(page).evaluate(async (element, timingKeys) => {
     const button = element as unknown as Clickable
     const frame = () =>
       new Promise<void>((resolve) =>
@@ -50,6 +53,7 @@ const openAndList = (page: Page) =>
           .filter((key) => !timingKeys.includes(key)),
       }))
   }, TIMING_KEYS)
+}
 
 const rows = (page: Page) =>
   menu(page).getByRole("navigation").getByRole("link")
