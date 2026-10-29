@@ -36,8 +36,10 @@ function cloudflareWebAnalytics(token: string | undefined): Plugin {
 
 // Font files every page's first paint needs, preloaded from index.html (#142):
 // they'd otherwise start only once the CSS has matched them to text, after
-// the app has rendered, and repaint the LCP element. Headings and the hero's
-// brand are Tektur; the Latin subset covers every Lang's page titles but ar's.
+// the app has rendered, and arrive around the first paint. Swapped in after
+// it, they repaint the LCP element (headings and the hero's brand: Tektur)
+// and reflow the text (Onest, Fira Code labels): the CV moved by 0.22 CLS.
+// The Latin subsets cover every Lang but ar's own script.
 function fontPreloads(names: RegExp[]): Plugin {
   return {
     name: "font-preloads",
@@ -152,7 +154,9 @@ export default defineConfig({
       }),
     cloudflareWebAnalytics(process.env.CF_WEB_ANALYTICS_TOKEN),
     routePreloads(),
-    fontPreloads([/^assets\/tektur-latin-wght-normal-[\w-]+\.woff2$/]),
+    fontPreloads([
+      /^assets\/(tektur|onest|fira-code)-latin-wght-normal-[\w-]+\.woff2$/,
+    ]),
   ],
   resolve: {
     alias: {
