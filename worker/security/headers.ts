@@ -2,6 +2,7 @@
 // Security headers). The CSP is Report-Only until the audit of stage 6
 // (docs/plan.md) switches it to enforce.
 import { CSP_REPORT_PATH } from "@contracts/api/csp-report"
+import { ROUTE_ATTRIBUTE } from "@contracts/route-preloads"
 
 // Name of the Reporting-Endpoints entry `report-to` points at.
 export const REPORT_GROUP = "csp"
@@ -111,6 +112,13 @@ export function securePage(response: Response, url: URL): Response {
       .on(NONCED, {
         element(el) {
           el.setAttribute("nonce", nonce)
+        },
+      })
+      // Route preloads no page kept (servePage): this is no page under a
+      // Lang.
+      .on(`link[${ROUTE_ATTRIBUTE}]`, {
+        element(el) {
+          el.remove()
         },
       })
       .on("head", {

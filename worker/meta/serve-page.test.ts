@@ -7,7 +7,7 @@ import { PAGE_PATHS, pageMeta } from "@contracts/meta"
 import { resolveMeta, type DataPage } from "./pages"
 import { headTags, servePage } from "./serve-page"
 
-const INDEX_HTML = `<!doctype html><html lang="en"><head><meta charset="UTF-8" /><title data-meta>WebRunner</title></head><body><div id="root"></div></body></html>`
+const INDEX_HTML = `<!doctype html><html lang="en"><head><meta charset="UTF-8" /><title data-meta>WebRunner</title><link rel="modulepreload" crossorigin href="/assets/layout.js" data-route="/$lang/*"><link rel="modulepreload" crossorigin href="/assets/post.js" data-route="/$lang/blog/$slug"><link rel="modulepreload" crossorigin href="/assets/card.js" data-route="/$lang /$lang/projects"></head><body><div id="root"></div></body></html>`
 
 const assetRequests: Request[] = []
 
@@ -439,6 +439,46 @@ describe("servePage", () => {
     expect(response.headers.get("Cache-Control")).toBe(
       "public, max-age=0, must-revalidate"
     )
+  })
+
+  it("keeps the route preloads of the page and drops the others", async () => {
+    const preloads = async (path: string) =>
+      (await page(`https://webrunner.dev${path}`)).all(
+        /<link rel="modulepreload" crossorigin href="([^"]+)">/g
+      )
+    expect(await preloads("/en")).toEqual([
+      "/assets/layout.js",
+      "/assets/card.js",
+    ])
+    expect(await preloads("/en/projects")).toEqual([
+      "/assets/layout.js",
+      "/assets/card.js",
+    ])
+    expect(await preloads("/ar/blog/edge-caching")).toEqual([
+      "/assets/layout.js",
+      "/assets/post.js",
+    ])
+    expect(await preloads("/en/gallery")).toEqual(["/assets/layout.js"])
+    expect((await page("https://webrunner.dev/en")).html).not.toContain(
+      "data-route"
+    )
+  })
+
+  it("preloads the page's Public API requests", async () => {
+    const requests = async (path: string) =>
+      (await page(`https://webrunner.dev${path}`)).all(
+        /<link rel="preload" as="fetch" crossorigin href="([^"]+)">/g
+      )
+    expect(await requests("/de")).toEqual([
+      "/api/public/de/profile",
+      "/api/public/de/projects",
+      "/api/public/de/posts",
+      "/api/public/de/albums",
+    ])
+    expect(await requests("/en/gallery")).toEqual(["/api/public/en/albums"])
+    expect(await requests("/en/blog?tag=testing")).toEqual([])
+    // A 404 has no data to wait for.
+    expect(await requests("/en/nope")).toEqual([])
   })
 
   it("escapes values in attributes", () => {
