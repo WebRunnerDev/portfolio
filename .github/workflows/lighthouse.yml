@@ -15,7 +15,9 @@ name: Lighthouse
 # or a login screen. Not production after the deploy either: that runs after
 # the merge and could not stop the PR. Lighthouse simulates a mobile 4G
 # connection, so a local server gives the same budgets; edge latency is what
-# this does not see.
+# this does not see. The server answers as the edge does, over HTTP/2 and
+# compressed: over HTTP/1.1 Lighthouse would queue the page's scripts on six
+# connections, which no visitor does.
 
 on:
   pull_request:

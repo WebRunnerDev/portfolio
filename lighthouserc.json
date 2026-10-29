@@ -6,18 +6,18 @@
       "startServerReadyPattern": "Local:",
       "startServerReadyTimeout": 180000,
       "url": [
-        "http://localhost:4175/en",
-        "http://localhost:4175/en/cv",
-        "http://localhost:4175/en/projects",
-        "http://localhost:4175/en/projects/edge-portfolio",
-        "http://localhost:4175/en/gallery",
-        "http://localhost:4175/en/gallery/astana",
-        "http://localhost:4175/en/blog",
-        "http://localhost:4175/en/blog/edge-caching",
-        "http://localhost:4175/ar"
+        "https://localhost:4175/en",
+        "https://localhost:4175/en/cv",
+        "https://localhost:4175/en/projects",
+        "https://localhost:4175/en/projects/edge-portfolio",
+        "https://localhost:4175/en/gallery",
+        "https://localhost:4175/en/gallery/astana",
+        "https://localhost:4175/en/blog",
+        "https://localhost:4175/en/blog/edge-caching",
+        "https://localhost:4175/ar"
       ],
       "settings": {
-        "chromeFlags": "--no-sandbox",
+        "chromeFlags": "--no-sandbox --ignore-certificate-errors",
         "skipAudits": ["is-crawlable"]
       }
     },
