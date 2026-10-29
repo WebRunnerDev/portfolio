@@ -1,5 +1,6 @@
 import * as v from "valibot"
 import { LANGS } from "../lang"
+import { MarkdownTreeSchema } from "../markdown/tree"
 
 // GET /api/public/:lang/* — published content on a Lang (worker/README.md ›
 // Public API). An entity without a Translation on that Lang comes with its EN
@@ -142,8 +143,8 @@ export type Project = v.InferOutput<typeof ProjectSchema>
 // GET /api/public/:lang/projects/:slug
 export const ProjectDetailSchema = v.object({
   ...ProjectSchema.entries,
-  // Markdown.
-  caseStudy: v.nullable(v.string()),
+  // Markdown, rendered (contracts/markdown).
+  caseStudy: v.nullable(MarkdownTreeSchema),
 })
 
 export type ProjectDetail = v.InferOutput<typeof ProjectDetailSchema>
@@ -177,8 +178,8 @@ export const PostsQuerySchema = v.object({
 // Translation on, for hreflang.
 export const PostDetailSchema = v.object({
   ...PostSchema.entries,
-  // Markdown.
-  body: v.string(),
+  // Markdown, rendered (contracts/markdown).
+  body: MarkdownTreeSchema,
   updatedAt: v.string(),
   langs: v.array(v.picklist(LANGS)),
 })

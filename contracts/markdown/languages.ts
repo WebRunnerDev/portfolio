@@ -39,7 +39,3 @@ export function languageModule(language: string): LanguageModule | undefined {
   if (Object.hasOwn(ALIASES, name)) name = ALIASES[name]
   return Object.hasOwn(LANGUAGES, name) ? LANGUAGES[name] : undefined
 }
-
-export function isHighlighted(language: string | undefined) {
-  return !!language && !!languageModule(language)
-}

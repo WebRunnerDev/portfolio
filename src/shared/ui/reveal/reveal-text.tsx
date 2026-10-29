@@ -1,8 +1,7 @@
 import * as React from "react"
-import { m } from "motion/react"
 
 import { cn } from "@/shared/lib/utils"
-import { DURATION, EASE, STAGGER } from "@/shared/lib/motion"
+import { STAGGER } from "@/shared/lib/motion"
 
 import { useReveal } from "./use-reveal"
 
@@ -21,9 +20,8 @@ export type RevealTextProps = {
 
 // The mask is taller than the text by this much on both sides, so accents
 // and descenders aren't cut at a tight line height; the part starts far
-// enough down to hide below it.
+// enough down to hide below it (`reveal-rise`, index.css).
 const MASK = "overflow-hidden py-[0.15em] -my-[0.15em]"
-const HIDDEN_Y = "120%"
 
 // DESIGN.md › Motion: text moves up from under a mask, part by part, once it
 // enters the viewport. Screen readers get the text in one piece. Under
@@ -60,24 +58,25 @@ export function RevealText({
 
   const part = (content: string, order: number, className: string) => (
     <span key={order} className={cn(MASK, className)}>
-      <m.span
-        className="inline-block"
-        initial={{ y: HIDDEN_Y }}
-        animate={inView ? { y: 0 } : undefined}
-        transition={{
-          ease: EASE.enter,
-          duration: DURATION.reveal,
-          delay: delay + order * STAGGER.word,
-        }}
-        onAnimationStart={order === 0 ? onAnimationStart : undefined}
+      <span
+        className={cn("inline-block", inView ? "reveal-rise" : "reveal-under")}
+        style={
+          {
+            "--reveal-delay": `${delay + order * STAGGER.word}s`,
+          } as React.CSSProperties
+        }
       >
         {content}
-      </m.span>
+      </span>
     </span>
   )
 
   return (
-    <Tag ref={ref as React.Ref<never>} className={className}>
+    <Tag
+      ref={ref as React.Ref<never>}
+      className={className}
+      onAnimationStart={onAnimationStart}
+    >
       <span className="sr-only">{lines.join(" ")}</span>
       <span aria-hidden="true">
         {parts.map((line, i) =>

@@ -7,6 +7,7 @@ import {
   type Tag,
 } from "@contracts/api/public"
 import type { Lang } from "@contracts/lang"
+import { markdownTree } from "@contracts/markdown/parse"
 import { apiError, methodNotAllowed, rejectInvalid } from "../../errors"
 import { parseJson, translationOf, type PublicEnv } from "../../public"
 
@@ -58,13 +59,16 @@ function toPost(row: PostRow): Post {
   }
 }
 
+// A Post as D1 has it: the body still Markdown.
+export type PostRecord = Omit<PostDetail, "body"> & { body: string }
+
 // The published Post at `slug` on a Lang, with its body; null for an unknown
 // slug and a draft. Meta Injection of its page reads it too.
 export async function readPost(
   db: D1Database,
   lang: Lang,
   slug: string
-): Promise<PostDetail | null> {
+): Promise<PostRecord | null> {
   const row = await db
     .prepare(`${SELECT_POST} AND p.slug = ?2`)
     .bind(lang, slug)
@@ -114,7 +118,8 @@ export const posts = new Hono<PublicEnv>()
   .get("/:slug", async (c) => {
     const post = await readPost(c.env.DB, c.var.lang, c.req.param("slug"))
     if (!post) return apiError(c, 404, "not_found")
-    return c.json(post satisfies PostDetail)
+    const body = await markdownTree(post.body)
+    return c.json({ ...post, body } satisfies PostDetail)
   })
   .all("/", methodNotAllowed("GET, HEAD"))
   .all("/:slug", methodNotAllowed("GET, HEAD"))

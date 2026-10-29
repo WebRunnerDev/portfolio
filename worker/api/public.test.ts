@@ -319,12 +319,18 @@ describe("projects", () => {
 
   it("answers a project by slug with its case study", async () => {
     const alpha = await get("/ru/projects/alpha", ProjectDetailSchema)
-    expect(alpha).toMatchObject({ fallback: false, caseStudy: "# Альфа" })
+    expect(alpha).toMatchObject({
+      fallback: false,
+      caseStudy: [{ tag: "h2", children: ["Альфа"] }],
+    })
   })
 
   it("falls back to EN by slug", async () => {
     const alpha = await get("/de/projects/alpha", ProjectDetailSchema)
-    expect(alpha).toMatchObject({ fallback: true, caseStudy: "# Alpha" })
+    expect(alpha).toMatchObject({
+      fallback: true,
+      caseStudy: [{ tag: "h2", children: ["Alpha"] }],
+    })
   })
 
   it("answers 404 for an unknown slug", async () => {
@@ -384,14 +390,20 @@ describe("posts", () => {
 
   it("answers a post by slug with its body", async () => {
     const post = await get("/ru/posts/hello", PostDetailSchema)
-    expect(post).toMatchObject({ fallback: false, body: "Тело" })
+    expect(post).toMatchObject({
+      fallback: false,
+      body: [{ tag: "p", children: ["Тело"] }],
+    })
     expect(post.updatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/)
     expect([...post.langs].sort()).toEqual(["en", "ru"])
   })
 
   it("falls back to EN by slug", async () => {
     const post = await get("/kk/posts/hello", PostDetailSchema)
-    expect(post).toMatchObject({ fallback: true, body: "Hello body" })
+    expect(post).toMatchObject({
+      fallback: true,
+      body: [{ tag: "p", children: ["Hello body"] }],
+    })
   })
 
   it("answers 404 for a draft and for an unknown slug", async () => {

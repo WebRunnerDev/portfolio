@@ -1,8 +1,8 @@
 import * as React from "react"
-import { m } from "motion/react"
 
+import { cn } from "@/shared/lib/utils"
 import { useDirection } from "@/shared/lib/direction"
-import { DURATION, EASE, STAGGER } from "@/shared/lib/motion"
+import { STAGGER } from "@/shared/lib/motion"
 
 import { useReveal } from "./use-reveal"
 
@@ -22,10 +22,11 @@ export type RevealProps = {
 }
 
 // DESIGN.md › Motion: a block fades in and settles when it enters the
-// viewport, once. Under reduced motion it is there from the start.
+// viewport, once (`reveal-*` in index.css). Under reduced motion it is there
+// from the start.
 export function Reveal({
   children,
-  as = "div",
+  as: Tag = "div",
   className,
   delay = 0,
   order = 0,
@@ -36,7 +37,6 @@ export function Reveal({
   const { ref, animated, inView, onAnimationStart } = useReveal<HTMLElement>()
 
   if (!animated) {
-    const Tag = as
     return (
       <Tag ref={ref as React.Ref<never>} className={className}>
         {children}
@@ -44,19 +44,17 @@ export function Reveal({
     )
   }
 
-  // One `m` component per tag; the union of them is too wide for JSX.
-  const Tag = m[as] as typeof m.div
   return (
     <Tag
-      ref={ref as React.Ref<HTMLDivElement>}
-      className={className}
-      initial={{ opacity: 0, x: flipX(-x), y }}
-      animate={inView ? { opacity: 1, x: 0, y: 0 } : undefined}
-      transition={{
-        ease: EASE.enter,
-        duration: DURATION.reveal,
-        delay: delay + order * STAGGER.item,
-      }}
+      ref={ref as React.Ref<never>}
+      className={cn(className, inView ? "reveal-in" : "reveal-out")}
+      style={
+        {
+          "--reveal-x": `${flipX(-x)}px`,
+          "--reveal-y": `${y}px`,
+          "--reveal-delay": `${delay + order * STAGGER.item}s`,
+        } as React.CSSProperties
+      }
       onAnimationStart={onAnimationStart}
     >
       {children}

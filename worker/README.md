@@ -21,6 +21,7 @@ ADR-0001: crawlers don't run JS, so `worker/meta/serve-page.ts` rewrites `index.
 - **404:** a path no page has answers 404 with the same SPA, the Not Found title and `noindex`.
 - **Previews** (`*.workers.dev`) get `X-Robots-Tag: noindex` and `<meta name="robots" content="noindex">`.
 - **Caching:** the HTML loses the `ETag` of `index.html`, which is the same for every page.
+- **Preloads** (#142): the page's Public API requests (`pageRequests`, `contracts/page-requests.ts`) as `<link rel="preload" as="fetch" crossorigin>`, none on a 404. The build puts a `<link rel="modulepreload" data-route>` in `index.html` for each chunk of a page's route (`contracts/route-preloads.ts`); the page keeps those whose route matches its path, and every other HTML answer drops them all (`securePage`).
 - **Pages with data from D1** (`cv`, `projects/:slug`, `gallery/:slug`, `blog/:slug`): add a `DataPage` to `DATA_PAGES` in `worker/meta/pages.ts` — a pattern on the path after the Lang and a `meta(env, lang, match)` that reads D1 and answers null for an unknown slug (404). It goes before the static meta of the same path. Build the meta with a function in `contracts/meta.ts` (`cvMeta`) and return it as `meta` from the page's loader too: `LangHead` takes it from there. Static sections go in `PAGES` in `contracts/meta.ts`.
 - **CV:** the title and description come from the Profile on the Lang (EN when it has none); without a Profile, the section meta. `cv/print` (the Print CV) gets the same meta and `noindex`.
 - **Project** (`projects/:slug`, `projectMeta`): the title and description of the Project on the Lang (EN when it has none), its cover through Cloudflare Images at 1200px as `og:image` (`/og-default.png` without one). Without a Case Study, or for an unknown slug, a 404. When D1 fails, the Projects section meta with 200: the page may well be there.
@@ -130,11 +131,13 @@ After the rate limit, every `/api/*` request goes through `checkOrigin` (`worker
 | `cv-pdf` | `{lang, generatedAt, fallback}` of the CV PDF to link: the Lang's own, else EN's (`fallback: true`); 404 while neither exists |
 | `experience`, `education`, `languages` | Lists by `position`; experience with its technologies |
 | `certifications`, `technologies`, `tracks` | Untranslated lists; technologies by category |
-| `projects`, `projects/:slug` | List without `caseStudy` (`hasCaseStudy` instead); by slug with it |
-| `posts?tag=<slug>`, `posts/:slug` | Published only, newest first, list without `body`; drafts answer 404. `posts/:slug` adds `body`, `updatedAt` and `langs` (the Langs it has a Translation on) |
+| `projects`, `projects/:slug` | List without `caseStudy` (`hasCaseStudy` instead); by slug with it (rendered, below) |
+| `posts?tag=<slug>`, `posts/:slug` | Published only, newest first, list without `body`; drafts answer 404. `posts/:slug` adds `body` (rendered, below), `updatedAt` and `langs` (the Langs it has a Translation on) |
 | `albums`, `albums/:slug` | List with `photoCount`; by slug with its photos. `cover` (`key`, `width`, `height`) is the chosen photo, else the first one in order (null for an empty album) |
 
 **Fallback** (CONTEXT.md): each translated entity comes with its Translation on the Lang, or its EN one and `fallback: true` when there is none. An entity translated on neither is left out (404 by slug). The SQL is `translationOf()` in `worker/api/public.ts`: one join that picks the Lang's row, else EN, so fields never mix two Translations. A photo's caption is optional: a photo without any caption has `caption: null` and `fallback: false`.
+
+**Markdown** (ADR-0011): a Project's `caseStudy` and a Post's `body` go out as a tree (`markdownTree`, `contracts/markdown/parse.ts`), code blocks highlighted by Shiki, so the page needs neither a parser nor Shiki. The isolate keeps the last 64 bodies it rendered. D1 and the Admin API keep the Markdown text.
 
 `*Key` fields are R2 object keys; `mediaUrl()`, `imageUrl()` and `imageSrcSet()` from `contracts/media.ts` turn them into URLs (Media below).
 

@@ -6,7 +6,8 @@ const port = 4173
 const devPort = 5174
 const devSpecs = /admin-editor\.spec\.ts/
 // axe and the keyboard pass on the production build with content
-// (scripts/audit/server.mjs), which serves the dist/ built for `port`.
+// (scripts/audit/server.mjs), which serves the dist/ built for `port` over
+// HTTPS with a self-signed certificate.
 const auditPort = 4175
 const auditSpecs = /a11y\.spec\.ts/
 
@@ -38,7 +39,8 @@ export default defineConfig({
       testMatch: auditSpecs,
       use: {
         ...devices["Desktop Chrome"],
-        baseURL: `http://localhost:${auditPort}`,
+        baseURL: `https://localhost:${auditPort}`,
+        ignoreHTTPSErrors: true,
       },
     },
   ],
@@ -57,7 +59,8 @@ export default defineConfig({
     // After the first server: it needs that build.
     {
       command: `node scripts/audit/server.mjs ${auditPort}`,
-      url: `http://localhost:${auditPort}/api/health`,
+      url: `https://localhost:${auditPort}/api/health`,
+      ignoreHTTPSErrors: true,
       reuseExistingServer: !process.env.CI,
       timeout: 180_000,
     },

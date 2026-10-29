@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test"
 
+import { markdownTree } from "../contracts/markdown/parse"
+
 // Issues #98, #99 and #100: the Blog page as Post cards, newest first,
 // filtered by Tag with `?tag=<slug>`, the page of a Post with its JSON-LD,
 // and (#101) the link to the RSS feed of each Lang.
@@ -63,6 +65,8 @@ async function mockPublicApi(page: Page, { empty = false } = {}) {
   await page.route("**/cdn-cgi/image/**", (route) =>
     route.fulfill({ status: 404 })
   )
+  // The Worker sends the body rendered.
+  const body = await markdownTree(BODY)
   await page.route("**/api/public/**", (route) => {
     const url = new URL(route.request().url())
     const [, , , lang, entity, slug] = url.pathname.split("/")
@@ -84,7 +88,7 @@ async function mockPublicApi(page: Page, { empty = false } = {}) {
         json: {
           ...found,
           fallback,
-          body: BODY,
+          body,
           updatedAt: "2026-10-21T08:00:00.000Z",
           langs,
         },

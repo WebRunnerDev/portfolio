@@ -7,6 +7,8 @@ import { tanstackRouter } from "@tanstack/router-plugin/vite"
 import react from "@vitejs/plugin-react"
 import { defineConfig, type Plugin } from "vite"
 
+import { ROUTE_ATTRIBUTE, routePattern } from "./contracts/route-preloads.ts"
+
 // Cloudflare Web Analytics beacon. The token is a Workers Builds build variable,
 // so only Cloudflare builds (production and previews) report; dev, CI and e2e
 // builds stay without the third-party script. The beacon tracks SPA navigations
@@ -28,6 +30,101 @@ function cloudflareWebAnalytics(token: string | undefined): Plugin {
           injectTo: "body",
         },
       ]
+    },
+  }
+}
+
+// Font files every page's first paint needs, preloaded from index.html (#142):
+// they'd otherwise start only once the CSS has matched them to text, after
+// the app has rendered, and arrive around the first paint. Swapped in after
+// it, they repaint the LCP element (headings and the hero's brand: Tektur)
+// and reflow the text (Onest, Fira Code labels): the CV moved by 0.22 CLS.
+// The Latin subsets cover every Lang but ar's own script.
+function fontPreloads(names: RegExp[]): Plugin {
+  return {
+    name: "font-preloads",
+    apply: "build",
+    transformIndexHtml: {
+      order: "post",
+      handler(_html, { bundle }) {
+        if (!bundle) return
+        return Object.values(bundle)
+          .filter(
+            ({ type, fileName }) =>
+              type === "asset" && names.some((name) => name.test(fileName))
+          )
+          .map(({ fileName }) => ({
+            tag: "link",
+            attrs: {
+              rel: "preload",
+              as: "font",
+              type: "font/woff2",
+              crossorigin: true,
+              href: `/${fileName}`,
+            },
+            injectTo: "head" as const,
+          }))
+      },
+    },
+  }
+}
+
+// contracts/route-preloads.ts: a modulepreload in index.html for each chunk a
+// page's route component needs beyond the entry's own, marked with the
+// routes that need it; the Worker keeps those of the page it serves. The
+// router splits each route's component into a chunk of its own
+// (`?tsr-split=component`).
+function routePreloads(): Plugin {
+  const ROUTE_FILE = /\/src\/app\/routes\/(.+)\.tsx\?tsr-split=component$/
+  return {
+    name: "route-preloads",
+    apply: "build",
+    transformIndexHtml: {
+      order: "post",
+      handler(_html, { bundle, chunk: entry }) {
+        if (!bundle || !entry) return
+        const chunks = new Map(
+          Object.values(bundle).flatMap((output) =>
+            output.type === "chunk" ? [[output.fileName, output]] : []
+          )
+        )
+        // A chunk and every chunk it imports statically.
+        const graph = (fileName: string, seen = new Set<string>()) => {
+          if (seen.has(fileName)) return seen
+          seen.add(fileName)
+          for (const next of chunks.get(fileName)?.imports ?? []) {
+            graph(next, seen)
+          }
+          return seen
+        }
+        const initial = graph(entry.fileName)
+
+        const routes = new Map<string, Set<string>>()
+        for (const chunk of chunks.values()) {
+          const file = ROUTE_FILE.exec(
+            chunk.facadeModuleId?.replaceAll("\\", "/") ?? ""
+          )?.[1]
+          const pattern = file && routePattern(file)
+          if (!pattern) continue
+          for (const fileName of graph(chunk.fileName)) {
+            if (initial.has(fileName)) continue
+            routes.set(
+              fileName,
+              (routes.get(fileName) ?? new Set()).add(pattern)
+            )
+          }
+        }
+        return [...routes].map(([fileName, patterns]) => ({
+          tag: "link",
+          attrs: {
+            rel: "modulepreload",
+            crossorigin: true,
+            href: `/${fileName}`,
+            [ROUTE_ATTRIBUTE]: [...patterns].join(" "),
+          },
+          injectTo: "head" as const,
+        }))
+      },
     },
   }
 }
@@ -56,6 +153,10 @@ export default defineConfig({
           : true,
       }),
     cloudflareWebAnalytics(process.env.CF_WEB_ANALYTICS_TOKEN),
+    routePreloads(),
+    fontPreloads([
+      /^assets\/(tektur|onest|fira-code)-latin-wght-normal-[\w-]+\.woff2$/,
+    ]),
   ],
   resolve: {
     alias: {

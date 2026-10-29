@@ -12,6 +12,7 @@ import { Button, Textarea, ToggleGroup, ToggleGroupItem } from "@/shared/ui/kit"
 import { Markdown } from "@/shared/ui/markdown"
 
 import type { Direction, Lang } from "@contracts/lang"
+import type { MarkdownTree } from "@contracts/markdown/tree"
 
 import { useMarkdownImages } from "./use-markdown-images"
 
@@ -25,6 +26,26 @@ function useDebounced<T>(value: T, delay: number) {
     return () => clearTimeout(timer)
   }, [value, delay])
   return debounced
+}
+
+// The preview's tree, built here as the Worker builds the public pages' (the
+// parser and Shiki load with the first preview), or null until it is.
+function usePreviewTree(text: string) {
+  const [tree, setTree] = useState<MarkdownTree | null>(null)
+  useEffect(() => {
+    let current = true
+    import("@contracts/markdown/parse")
+      .then(({ markdownTree }) => markdownTree(text))
+      .then((next) => {
+        if (current) setTree(next)
+      })
+      // No preview rather than a broken editor.
+      .catch(() => {})
+    return () => {
+      current = false
+    }
+  }, [text])
+  return tree
 }
 
 // Markdown on the left, the preview on the right, rendered by the site's own
@@ -44,6 +65,7 @@ export function MarkdownInput({
 }) {
   const [shown, setShown] = useState<"text" | "preview">("text")
   const preview = useDebounced(value, PREVIEW_DELAY)
+  const tree = usePreviewTree(preview)
   const textarea = useRef<HTMLTextAreaElement>(null)
   const images = useMarkdownImages(value, onChange, textarea)
   const [over, setOver] = useState(false)
@@ -108,7 +130,7 @@ export function MarkdownInput({
           )}
         >
           {preview.trim() ? (
-            <Markdown lang={lang}>{preview}</Markdown>
+            tree && <Markdown tree={tree} lang={lang} />
           ) : (
             <p className="text-zsd-body-sm text-muted-foreground">
               Nothing to preview yet.

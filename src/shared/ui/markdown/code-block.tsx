@@ -1,49 +1,23 @@
-import { useEffect, useState, type CSSProperties } from "react"
+import type { CSSProperties } from "react"
 
-import type { Token } from "./highlighter"
-import { isHighlighted } from "./languages"
+import type { Token } from "@contracts/markdown/tree"
 
-// A fenced code block: its text and the language after the fence, if any.
-// Code is never mirrored (ADR-0007) and scrolls in its own region, which takes
-// focus so the keyboard can scroll it (DESIGN.md › Responsive behavior).
-// A known language is highlighted with Shiki, loaded only now; until then (and
-// for any other language) the block is the same text uncoloured, so nothing
-// moves. Each token carries both themes' colours as CSS variables and
-// `.shiki-token` picks one by the theme class, so a theme switch repaints
-// without highlighting again.
+// A fenced code block: its text, the language after the fence, if any, and
+// the lines Shiki coloured on the Worker (`markdownTree`), if it knows the
+// language; any other block is the plain text. Code is never mirrored
+// (ADR-0007) and scrolls in its own region, which takes focus so the keyboard
+// can scroll it (DESIGN.md › Responsive behavior). Each token carries both
+// themes' colours as CSS variables and `.shiki-token` picks one by the theme
+// class, so a theme switch only repaints.
 export function CodeBlock({
   code,
   language,
+  lines,
 }: {
   code: string
   language: string | undefined
+  lines: Token[][] | undefined
 }) {
-  const [highlighted, setHighlighted] = useState<{
-    code: string
-    language: string
-    lines: Token[][]
-  } | null>(null)
-
-  useEffect(() => {
-    if (!language || !isHighlighted(language)) return
-    let current = true
-    import("./highlighter")
-      .then(({ highlight }) => highlight(code, language))
-      .then((lines) => {
-        if (current && lines) setHighlighted({ code, language, lines })
-      })
-      // Shiki failed to load: the plain text stays.
-      .catch(() => {})
-    return () => {
-      current = false
-    }
-  }, [code, language])
-
-  const lines =
-    highlighted?.code === code && highlighted.language === language
-      ? highlighted.lines
-      : null
-
   return (
     <pre
       dir="ltr"

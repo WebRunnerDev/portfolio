@@ -53,22 +53,6 @@ const easingRestrictions = [
   },
 ]
 
-// The same for Motion: `ease` comes from EASE in @/shared/lib/motion, and a
-// transition object names it, or Motion falls back to its keyword curves.
-const motionEasingRestrictions = [
-  {
-    selector:
-      "Property[key.name='ease']:not([value.type='Identifier'], [value.type='MemberExpression'])",
-    message:
-      "Take the curve from EASE in @/shared/lib/motion (DESIGN.md › Motion).",
-  },
-  {
-    selector:
-      ":matches(JSXAttribute[name.name='transition'] > JSXExpressionContainer, Property[key.name='transition']) > ObjectExpression:not(:has(> Property[key.name='ease']))",
-    message: "Give the transition an `ease` from EASE in @/shared/lib/motion.",
-  },
-]
-
 export default defineConfig([
   globalIgnores([
     "dist",
@@ -108,7 +92,6 @@ export default defineConfig([
         "error",
         { restrict: [...deprecatedInsetRestrictions, ...easingRestrictions] },
       ],
-      "no-restricted-syntax": ["error", ...motionEasingRestrictions],
       "better-tailwindcss/no-deprecated-classes": "error",
       "better-tailwindcss/no-duplicate-classes": "error",
       "better-tailwindcss/no-conflicting-classes": "error",

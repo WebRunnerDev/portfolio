@@ -14,6 +14,8 @@ import {
   parsePagePath,
   type PageMeta,
 } from "@contracts/meta"
+import { pageRequests } from "@contracts/page-requests"
+import { ROUTE_ATTRIBUTE, routeMatches } from "@contracts/route-preloads"
 import { resolveMeta } from "./pages"
 
 // Marks the injected tags; LangHead removes them once React renders its own.
@@ -90,6 +92,22 @@ export function headTags(
     .join("")
 }
 
+// The page's Public API requests (contracts/page-requests.ts), preloaded so
+// they run alongside the app's code. `crossorigin`: the same credentials
+// mode as the app's `fetch`, or the browser wouldn't use them.
+export function dataPreloads(
+  lang: Lang,
+  path: string,
+  search: URLSearchParams
+) {
+  return pageRequests(path, search)
+    .map(
+      (request) =>
+        `<link rel="preload" as="fetch" crossorigin href="${escape(`/api/public/${lang}/${request}`)}">`
+    )
+    .join("")
+}
+
 // index.html for a path under a Lang, or null for any other path.
 export async function servePage(
   request: Request,
@@ -134,6 +152,20 @@ export async function servePage(
     .on("head", {
       element(el) {
         el.append(headTags(url, lang, path, meta, noindex), { html: true })
+        if (found) {
+          el.append(dataPreloads(lang, path, url.searchParams), { html: true })
+        }
+      },
+    })
+    // Route preloads (contracts/route-preloads.ts): the page's own stay.
+    .on(`link[${ROUTE_ATTRIBUTE}]`, {
+      element(el) {
+        const routes = el.getAttribute(ROUTE_ATTRIBUTE)?.split(" ") ?? []
+        if (routes.some((route) => routeMatches(route, url.pathname))) {
+          el.removeAttribute(ROUTE_ATTRIBUTE)
+        } else {
+          el.remove()
+        }
       },
     })
     .transform(html)

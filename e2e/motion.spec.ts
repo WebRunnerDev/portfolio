@@ -38,13 +38,6 @@ test("reduced motion shows everything at once", async ({ page }) => {
   ).toHaveCount(0)
 })
 
-test("content shows even if Motion's features never load", async ({ page }) => {
-  await page.route(/\/assets\/features-[\w-]+\.js$/, (route) => route.abort())
-  await page.goto("/en/design")
-  await revealed(page).scrollIntoViewIfNeeded()
-  await expect(revealed(page)).toHaveCSS("opacity", "1")
-})
-
 test("the focus ring of a chamfered button follows the cut", async ({
   page,
 }) => {

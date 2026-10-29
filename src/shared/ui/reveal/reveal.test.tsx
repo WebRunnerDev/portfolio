@@ -1,6 +1,5 @@
 import type { ReactNode } from "react"
 import { renderToStaticMarkup } from "react-dom/server"
-import { MotionConfig } from "motion/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import type { Direction } from "@contracts/lang"
@@ -9,18 +8,25 @@ import { DirectionContext } from "@/shared/lib/direction"
 import { Reveal } from "./reveal"
 import { RevealText } from "./reveal-text"
 
+// `reduced` answers the media query `usePrefersReducedMotion` asks.
 const render = (
   node: ReactNode,
   { dir = "ltr", reduced = false }: { dir?: Direction; reduced?: boolean } = {}
-) =>
-  renderToStaticMarkup(
-    <MotionConfig reducedMotion={reduced ? "always" : "never"}>
-      <DirectionContext.Provider value={dir}>{node}</DirectionContext.Provider>
-    </MotionConfig>
+) => {
+  vi.stubGlobal("window", {
+    matchMedia: () => ({
+      matches: reduced,
+      addEventListener() {},
+      removeEventListener() {},
+    }),
+  })
+  return renderToStaticMarkup(
+    <DirectionContext.Provider value={dir}>{node}</DirectionContext.Provider>
   )
+}
 
-// `m` components render their `initial` state as inline styles.
-const HIDDEN = /opacity:0|translateY\(120%\)/
+// Before it enters the viewport a part waits hidden (index.css › reveal-*).
+const HIDDEN = /reveal-out|reveal-under/
 
 beforeEach(() => {
   vi.stubGlobal("IntersectionObserver", class {})
@@ -33,18 +39,23 @@ afterEach(() => {
 describe("Reveal", () => {
   it("starts hidden and below its place", () => {
     const html = render(<Reveal>Projects</Reveal>)
-    expect(html).toMatch(/opacity:0/)
-    expect(html).toContain("translateY(24px)")
+    expect(html).toContain('class="reveal-out"')
+    expect(html).toContain("--reveal-x:0px;--reveal-y:24px")
   })
 
   it("comes from the inline start in LTR", () => {
     const html = render(<Reveal x={40}>Projects</Reveal>)
-    expect(html).toContain("translateX(-40px)")
+    expect(html).toContain("--reveal-x:-40px;--reveal-y:0px")
   })
 
   it("mirrors the horizontal offset in RTL", () => {
     const html = render(<Reveal x={40}>Projects</Reveal>, { dir: "rtl" })
-    expect(html).toContain("translateX(40px)")
+    expect(html).toContain("--reveal-x:40px")
+  })
+
+  it("staggers by its order", () => {
+    const html = render(<Reveal order={2}>Projects</Reveal>)
+    expect(html).toContain("--reveal-delay:0.16s")
   })
 
   it("shows the end state at once under reduced motion", () => {
@@ -67,14 +78,14 @@ describe("Reveal", () => {
 describe("RevealText", () => {
   it("puts each word under its own mask, below it", () => {
     const html = render(<RevealText text="Heavy graphite" />)
-    expect(html.match(/translateY\(120%\)/g)).toHaveLength(2)
+    expect(html.match(/reveal-under/g)).toHaveLength(2)
     expect(html).toContain(">Heavy</span>")
     expect(html).toContain(">graphite</span>")
   })
 
   it("moves lines whole when split by line", () => {
     const html = render(<RevealText by="line" text={"Heavy graphite\nmoves"} />)
-    expect(html.match(/translateY\(120%\)/g)).toHaveLength(2)
+    expect(html.match(/reveal-under/g)).toHaveLength(2)
     expect(html).toContain(">Heavy graphite</span>")
   })
 
