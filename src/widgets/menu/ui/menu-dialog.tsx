@@ -30,8 +30,9 @@ const ROW = "menu-row-in group-data-[state=closed]/menu:menu-row-out"
 // Full-screen menu at all widths (DESIGN.md). Radix traps focus, closes on
 // Esc and returns focus to the trigger; it keeps the menu mounted until the
 // surface has faded (`menu-out` waits for the tiles, FOLD_END).
-export function MenuDialog() {
-  const [open, setOpen] = useState(false)
+// `defaultOpen`: the stand-in trigger was clicked while this loaded.
+export function MenuDialog({ defaultOpen = false }: { defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen)
   const slot = useRef<HTMLSpanElement>(null)
   const lang = useLang()
   const t = useT()

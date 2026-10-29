@@ -57,13 +57,20 @@ function Credit({ track }: { track: Track }) {
 // next, the volume, and the playlist with each Track's credit. Radix moves
 // the focus in, closes on Esc and outside, and returns the focus to the
 // button. Never mirrored: `dir="ltr"` even in the ar Lang.
-export function PlayerPanel({ player }: { player: Player }) {
+// `defaultOpen`: the stand-in button was clicked while this loaded.
+export function PlayerPanel({
+  player,
+  defaultOpen = false,
+}: {
+  player: Player
+  defaultOpen?: boolean
+}) {
   const t = useT()
   const { tracks, track, index, playing } = player
   const label = t("player.label")
 
   return (
-    <Popover>
+    <Popover defaultOpen={defaultOpen}>
       <PopoverTrigger asChild>
         <PlayerButton playing={playing} label={label} />
       </PopoverTrigger>

@@ -30,8 +30,8 @@ function Equalizer({ playing }: { playing: boolean }) {
   )
 }
 
-// The mini button in the corner that opens the panel, and the Suspense
-// fallback while the panel loads, so nothing shifts.
+// The mini button in the corner that opens the panel, and its stand-in until
+// the panel loads, so nothing shifts.
 export function PlayerButton({
   playing,
   label,
