@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test"
 
+import { expectNoPageOverflow } from "./overflow"
+
 // Issue #86: the Gallery page as a grid of Album cards; #87: an Album's page
 // with its photos as masonry. Against an in-memory /api/public/* (the D1
 // behind `vite preview` is empty). On RU, Cats only has its EN Translation;
@@ -159,10 +161,7 @@ test("the grid mirrors on /ar and fits 360px", async ({ page }) => {
 
   await page.setViewportSize({ width: 360, height: 800 })
   await expect(cards(page)).toHaveCount(3)
-  const overflow = await page
-    .locator("html")
-    .evaluate((el) => el.scrollWidth - el.clientWidth)
-  expect(overflow).toBe(0)
+  await expectNoPageOverflow(page)
 })
 
 const photoItems = (page: Page) =>
@@ -281,10 +280,7 @@ test("the masonry mirrors on /ar and fits 360px", async ({ page }) => {
 
   await page.setViewportSize({ width: 360, height: 800 })
   await expect(images).toHaveCount(6)
-  const overflow = await page
-    .locator("html")
-    .evaluate((el) => el.scrollWidth - el.clientWidth)
-  expect(overflow).toBe(0)
+  await expectNoPageOverflow(page)
 })
 
 // #88: the Lightbox over an Album, its photo in `?photo=<id>`.

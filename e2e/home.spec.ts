@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test"
 
+import { expectNoPageOverflow } from "./overflow"
+
 // Issue #118: the sections of the home page below the hero
 // (docs/design-brief.md › Home rhythm), each from its /api/public/* list and
 // leading to its part of the site; one with nothing to show isn't rendered.
@@ -111,14 +113,6 @@ async function mockPublicApi(page: Page, data: Data = FULL) {
     return route.fulfill({ json })
   })
 }
-
-const horizontalOverflow = (page: Page) =>
-  page
-    .locator("html")
-    .evaluate(
-      (el: { scrollWidth: number; clientWidth: number }) =>
-        el.scrollWidth - el.clientWidth
-    )
 
 const section = (page: Page, id: string) => page.getByTestId(`home-${id}`)
 const SECTIONS = ["about", "projects", "posts", "gallery"]
@@ -255,7 +249,7 @@ test("/ar/ mirrors the sections; the gallery strip scrolls on its own", async ({
   const first = (await albums.first().boundingBox())!
   const second = (await albums.nth(1).boundingBox())!
   expect(second.x).toBeLessThan(first.x)
-  expect(await horizontalOverflow(page)).toBe(0)
+  await expectNoPageOverflow(page)
 })
 
 test("the strip doesn't scroll the page sideways at 360px", async ({
@@ -266,5 +260,5 @@ test("the strip doesn't scroll the page sideways at 360px", async ({
   await page.goto("/en")
   await section(page, "gallery").scrollIntoViewIfNeeded()
   await expect(section(page, "gallery").getByRole("listitem")).toHaveCount(4)
-  expect(await horizontalOverflow(page)).toBe(0)
+  await expectNoPageOverflow(page)
 })

@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test"
 
+import { expectNoPageOverflow } from "./overflow"
+
 import { markdownTree } from "../contracts/markdown/parse"
 
 // Issues #98, #99 and #100: the Blog page as Post cards, newest first,
@@ -245,10 +247,7 @@ test("/ar keeps Western digits, mirrors the grid and fits 360px", async ({
 
   await page.setViewportSize({ width: 360, height: 800 })
   await expect(cards(page)).toHaveCount(3)
-  const overflow = await page
-    .locator("html")
-    .evaluate((el) => el.scrollWidth - el.clientWidth)
-  expect(overflow).toBe(0)
+  await expectNoPageOverflow(page)
 })
 
 const shareUrl = (url: string) =>
@@ -406,10 +405,7 @@ test("the Fallback on /ar reads left to right, the arrow mirrors", async ({
   const arrow = main.getByRole("link", { name: "كل التدوينات" }).locator("svg")
   await expect(arrow).toHaveCSS("rotate", "180deg")
 
-  const overflow = await page
-    .locator("html")
-    .evaluate((el) => el.scrollWidth - el.clientWidth)
-  expect(overflow).toBe(0)
+  await expectNoPageOverflow(page)
 })
 
 test("an unknown slug and a draft are a 404", async ({ page }) => {
