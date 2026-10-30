@@ -15,6 +15,8 @@ const horizontalOverflow = (page: Page) =>
 test("menu works from the keyboard: trap, Esc, focus return", async ({
   page,
 }) => {
+  // Full screen, below `lg`, the menu is modal; the panel above it isn't.
+  await page.setViewportSize({ width: 800, height: 900 })
   await page.goto("/en")
   const trigger = page.getByRole("banner").getByRole("button", { name: "Menu" })
   await expect(trigger).toBeEnabled()

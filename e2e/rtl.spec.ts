@@ -1,6 +1,10 @@
 import { expect, test, type Page } from "@playwright/test"
 
 // ADR-0007: the header and menu mirror in RTL; the logo and code don't.
+// Below `lg`, where the menu is full screen with a bar of its own (the panel
+// above it: e2e/menu.spec.ts).
+test.use({ viewport: { width: 800, height: 900 } })
+
 async function header(page: Page) {
   const banner = page.getByRole("banner")
   const logo = banner.getByRole("img", { name: "WebRunner" })
@@ -38,6 +42,7 @@ test("/ar/ mirrors the header and menu but not the logo", async ({ page }) => {
   // The active marker is an inline-start border: on the right in RTL.
   const active = dialog
     .getByRole("navigation")
+    .first()
     .locator('a[aria-current="page"]')
   await expect(active).toHaveCSS("border-right-width", "2px")
   await expect(active).toHaveCSS("border-left-width", "0px")
@@ -55,6 +60,7 @@ test("/en/ keeps the LTR header", async ({ page }) => {
   await expect(dialog).toHaveCSS("direction", "ltr")
   const active = dialog
     .getByRole("navigation")
+    .first()
     .locator('a[aria-current="page"]')
   await expect(active).toHaveCSS("border-left-width", "2px")
 })
