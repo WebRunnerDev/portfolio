@@ -32,7 +32,8 @@ function play(
 
 // The logo tiles of the menu (DESIGN.md › Tile: one element between the
 // header and the menu). They rest spread over the screen, faint, through
-// `placements`; on open they leave the logo in the menu bar (`slot`, where the
+// `placements` (from `lg`, over the panel, small enough that they stay in
+// it; the clip reaches up over the header, so they leave the logo in view); on open they leave the logo in the menu bar (`slot`, where the
 // header logo is) and on close fold back into it. The whole set scales and
 // moves on the compositor (Web Animations, transform and opacity only); each
 // tile moves inside it. Under reduced motion they just stand spread. The set
@@ -51,10 +52,14 @@ export function MenuTiles({
     if (!el || !slot.current) return
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) return
 
-    // The set's own box (offset*: untransformed), mapped onto the logo slot.
+    // The set's own box (offset*: untransformed, from its frame), mapped
+    // onto the logo slot.
     const box = slot.current.getBoundingClientRect()
+    const frame = (el.offsetParent ?? document.body).getBoundingClientRect()
+    const left = frame.left + el.offsetLeft
+    const top = frame.top + el.offsetTop
     const logo = {
-      transform: `translate(${box.left - el.offsetLeft}px, ${box.top - el.offsetTop}px) scale(${box.width / el.offsetWidth})`,
+      transform: `translate(${box.left - left}px, ${box.top - top}px) scale(${box.width / el.offsetWidth})`,
       opacity: 1,
     }
     const spread = { transform: "none", opacity: TILES_OPACITY }
@@ -95,18 +100,20 @@ export function MenuTiles({
   return (
     <div
       aria-hidden
-      className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
+      className="pointer-events-none fixed inset-0 -z-10 overflow-hidden lg:absolute lg:-top-(--menu-header)"
     >
-      <div
-        ref={set}
-        data-testid="menu-tiles"
-        style={{ opacity: TILES_OPACITY }}
-        className="absolute inset-y-0 inset-e-0 my-auto size-[min(100vw,100vh)] origin-top-left text-zsd-on-surface"
-      >
-        <LogoTiles
-          placements={SPREAD_TILES}
-          className="size-full overflow-visible"
-        />
+      <div className="absolute inset-0 lg:top-(--menu-header)">
+        <div
+          ref={set}
+          data-testid="menu-tiles"
+          style={{ opacity: TILES_OPACITY }}
+          className="absolute inset-y-0 inset-e-0 my-auto size-[min(100vw,100vh)] origin-top-left text-zsd-on-surface lg:aspect-square lg:h-2/3 lg:w-auto"
+        >
+          <LogoTiles
+            placements={SPREAD_TILES}
+            className="size-full overflow-visible"
+          />
+        </div>
       </div>
     </div>
   )

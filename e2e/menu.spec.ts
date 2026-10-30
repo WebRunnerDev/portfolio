@@ -75,12 +75,13 @@ test("opens and closes with the mouse, moving transform and opacity only", async
 
   // Every row ends in place.
   for (const link of await rows(page).all()) {
-    const text = link.locator("span.block")
+    const text = link.locator("span.block").first()
     await expect(text).toHaveCSS("opacity", "1")
     await expect(text).toHaveCSS("transform", "none")
   }
 
-  await menu(page).getByRole("button", { name: "Close menu" }).click()
+  // The panel leaves the header in view: its trigger closes it.
+  await trigger(page, "Close menu").click()
   // Radix keeps the menu while it folds, then removes it.
   await expect(menu(page)).toBeHidden()
   await expect(trigger(page)).toBeFocused()
@@ -91,14 +92,16 @@ test("opens and closes from the keyboard", async ({ page }) => {
   await expect(trigger(page)).toBeEnabled()
   await trigger(page).focus()
   await page.keyboard.press("Enter")
-  await expect(
-    menu(page).getByRole("button", { name: "Close menu" })
-  ).toBeFocused()
 
-  // Hover and focus look the same: the tile at the start of the row shows.
+  // Radix focuses the panel itself (it skips links), Tab the first block.
+  // Hover and focus look the same: its tile shows. The block's description
+  // is read as such, not as its name.
+  await expect(menu(page)).toBeFocused()
   await page.keyboard.press("Tab")
   const first = rows(page).first()
   await expect(first).toBeFocused()
+  await expect(first).toHaveAccessibleName("Home")
+  await expect(first).toHaveAccessibleDescription(/^Portfolio of WebRunner/)
   await expect(first.locator("span").first()).toHaveCSS("opacity", "1")
 
   await page.keyboard.press("Escape")
@@ -110,7 +113,9 @@ test("a link works while the menu is still opening", async ({ page }) => {
   await page.goto("/en")
   await expect(trigger(page)).toBeEnabled()
   await trigger(page).click()
-  await rows(page).filter({ hasText: "Projects" }).click()
+  await rows(page)
+    .and(page.getByRole("link", { name: "Projects" }))
+    .click()
   await expect(page).toHaveURL(/\/en\/projects$/)
   await expect(menu(page)).toBeHidden()
 })
@@ -122,7 +127,7 @@ test("reduced motion opens and closes the menu at once", async ({ page }) => {
   expect(await openAndList(page)).toEqual([])
   await expect(menu(page)).toBeVisible()
   for (const link of await rows(page).all()) {
-    await expect(link.locator("span.block")).toHaveCSS("opacity", "1")
+    await expect(link.locator("span.block").first()).toHaveCSS("opacity", "1")
   }
 
   await page.keyboard.press("Escape")
@@ -140,9 +145,72 @@ test("on /ar/ the layout mirrors, the tiles don't", async ({ page }) => {
   await expect(tiles).toHaveCSS("direction", "rtl")
   // The spread tiles sit at the inline end: on the left in RTL.
   expect((await tiles.boundingBox())!.x).toBe(0)
-  // The close button takes the trigger's place: the inline end, on the left.
-  const close = menu(page, "القائمة").getByRole("button", {
-    name: "إغلاق القائمة",
-  })
+  // The trigger turns into the close button: the inline end, on the left.
+  const close = trigger(page, "إغلاق القائمة")
   expect((await close.boundingBox())!.x).toBeLessThan(200)
+})
+
+test("the panel hangs from the header and leaves the page in use", async ({
+  page,
+}) => {
+  await page.goto("/en/cv")
+  await expect(trigger(page)).toBeEnabled()
+  await trigger(page).click()
+  const header = (await page.getByRole("banner").boundingBox())!
+  const panel = (await menu(page).boundingBox())!
+  expect(panel.y).toBe(header.y + header.height)
+  expect(panel.height).toBeLessThan(page.viewportSize()!.height / 2)
+  // The tiles fold back into the header logo, not into the first block: the
+  // panel's unseen bar stands right over the header.
+  const brand = async (scope: ReturnType<typeof menu>) =>
+    (await scope.getByTestId("brand").boundingBox())!
+  expect(await brand(menu(page))).toEqual(await brand(page.getByRole("banner")))
+  // The five blocks stand in one row, titles in line once they've risen.
+  for (const link of await rows(page).all()) {
+    await expect(link.locator("span.block").first()).toHaveCSS(
+      "transform",
+      "none"
+    )
+  }
+  const tops = await Promise.all(
+    (await rows(page).all()).map(
+      async (link) =>
+        (await link.locator("span.block").first().boundingBox())!.y
+    )
+  )
+  expect(new Set(tops).size).toBe(1)
+
+  // Non-modal: the page still scrolls, and a click on it closes the panel.
+  await page.mouse.wheel(0, 400)
+  await expect.poll(() => page.evaluate("window.scrollY")).toBeGreaterThan(0)
+  await page.mouse.click(10, page.viewportSize()!.height - 10)
+  await expect(menu(page)).toBeHidden()
+})
+
+test.describe("below lg", () => {
+  test.use({ viewport: { width: 800, height: 900 } })
+
+  test("the menu is full screen and the header doesn't move", async ({
+    page,
+  }) => {
+    await page.goto("/en/cv")
+    await expect(trigger(page)).toBeEnabled()
+    const before = (await trigger(page).boundingBox())!
+    await trigger(page).click()
+    const box = (await menu(page).boundingBox())!
+    expect(box.y).toBe(0)
+    expect(box.height).toBe(900)
+    // The close button of its bar ends where the trigger does, though the
+    // page's scrollbar is gone under the menu.
+    const close = menu(page).getByRole("button", { name: "Close menu" })
+    await expect(close).toBeFocused()
+    const closeBox = (await close.boundingBox())!
+    expect(closeBox.x + closeBox.width).toBeCloseTo(before.x + before.width, 0)
+
+    // The scrollbar keeps its place while the page is locked: nothing
+    // shifts when it comes back.
+    await close.click()
+    await expect(menu(page)).toBeHidden()
+    expect((await trigger(page).boundingBox())!.x).toBe(before.x)
+  })
 })

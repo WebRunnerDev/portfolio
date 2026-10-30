@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test"
 
+import { expectNoPageOverflow } from "./overflow"
+
 // Issue #66: the Web CV, against an in-memory /api/public/* (the D1 behind
 // `vite preview` is empty). `cv-sections` answers what D1 has with
 // `show_web = 1`, in order: Education is left out, though it has entries.
@@ -238,13 +240,7 @@ test("the CV fits 360px in LTR and RTL", async ({ page }) => {
   for (const lang of ["de", "ar"]) {
     await page.goto(`/${lang}/cv`)
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible()
-    const overflow = await page
-      .locator("html")
-      .evaluate(
-        (el: { scrollWidth: number; clientWidth: number }) =>
-          el.scrollWidth - el.clientWidth
-      )
-    expect(overflow).toBeLessThanOrEqual(0)
+    await expectNoPageOverflow(page)
   }
 })
 

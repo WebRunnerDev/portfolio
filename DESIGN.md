@@ -365,7 +365,7 @@ Keep each pointer target at least `control-height` in both dimensions.
 - From `md`: the CV shows the date column beside each entry.
 - From `lg`: three columns of cards. Four columns in the gallery.
 
-A full-screen menu replaces a navigation bar at all widths.
+A menu replaces a navigation bar at all widths: full screen below `lg`, from `lg` a panel of section blocks under the header.
 See `docs/design-brief.md` for the header, footer, and home layouts.
 
 Do not let the page scroll horizontally at `x-zsd.layout.viewport-min`. Code blocks scroll in their own region.
@@ -461,7 +461,7 @@ Do not apply filters to photos. Give each photo alternative text.
 Support keyboard operation in the reading sequence.
 Use `x-zsd.accessibility.focus-width`, `x-zsd.accessibility.focus-offset`, and `x-zsd.accessibility.focus-color` for the focus outline.
 On a chamfered element, the focus outline follows the chamfer.
-Keep focus visible under the sticky header. Move focus into the full-screen menu and return it on close.
+Keep focus visible under the sticky header. Move focus into the menu and return it on close. Trap it in the full-screen menu; the panel is non-modal.
 Selection is `on-primary` on `primary`.
 
 ### Review checks

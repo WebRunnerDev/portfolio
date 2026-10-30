@@ -1,20 +1,16 @@
-import { expect, test, type Page } from "@playwright/test"
+import { expect, test } from "@playwright/test"
+
+import { expectNoPageOverflow } from "./overflow"
 
 // Issue #8: header, full-screen menu, footer, stub pages, 404.
 const LANGS = ["en", "ru", "kk", "es", "de", "ar"]
 const PAGES = ["", "/cv", "/projects", "/gallery", "/blog"]
 
-const horizontalOverflow = (page: Page) =>
-  page
-    .locator("html")
-    .evaluate(
-      (el: { scrollWidth: number; clientWidth: number }) =>
-        el.scrollWidth - el.clientWidth
-    )
-
 test("menu works from the keyboard: trap, Esc, focus return", async ({
   page,
 }) => {
+  // Full screen, below `lg`, the menu is modal; the panel above it isn't.
+  await page.setViewportSize({ width: 800, height: 900 })
   await page.goto("/en")
   const trigger = page.getByRole("banner").getByRole("button", { name: "Menu" })
   await expect(trigger).toBeEnabled()
@@ -100,8 +96,7 @@ test.describe("at 360px", () => {
       for (const path of [...PAGES, "/nope"]) {
         await page.goto(`/${lang}${path}`)
         await expect(page.getByRole("banner")).toBeVisible()
-        const overflow = await horizontalOverflow(page)
-        expect(overflow, `/${lang}${path}`).toBeLessThanOrEqual(0)
+        await expectNoPageOverflow(page, `/${lang}${path}`)
       }
     }
   })
@@ -116,7 +111,6 @@ test.describe("at 360px", () => {
     await expect(menu.getByRole("button", { name: "Қараңғы" })).toBeVisible()
     await menu.getByRole("link", { name: "Deutsch" }).click()
     await expect(page).toHaveURL(/\/de\/blog$/)
-    const overflow = await horizontalOverflow(page)
-    expect(overflow).toBeLessThanOrEqual(0)
+    await expectNoPageOverflow(page)
   })
 })
