@@ -30,15 +30,17 @@ export function CrossIcon() {
 
 // The menu trigger, and the stand-in while the menu loads, so the header
 // doesn't shift. Icon-only below `sm`; the close button of the menu bar takes
-// the same place.
+// the same place. From `lg` the panel leaves the header in view, so the
+// trigger itself turns into the close button (`open`).
 export function MenuButton({
   label,
+  open = false,
   ...props
-}: ComponentProps<typeof BarButton> & { label: string }) {
+}: ComponentProps<typeof BarButton> & { label: string; open?: boolean }) {
   return (
     <BarButton square aria-label={label} title={label} {...props}>
       <span className="max-sm:hidden">{label}</span>
-      <LinesIcon />
+      {open ? <CrossIcon /> : <LinesIcon />}
     </BarButton>
   )
 }

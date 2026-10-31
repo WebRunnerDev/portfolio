@@ -316,6 +316,14 @@
       var(--zsd-x-zsd-layout-header-height) +
         var(--zsd-x-zsd-border-width-default)
     );
+    /* The scrollbar's place stays when a dialog locks the page, so neither
+     * the page nor the full-screen menu over it shifts by its width. */
+    scrollbar-gutter: stable;
+  }
+  /* Radix makes up for the removed scrollbar with a margin; the gutter
+   * already keeps its place. */
+  html body[data-scroll-locked] {
+    margin-right: 0 !important;
   }
 }
 
@@ -455,7 +463,7 @@ html:active-view-transition-type(forward, back) {
   }
 }
 
-/* DESIGN.md › Motion: the full-screen menu (`MenuDialog` in @/widgets/menu,
+/* DESIGN.md › Motion: the menu (`MenuDialog` in @/widgets/menu,
  * timings in its lib/choreography.ts). The surface fades in; on close it
  * waits until the tiles are back in the logo (`--menu-fold-end`), so Radix
  * keeps the menu mounted that long. Each row rises from under its mask after

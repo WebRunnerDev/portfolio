@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test"
 
+import { expectNoPageOverflow } from "./overflow"
+
 import { markdownTree } from "../contracts/markdown/parse"
 
 // Issues #69 and #70: the Projects page as a card grid and the Case Study page,
@@ -226,10 +228,7 @@ test("the grid mirrors on /ar and fits 360px", async ({ page }) => {
     .boundingBox()
   expect(status!.x - card!.x).toBeLessThan(card!.width / 2)
 
-  const overflow = await page
-    .locator("html")
-    .evaluate((el) => el.scrollWidth - el.clientWidth)
-  expect(overflow).toBe(0)
+  await expectNoPageOverflow(page)
 })
 
 test("the Case Study page shows the header and the Markdown", async ({
@@ -361,10 +360,7 @@ test("the Case Study mirrors on /ar but its code doesn't, at 360px", async ({
   expect(await code.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(
     true
   )
-  const overflow = await page
-    .locator("html")
-    .evaluate((el) => el.scrollWidth - el.clientWidth)
-  expect(overflow).toBe(0)
+  await expectNoPageOverflow(page)
 })
 
 // Issue #119, DESIGN.md › Card: hover and keyboard focus look the same, a
