@@ -1,11 +1,13 @@
 import { useLayoutEffect } from "react"
-import { Link, Outlet } from "@tanstack/react-router"
+import { Link, Outlet, useLocation } from "@tanstack/react-router"
+import { cn } from "cn"
 import { Direction as RadixDirection } from "radix-ui"
 
 import { getMe } from "../api/admin-api"
-import { ENTITIES } from "../model/entities"
+import { adminTitle, SECTIONS } from "../model/sections"
 import { useResource } from "../model/use-resource"
 import { ApiErrorNotice } from "./api-error-notice"
+import { SectionLink } from "./section-link"
 
 const FOCUS_RING =
   "outline-offset-2 focus-visible:outline-2 focus-visible:outline-ring"
@@ -16,6 +18,7 @@ const FOCUS_RING =
 // useDirection): every shared module splits a public chunk in two.
 export function AdminLayout() {
   const me = useResource("me", getMe)
+  const { pathname } = useLocation()
 
   useLayoutEffect(() => {
     document.documentElement.lang = "en"
@@ -24,7 +27,7 @@ export function AdminLayout() {
 
   return (
     <RadixDirection.Provider dir="ltr">
-      <title>Admin · WebRunner</title>
+      <title>{adminTitle(pathname)}</title>
       <meta name="robots" content="noindex, nofollow" />
       <div className="flex min-h-svh flex-col bg-background text-foreground">
         <header className="border-b border-border bg-card">
@@ -51,38 +54,42 @@ export function AdminLayout() {
         </header>
         <div className="flex flex-1 flex-col lg:flex-row">
           <nav
-            aria-label="Content"
+            aria-label="Admin"
             className="border-b border-border lg:w-56 lg:shrink-0 lg:border-e lg:border-b-0"
           >
-            <ul className="flex flex-wrap gap-zsd-xs p-zsd-sm lg:flex-col">
-              {ENTITIES.map((entity) => (
-                <li key={entity.path}>
-                  <Link
-                    to="/admin/$entity"
-                    params={{ entity: entity.path }}
-                    className={`block rounded-md px-zsd-sm py-zsd-xs text-zsd-body-sm hover:bg-muted ${FOCUS_RING}`}
-                    activeProps={{
-                      className: "bg-muted font-medium",
-                      "aria-current": "page",
-                    }}
+            <div className="flex flex-wrap gap-x-zsd-lg gap-y-zsd-sm p-zsd-sm lg:flex-col">
+              {SECTIONS.map((section) => (
+                <div key={section.id} className="flex flex-col gap-zsd-xs">
+                  {section.label && (
+                    <h2
+                      id={`admin-nav-${section.id}`}
+                      className="px-zsd-sm pt-zsd-xs text-zsd-body-sm text-muted-foreground"
+                    >
+                      {section.label}
+                    </h2>
+                  )}
+                  <ul
+                    aria-labelledby={
+                      section.label ? `admin-nav-${section.id}` : undefined
+                    }
+                    className="flex flex-wrap gap-zsd-xs lg:flex-col"
                   >
-                    {entity.label}
-                  </Link>
-                </li>
+                    {section.items.map((item) => (
+                      <li key={item.path}>
+                        <SectionLink
+                          item={item}
+                          className={cn(
+                            `block rounded-md px-zsd-sm py-zsd-xs text-zsd-body-sm hover:bg-muted ${FOCUS_RING}`,
+                            item.nested && "lg:ms-zsd-md"
+                          )}
+                          activeClassName="bg-muted font-medium"
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               ))}
-              <li>
-                <Link
-                  to="/admin/cv-pdf"
-                  className={`block rounded-md px-zsd-sm py-zsd-xs text-zsd-body-sm hover:bg-muted ${FOCUS_RING}`}
-                  activeProps={{
-                    className: "bg-muted font-medium",
-                    "aria-current": "page",
-                  }}
-                >
-                  CV PDF
-                </Link>
-              </li>
-            </ul>
+            </div>
           </nav>
           <main
             id="main"

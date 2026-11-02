@@ -7,7 +7,7 @@ export function UnknownEntity({ path }: { path: string }) {
       <p className="text-zsd-body-md text-muted-foreground">
         There is no “{path}” in the admin.{" "}
         <Link to="/admin" className="underline underline-offset-4">
-          All content
+          Admin home
         </Link>
       </p>
     </>
