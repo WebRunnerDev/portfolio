@@ -96,11 +96,79 @@ test("admin is EN, LTR and noindex after an RTL page", async ({ page }) => {
   )
 })
 
+test("admin keeps the site's content apart from the CV", async ({ page }) => {
+  await mockAdminApi(page)
+  await page.goto("/admin")
+  const nav = page.getByRole("navigation", { name: "Admin" })
+  await expect(
+    nav.getByRole("list", { name: "Site content" }).getByRole("link")
+  ).toHaveText(["Projects", "Posts", "Tags", "Albums", "Photos", "Tracks"])
+  await expect(
+    nav.getByRole("list", { name: "CV", exact: true }).getByRole("link")
+  ).toHaveText([
+    "CV sections",
+    "Experience",
+    "Education",
+    "Certifications",
+    "Languages",
+    "Technologies",
+    "CV PDF",
+  ])
+
+  // A list says where it is: in the trail and in the tab.
+  await nav.getByRole("link", { name: "Experience" }).click()
+  await expect(page).toHaveTitle("Experience · Admin · WebRunner")
+  const trail = page.getByRole("navigation", { name: "Breadcrumb" })
+  await trail.getByRole("link", { name: "CV" }).click()
+  await expect(page).toHaveURL(/\/admin#cv$/)
+  await expect(page).toHaveTitle("Admin · WebRunner")
+})
+
+test("admin home shows what each page has; CV sections read and link", async ({
+  page,
+}) => {
+  await page.route("**/api/admin/**", (route) => {
+    const path = new URL(route.request().url()).pathname
+    const json: Record<string, unknown> = {
+      "/api/admin/me": { email: "owner@example.com" },
+      "/api/admin/cv-sections": [
+        { id: 1, type: "experience", showWeb: true, showPdf: true },
+        { id: 2, type: "languages", showWeb: true, showPdf: false },
+      ],
+      "/api/admin/cv-pdf": [],
+    }
+    if (path in json) return route.fulfill({ json: json[path] })
+    if (path === "/api/admin/profile") {
+      return route.fulfill({ status: 404, json: { error: "not_found" } })
+    }
+    return route.fulfill({ json: [] })
+  })
+  await page.goto("/admin")
+  await expect(page.getByTestId("summary-cv-sections")).toHaveText(
+    "2 CV sections"
+  )
+  await expect(page.getByTestId("summary-projects")).toHaveText("None yet")
+  await expect(page.getByTestId("summary-profile")).toHaveText(
+    "Not created yet"
+  )
+  await expect(page.getByTestId("summary-cv-pdf")).toHaveText("No PDF yet")
+
+  await page
+    .getByRole("navigation", { name: "Admin" })
+    .getByRole("link", { name: "CV sections" })
+    .click()
+  const row = page.getByRole("row", { name: /Languages/ })
+  await expect(row.getByRole("link").first()).toHaveText("Languages")
+  await row.getByRole("link", { name: "Edit languages" }).click()
+  await expect(page).toHaveURL(/\/admin\/languages$/)
+  await expect(page.getByRole("heading", { name: "Languages" })).toBeVisible()
+})
+
 test("admin lists, creates and deletes projects", async ({ page }) => {
   await mockAdminApi(page)
   await page.goto("/admin")
   await page
-    .getByRole("navigation", { name: "Content" })
+    .getByRole("navigation", { name: "Admin" })
     .getByRole("link", { name: "Projects" })
     .click()
   await expect(page.getByText("No projects yet.")).toBeVisible()

@@ -7,7 +7,7 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react"
-import { getRouteApi, Link, useBlocker } from "@tanstack/react-router"
+import { getRouteApi, useBlocker } from "@tanstack/react-router"
 import { cn } from "cn"
 import type { DraftLang } from "@contracts/api/translate"
 import { LANGS, langDirection, type Lang } from "@contracts/lang"
@@ -65,6 +65,7 @@ import {
 } from "../model/entities"
 import { useResource } from "../model/use-resource"
 import { ApiErrorNotice } from "./api-error-notice"
+import { Breadcrumbs } from "./breadcrumbs"
 import type { Gallery } from "./cover-input"
 import { FieldInput } from "./field-input"
 import { GallerySection } from "./gallery-section"
@@ -87,13 +88,8 @@ function EntityEditor({ entity, id }: { entity: EntityConfig; id: string }) {
 
   return (
     <>
-      <Link
-        to="/admin/$entity"
-        params={{ entity: entity.path }}
-        className="self-start text-zsd-body-sm underline-offset-4 hover:underline"
-      >
-        {entity.label}
-      </Link>
+      {/* The Profile's list only leads back here. */}
+      <Breadcrumbs path={entity.path} editor={!entity.single} />
       {row.error && <ApiErrorNotice error={row.error} onRetry={row.reload} />}
       {row.loading && (
         <p role="status" className="text-zsd-body-md text-muted-foreground">
@@ -283,7 +279,7 @@ function RowEditor({
   return (
     <>
       <h1 className="font-heading text-zsd-headline-md break-words">
-        {rowTitle(entity, saved)}
+        {entity.single ? entity.label : rowTitle(entity, saved)}
       </h1>
       {entity.publishable && (
         <PublishBar row={saved} dirty={dirty} onPublish={publish} />

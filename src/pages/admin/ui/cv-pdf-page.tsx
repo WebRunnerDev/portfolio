@@ -22,6 +22,7 @@ import {
 } from "../api/admin-api"
 import { useResource } from "../model/use-resource"
 import { ApiErrorNotice, errorMessage } from "./api-error-notice"
+import { Breadcrumbs } from "./breadcrumbs"
 
 const LINK =
   "underline-offset-4 outline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
@@ -42,6 +43,7 @@ export function CvPdfPage() {
 
   return (
     <>
+      <Breadcrumbs path="cv-pdf" />
       <h1 className="font-heading text-zsd-headline-md">CV PDF</h1>
       <p className="max-w-prose text-zsd-body-sm text-muted-foreground">
         Generate prints the Print CV of the Lang on one A4 page. Langs without a

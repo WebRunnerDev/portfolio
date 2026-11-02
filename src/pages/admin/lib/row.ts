@@ -1,7 +1,7 @@
 import { DEFAULT_LANG, LANGS, type Lang } from "@contracts/lang"
 
 import type { AdminRow, Values } from "../api/admin-api"
-import type { Column, EntityConfig } from "../model/entities"
+import type { Column, EntityConfig, Field } from "../model/entities"
 
 // Reading rows of the admin API for the lists.
 
@@ -29,12 +29,23 @@ export function fieldValue(row: AdminRow, field: string, translated = false) {
   return translated ? translatedValue(row, field) : row[field]
 }
 
+// How an option of a `select` field reads.
+export function optionLabel(
+  field: Field & { kind: "select" },
+  option: string
+): string {
+  return field.labels?.[option] ?? option.replaceAll("_", " ")
+}
+
 export function rowTitle(entity: EntityConfig, row: AdminRow): string {
-  for (const field of entity.titleFields) {
+  for (const name of entity.titleFields) {
     const value =
-      translatedValue(row, field) ?? (row[field] as string | undefined)
+      translatedValue(row, name) ?? (row[name] as string | undefined)
     if (value !== undefined && value !== null && value !== "") {
-      return String(value)
+      const field = entity.fields.find((candidate) => candidate.name === name)
+      return field?.kind === "select"
+        ? optionLabel(field, String(value))
+        : String(value)
     }
   }
   return `${entity.singular} #${row.id}`

@@ -37,7 +37,7 @@ import { cn } from "@/shared/lib/utils"
 import { AdminApiError, reorderRows, type AdminRow } from "../api/admin-api"
 import { cellText, fieldValue, rowTitle, translatedLangs } from "../lib/row"
 import { thumbnail } from "../lib/thumbnail"
-import type { Column, EntityConfig } from "../model/entities"
+import { findEntity, type Column, type EntityConfig } from "../model/entities"
 import { ApiErrorNotice } from "./api-error-notice"
 import { DeleteRowButton } from "./delete-row-button"
 
@@ -75,6 +75,18 @@ function Cell({ row, column }: { row: AdminRow; column: Column }) {
           className="size-12 border border-border object-cover"
         />
       ) : null
+    case "entity": {
+      const target = typeof value === "string" && findEntity(value)
+      return target ? (
+        <Link
+          to="/admin/$entity"
+          params={{ entity: target.path }}
+          className="underline-offset-4 outline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+        >
+          Edit {target.label.toLowerCase()}
+        </Link>
+      ) : null
+    }
     default:
       return <>{cellText(row, column)}</>
   }

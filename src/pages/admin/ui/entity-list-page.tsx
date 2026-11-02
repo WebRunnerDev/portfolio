@@ -1,43 +1,19 @@
 import { useId, useState } from "react"
-import { getRouteApi } from "@tanstack/react-router"
+import { getRouteApi, Navigate } from "@tanstack/react-router"
 
 import { Label } from "@/shared/ui/kit"
 
-import {
-  AdminApiError,
-  getRow,
-  listRows,
-  type AdminRow,
-} from "../api/admin-api"
 import { findEntity, type EntityConfig } from "../model/entities"
+import { loadRows } from "../model/load-rows"
 import { useResource } from "../model/use-resource"
 import { ApiErrorNotice } from "./api-error-notice"
+import { Breadcrumbs } from "./breadcrumbs"
 import { CreateDialog } from "./create-dialog"
 import { EntityTable } from "./entity-table"
 import { RefSelect } from "./ref-select"
 import { UnknownEntity } from "./unknown-entity"
 
 const route = getRouteApi("/admin/$entity/")
-
-// The Profile is one record: 404 until it's created, then a one-row list.
-async function loadRows(
-  entity: EntityConfig,
-  scopeId: string
-): Promise<AdminRow[]> {
-  if (!entity.single) {
-    const query =
-      entity.scope && scopeId ? { [entity.scope.field]: scopeId } : undefined
-    return listRows(entity.path, entity.schemas.entity, query)
-  }
-  try {
-    return [await getRow(entity.path, entity.schemas.entity)]
-  } catch (error) {
-    if (error instanceof AdminApiError && error.status === 404) {
-      return []
-    }
-    throw error
-  }
-}
 
 export function EntityListPage() {
   const { entity: path } = route.useParams()
@@ -59,9 +35,22 @@ function EntityList({ entity }: { entity: EntityConfig }) {
     entity.scope && !scopeId ? { ...entity, ordered: false } : entity
   const canCreate = !entity.single || rows.data?.length === 0
   const scopeEntity = entity.scope && findEntity(entity.scope.entity)
+  const single = entity.single && rows.data?.[0]
+
+  // The Profile, once it exists, is edited rather than listed.
+  if (single) {
+    return (
+      <Navigate
+        to="/admin/$entity/$id"
+        params={{ entity: entity.path, id: String(single.id) }}
+        replace
+      />
+    )
+  }
 
   return (
     <>
+      <Breadcrumbs path={entity.path} />
       <div className="flex flex-wrap items-center gap-zsd-md">
         <h1 className="me-auto font-heading text-zsd-headline-md">
           {entity.label}
