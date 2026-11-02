@@ -14,6 +14,7 @@ import type { Direction, Lang } from "@contracts/lang"
 
 import type { Values } from "../api/admin-api"
 import type { FormValue } from "../lib/form"
+import { optionLabel } from "../lib/row"
 import type { Field } from "../model/entities"
 import { CoverInput, type Gallery } from "./cover-input"
 import { FileInput } from "./file-input"
@@ -156,7 +157,7 @@ export function FieldInput({
         >
           {field.options.map((option) => (
             <NativeSelectOption key={option} value={option}>
-              {option.replaceAll("_", " ")}
+              {optionLabel(field, option)}
             </NativeSelectOption>
           ))}
         </NativeSelect>

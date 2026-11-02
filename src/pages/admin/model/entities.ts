@@ -37,7 +37,13 @@ export type Field = {
   | { kind: "lines" }
   | { kind: "number" }
   | { kind: "boolean"; initial: boolean }
-  | { kind: "select"; options: readonly string[]; initial?: string }
+  | {
+      kind: "select"
+      options: readonly string[]
+      initial?: string
+      // How an option reads; else the option with spaces for underscores.
+      labels?: Record<string, string>
+    }
   // The id of a row of another entity: a photo's album.
   | { kind: "ref"; entity: string }
   // Ids of rows of another entity: a project's technologies. `addable`: a
@@ -67,6 +73,8 @@ export type Column = {
     | "date"
     | "duration"
     | "image"
+    // The path of an entity: a link to its list (a CV section's rows).
+    | "entity"
 }
 
 export type EntityConfig = {
@@ -157,12 +165,14 @@ export const ENTITIES: EntityConfig[] = [
     columns: [
       { label: "Web", field: "showWeb", kind: "flag" },
       { label: "PDF", field: "showPdf", kind: "flag" },
+      { label: "Rows", field: "type", kind: "entity" },
     ],
     fields: [
       {
         name: "type",
         label: "Type",
         kind: "select",
+        // Each the path of the entity whose rows the section shows.
         options: [
           "experience",
           "projects",
@@ -171,6 +181,14 @@ export const ENTITIES: EntityConfig[] = [
           "certifications",
           "languages",
         ],
+        labels: {
+          experience: "Experience",
+          projects: "Projects",
+          technologies: "Technologies",
+          education: "Education",
+          certifications: "Certifications",
+          languages: "Languages",
+        },
       },
       {
         name: "showWeb",
