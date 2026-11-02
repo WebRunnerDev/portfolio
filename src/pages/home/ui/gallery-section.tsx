@@ -1,5 +1,6 @@
 import { use } from "react"
 import { Link } from "@tanstack/react-router"
+import { ArrowRight } from "lucide-react"
 
 import type { Album } from "@contracts/api/public"
 import { imageSrcSet, imageUrl } from "@contracts/media"
@@ -32,6 +33,7 @@ export function GallerySection({ albums }: { albums: Promise<Album[]> }) {
     <HomeSection
       id="gallery"
       title={t("nav.gallery")}
+      wide
       className="pt-zsd-section-lg"
     >
       <Reveal order={1} className="mt-zsd-xl">
@@ -48,6 +50,11 @@ export function GallerySection({ albums }: { albums: Promise<Album[]> }) {
                 <span className="font-heading text-zsd-headline-sm break-words text-zsd-on-surface">
                   <span className={CARD_TITLE_SHIFT}>
                     {t("home.gallery.link")}
+                    <ArrowRight
+                      aria-hidden
+                      strokeWidth={1.5}
+                      className="ms-zsd-sm inline size-4 align-[-0.1em] text-zsd-primary-text rtl:rotate-180"
+                    />
                   </span>
                 </span>
                 <span className="text-zsd-body-sm text-zsd-on-surface-muted">

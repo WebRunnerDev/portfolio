@@ -5,7 +5,8 @@ import { cvPdfFilename, cvPdfPath } from "@contracts/cv-pdf"
 import { useT } from "@/shared/i18n"
 
 // The CV PDF download of the Web CV (ADR-0003): the Lang's own PDF, or the
-// EN one, which the label says. A plain link: the file is a page of its own.
+// EN one, which the label says. A plain link: the file is a page of its own,
+// drawn as a `button-secondary`.
 export function CvPdfLink({ pdf }: { pdf: CvPdf }) {
   const t = useT()
   return (
@@ -15,9 +16,13 @@ export function CvPdfLink({ pdf }: { pdf: CvPdf }) {
       hrefLang={pdf.lang}
       type="application/pdf"
       data-testid="cv-pdf-link"
-      className="inline-flex min-h-zsd-control-height items-center gap-zsd-xs border border-zsd-outline-muted px-zsd-md text-zsd-body-md text-zsd-on-surface outline-offset-2 hover:bg-zsd-surface-raised focus-visible:outline-2 focus-visible:outline-ring"
+      className="inline-flex min-h-zsd-control-height items-center gap-zsd-sm border border-zsd-outline bg-zsd-surface px-zsd-lg font-zsd-label-md text-zsd-label-md text-zsd-on-surface outline-offset-2 transition-colors duration-(--zsd-x-zsd-motion-duration-fast) ease-zsd-hover hover:border-zsd-primary hover:bg-zsd-surface-raised focus-visible:bg-zsd-surface-raised focus-visible:outline-2 focus-visible:outline-ring active:bg-zsd-surface-raised motion-reduce:transition-none"
     >
-      <Download aria-hidden="true" className="size-4 shrink-0" />
+      <Download
+        aria-hidden="true"
+        strokeWidth={1.5}
+        className="size-4 shrink-0 text-zsd-primary-text"
+      />
       {t(pdf.fallback ? "cv.downloadPdfEn" : "cv.downloadPdf")}
     </a>
   )

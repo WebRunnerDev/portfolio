@@ -8,6 +8,7 @@ import { fallbackLang } from "@/shared/ui/fallback-notice"
 
 import type { HeroTier } from "../model/tier"
 import { HeroBrand } from "./hero-brand"
+import { CONTENT_START } from "./home-section"
 import { HeroLite } from "./hero-lite"
 import { HeroStatic } from "./hero-static"
 
@@ -94,13 +95,13 @@ export function Hero({
         <HeroBrand />
         <p
           style={delay(SUBTITLE_START)}
-          className="mt-zsd-xl min-h-[3lh] max-w-(--zsd-x-zsd-layout-prose-max) font-zsd-body-lg text-zsd-body-lg text-balance text-zsd-on-surface-muted lg:ms-[calc(100%/3)]"
+          className={`mt-zsd-xl min-h-[3lh] max-w-(--zsd-x-zsd-layout-prose-max) font-zsd-body-lg text-zsd-body-lg text-balance text-zsd-on-surface-muted ${CONTENT_START}`}
         >
           <Suspense>
             <HeroSubtitle profile={profile} />
           </Suspense>
         </p>
-        <div className="mt-zsd-lg flex flex-wrap gap-zsd-md lg:ms-[calc(100%/3)]">
+        <div className={`mt-zsd-lg flex flex-wrap gap-zsd-md ${CONTENT_START}`}>
           <Link
             to="/$lang/cv"
             params={{ lang }}

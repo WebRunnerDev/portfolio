@@ -1,5 +1,6 @@
 import { use } from "react"
 import { Link } from "@tanstack/react-router"
+import { ArrowRight } from "lucide-react"
 
 import type { Post } from "@contracts/api/public"
 import { formatDate, useLang, useT } from "@/shared/i18n"
@@ -15,7 +16,7 @@ const MOTION_FAST =
 
 // The Blog (docs/design-brief.md › Ритм главной): dense and
 // chamber-sized, a list of three, the date and the title, no covers. Each
-// row links to its post; on hover and focus, as a card, a rust tile shows
+// row links to its post, an arrow after its title; on hover and focus, as a card, a rust tile shows
 // at its start and the title moves 4px along the reading direction. Leads to
 // all the publications. Not shown without a published Post.
 export function PostsSection({ posts }: { posts: Promise<Post[]> }) {
@@ -47,7 +48,7 @@ export function PostsSection({ posts }: { posts: Promise<Post[]> }) {
             >
               <time
                 dateTime={post.publishedAt}
-                className="shrink-0 font-zsd-label-mono text-zsd-label-mono text-zsd-on-surface-muted uppercase sm:w-32 rtl:normal-case"
+                className="shrink-0 font-zsd-label-mono text-zsd-label-mono whitespace-nowrap text-zsd-on-surface-muted uppercase sm:w-40 rtl:normal-case"
               >
                 {formatDate(new Date(post.publishedAt), lang)}
               </time>
@@ -61,6 +62,11 @@ export function PostsSection({ posts }: { posts: Promise<Post[]> }) {
                   className={`min-w-0 font-heading text-zsd-headline-sm break-words text-zsd-on-surface transition-transform card-active:translate-x-1 rtl:card-active:-translate-x-1 ${MOTION_FAST}`}
                 >
                   {post.title}
+                  <ArrowRight
+                    aria-hidden
+                    strokeWidth={1.5}
+                    className="ms-zsd-sm inline size-4 align-[-0.1em] text-zsd-primary-text rtl:rotate-180"
+                  />
                 </span>
               </span>
             </Link>

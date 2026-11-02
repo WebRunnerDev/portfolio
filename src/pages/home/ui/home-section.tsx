@@ -13,14 +13,29 @@ const FOCUS_RING =
 export const CONTENT =
   "mx-auto w-full max-w-(--zsd-x-zsd-layout-content-max) px-zsd-lg md:px-zsd-xxl"
 
+// From `lg` the content box is four columns `xxl` apart: a section's title
+// holds the first, its content the other three.
+const CHAPTER =
+  "lg:grid lg:grid-cols-4 lg:gap-x-zsd-xxl lg:[&>*:last-child]:col-span-3"
+
+// From `lg`, where a section's content starts: the hero's subtitle and
+// actions stand on the same line.
+export const CONTENT_START =
+  "lg:ms-[calc((100%-3*var(--zsd-spacing-xxl))/4+var(--zsd-spacing-xxl))]"
+
 // A section of the home page below the hero (docs/design-brief.md › Ритм
-// главной): its index in `label-mono`, a `headline-md` title rising word by
-// word, the content, and one link to its part of the site at the end. The
-// index is a CSS counter on the sections actually shown (the hero is 01), so
-// a hidden empty section leaves no gap. `actions` stand beside the link (the
-// CV PDF); a section whose content is itself the link (the Gallery banner)
-// has none. `className` sets the section's own spacing; `content` is false
-// when the content lays itself out past the content box.
+// главной), opened as a chapter: a hairline across the content box with a
+// rust tile and the index in `label-mono` on it, then a `headline-md` title
+// rising word by word, the content, and one link to its part of the site at
+// the end, as a `button-secondary` with an arrow, so it reads as the way on.
+// From `lg` the title holds the first quarter and stays in view under the
+// header while its section scrolls by; the content takes the other three
+// quarters, on the line of the hero's subtitle. A `wide` section (the Gallery
+// banner) keeps the title above and its content across the whole box, for
+// the airy beat of the rhythm. The index is a CSS counter on the sections
+// actually shown (the hero is 01), so a hidden empty section leaves no gap.
+// `actions` stand beside the link (the CV PDF). `className` sets the
+// section's own spacing.
 export function HomeSection({
   id,
   title,
@@ -28,7 +43,7 @@ export function HomeSection({
   linkText,
   actions,
   className,
-  content = true,
+  wide = false,
   children,
 }: {
   id: string
@@ -37,7 +52,7 @@ export function HomeSection({
   linkText?: string
   actions?: ReactNode
   className?: string
-  content?: boolean
+  wide?: boolean
   children: ReactNode
 }) {
   const lang = useLang()
@@ -51,42 +66,55 @@ export function HomeSection({
       <div className={CONTENT}>
         <Reveal
           as="p"
-          className="font-zsd-label-mono text-zsd-label-mono text-zsd-on-surface-muted"
+          y={0}
+          className="flex items-center gap-zsd-md border-t border-zsd-outline-muted pt-zsd-md font-zsd-label-mono text-zsd-label-mono text-zsd-on-surface-muted"
         >
+          <span
+            aria-hidden="true"
+            className="size-2 shrink-0 rotate-45 bg-zsd-primary"
+          />
           <span
             aria-hidden="true"
             className="before:content-[counter(home-section,decimal-leading-zero)]"
           />
         </Reveal>
-        <div id={`home-${id}-title`}>
-          <RevealText
-            as="h2"
-            text={title}
-            delay={0.1}
-            className="mt-zsd-sm font-heading text-zsd-headline-md break-words hyphens-auto text-zsd-on-surface"
-          />
+        <div className={cn("mt-zsd-lg", !wide && CHAPTER)}>
+          <div
+            id={`home-${id}-title`}
+            className={cn(
+              !wide &&
+                "lg:sticky lg:top-[calc(var(--zsd-x-zsd-layout-header-height)+var(--zsd-spacing-xl))] lg:self-start"
+            )}
+          >
+            <RevealText
+              as="h2"
+              text={title}
+              delay={0.1}
+              className="font-heading text-zsd-headline-md break-words hyphens-auto text-zsd-on-surface"
+            />
+          </div>
+          <div className={cn(!wide && "lg:[&>*:first-child]:mt-0")}>
+            {children}
+            {link && (
+              <Reveal className="mt-zsd-xl flex flex-wrap items-center gap-x-zsd-xl gap-y-zsd-md">
+                <Link
+                  to={link}
+                  params={{ lang }}
+                  className={`group/more inline-flex min-h-zsd-control-height items-center gap-zsd-sm border border-zsd-outline bg-zsd-surface px-zsd-lg font-zsd-label-md text-zsd-label-md text-zsd-on-surface transition-colors duration-(--zsd-x-zsd-motion-duration-fast) ease-zsd-hover hover:border-zsd-primary hover:bg-zsd-surface-raised focus-visible:bg-zsd-surface-raised active:bg-zsd-surface-raised motion-reduce:transition-none ${FOCUS_RING}`}
+                >
+                  {linkText}
+                  <ArrowRight
+                    aria-hidden
+                    strokeWidth={1.5}
+                    className="size-4 text-zsd-primary-text transition-transform duration-(--zsd-x-zsd-motion-duration-fast) ease-zsd-hover group-hover/more:translate-x-1 group-focus-visible/more:translate-x-1 motion-reduce:transition-none rtl:rotate-180 rtl:group-hover/more:-translate-x-1 rtl:group-focus-visible/more:-translate-x-1"
+                  />
+                </Link>
+                {actions}
+              </Reveal>
+            )}
+          </div>
         </div>
       </div>
-      {content ? <div className={CONTENT}>{children}</div> : children}
-      {link && (
-        <div className={CONTENT}>
-          <Reveal className="mt-zsd-xl flex flex-wrap items-center gap-x-zsd-xl gap-y-zsd-md">
-            <Link
-              to={link}
-              params={{ lang }}
-              className={`group/more inline-flex min-h-zsd-control-height items-center gap-zsd-sm font-zsd-label-md text-zsd-label-md text-zsd-primary-text underline-offset-4 hover:underline focus-visible:underline ${FOCUS_RING}`}
-            >
-              {linkText}
-              <ArrowRight
-                aria-hidden
-                strokeWidth={1.5}
-                className="size-4 transition-transform duration-(--zsd-x-zsd-motion-duration-fast) ease-zsd-hover group-hover/more:translate-x-1 group-focus-visible/more:translate-x-1 motion-reduce:transition-none rtl:rotate-180 rtl:group-hover/more:-translate-x-1 rtl:group-focus-visible/more:-translate-x-1"
-              />
-            </Link>
-            {actions}
-          </Reveal>
-        </div>
-      )}
     </section>
   )
 }
