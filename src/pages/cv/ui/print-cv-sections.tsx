@@ -8,11 +8,12 @@ import type {
   Project,
   Technology,
 } from "@contracts/api/public"
+import { Month, Period, TECH_CATEGORIES, groupByCategory } from "@/entities/cv"
 import { useT } from "@/shared/i18n"
 import { fallbackLang } from "@/shared/ui/fallback-notice"
 
 import { CV_LINK } from "./cv-header"
-import { CATEGORIES, EXTERNAL, Month, Period } from "./cv-sections"
+import { EXTERNAL } from "./cv-sections"
 
 // The CV Sections of the Print CV: dense, one column, the date at the end of
 // the title line, no technology badges. An entry never breaks across pages.
@@ -122,16 +123,12 @@ export function PrintProjectList({ items }: { items: Project[] }) {
 // One line per group: "Front-End: React, TypeScript".
 export function PrintTechnologyGroups({ items }: { items: Technology[] }) {
   const t = useT()
-  const groups = new Map<Technology["category"], Technology[]>()
-  for (const tech of items) {
-    groups.set(tech.category, [...(groups.get(tech.category) ?? []), tech])
-  }
   return (
     <ul>
-      {[...groups].map(([category, techs]) => (
+      {groupByCategory(items).map(([category, techs]) => (
         <li key={category} className="break-inside-avoid">
           <span className="font-semibold text-zsd-on-surface">
-            {t(CATEGORIES[category])}:
+            {t(TECH_CATEGORIES[category])}:
           </span>{" "}
           <span dir="ltr">{techs.map((tech) => tech.name).join(", ")}</span>
         </li>

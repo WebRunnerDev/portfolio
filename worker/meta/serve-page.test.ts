@@ -471,6 +471,10 @@ describe("servePage", () => {
       )
     expect(await requests("/de")).toEqual([
       "/api/public/de/profile",
+      "/api/public/de/experience",
+      "/api/public/de/education",
+      "/api/public/de/technologies",
+      "/api/public/de/cv-pdf",
       "/api/public/de/projects",
       "/api/public/de/posts",
       "/api/public/de/albums",

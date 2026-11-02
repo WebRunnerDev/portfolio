@@ -10,10 +10,10 @@ import type {
   Project,
   Technology,
 } from "@contracts/api/public"
+import { Month, Period, TECH_CATEGORIES, groupByCategory } from "@/entities/cv"
 import { useLang, useT, type MessageKey } from "@/shared/i18n"
 import { FallbackNotice, fallbackLang } from "@/shared/ui/fallback-notice"
 
-import { formatMonth } from "../lib/format-month"
 import { CV_LINK } from "./cv-header"
 
 export const SECTION_HEADINGS: Record<CvSection["type"], MessageKey> = {
@@ -23,13 +23,6 @@ export const SECTION_HEADINGS: Record<CvSection["type"], MessageKey> = {
   education: "cv.education",
   certifications: "cv.certifications",
   languages: "cv.languages",
-}
-
-export const CATEGORIES: Record<Technology["category"], MessageKey> = {
-  frontend: "cv.tech.frontend",
-  backend_cloud: "cv.tech.backend_cloud",
-  qa_testing: "cv.tech.qa_testing",
-  tools_design: "cv.tech.tools_design",
 }
 
 const MONO = "font-zsd-label-mono text-zsd-label-mono uppercase rtl:normal-case"
@@ -56,21 +49,6 @@ function Entry({
         {children}
       </div>
     </li>
-  )
-}
-
-export function Month({ value }: { value: string }) {
-  const lang = useLang()
-  return <time dateTime={value}>{formatMonth(value, lang)}</time>
-}
-
-// `end` null is "present".
-export function Period({ start, end }: { start: string; end: string | null }) {
-  const t = useT()
-  return (
-    <p>
-      <Month value={start} /> – {end ? <Month value={end} /> : t("cv.present")}
-    </p>
   )
 }
 
@@ -205,17 +183,13 @@ export function ProjectList({ items }: { items: Project[] }) {
   )
 }
 
-// The directory by group, groups and technologies in the API's order.
+// The directory by group (groupByCategory).
 export function TechnologyGroups({ items }: { items: Technology[] }) {
   const t = useT()
-  const groups = new Map<Technology["category"], Technology[]>()
-  for (const tech of items) {
-    groups.set(tech.category, [...(groups.get(tech.category) ?? []), tech])
-  }
   return (
     <ul className="flex flex-col gap-zsd-lg">
-      {[...groups].map(([category, techs]) => (
-        <Entry key={category} aside={<h3>{t(CATEGORIES[category])}</h3>}>
+      {groupByCategory(items).map(([category, techs]) => (
+        <Entry key={category} aside={<h3>{t(TECH_CATEGORIES[category])}</h3>}>
           <TechBadges items={techs} />
         </Entry>
       ))}

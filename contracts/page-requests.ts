@@ -34,7 +34,16 @@ export function pageRequests(path: string, search: URLSearchParams): string[] {
   if (slug === undefined) {
     switch (section) {
       case undefined:
-        return ["profile", "projects", "posts", "albums"]
+        return [
+          "profile",
+          "experience",
+          "education",
+          "technologies",
+          "cv-pdf",
+          "projects",
+          "posts",
+          "albums",
+        ]
       case "cv":
         return [...CV, "cv-sections?form=web", "cv-pdf"]
       case "projects":
