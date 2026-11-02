@@ -71,8 +71,8 @@ function EntryList({
 }
 
 // The CV in short (docs/design-brief.md › Ритм главной): chamber-sized, the
-// Profile's `about` as one `body-lg` paragraph in the prose column, offset
-// from `lg` as the hero's subtitle; under it the latest Experience (period,
+// Profile's `about` as one `body-lg` paragraph in the prose column, on the
+// line of the hero's subtitle (HomeSection); under it the latest Experience (period,
 // role, company) over the Education (period, institution, degree), and the
 // technologies by category beside them from `lg`. Leads to the CV, with the
 // CV PDF beside the link. Not shown while it has none of these.
@@ -96,7 +96,7 @@ export function CvSection({ cv }: { cv: Promise<HomeCv> }) {
         <Reveal
           as="p"
           order={1}
-          className="mt-zsd-xl max-w-(--zsd-x-zsd-layout-prose-max) font-zsd-body-lg text-zsd-body-lg whitespace-pre-line text-zsd-on-surface-muted lg:ms-[calc(100%/3)]"
+          className="mt-zsd-xl max-w-(--zsd-x-zsd-layout-prose-max) font-zsd-body-lg text-zsd-body-lg whitespace-pre-line text-zsd-on-surface-muted"
         >
           <span lang={fallbackLang(profile)}>{about}</span>
         </Reveal>

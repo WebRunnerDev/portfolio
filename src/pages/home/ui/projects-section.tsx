@@ -1,5 +1,6 @@
 import { use } from "react"
 import { Link } from "@tanstack/react-router"
+import { ArrowRight } from "lucide-react"
 import { cn } from "cn"
 
 import type { Project } from "@contracts/api/public"
@@ -15,11 +16,14 @@ const FOCUS_RING =
   "outline-offset-2 focus-visible:outline-2 focus-visible:outline-ring"
 const MOTION_FAST =
   "duration-(--zsd-x-zsd-motion-duration-fast) ease-zsd-hover motion-reduce:transition-none"
+// After the title of a row that is a link: says it leads somewhere.
+const ROW_ARROW =
+  "ms-zsd-sm inline size-4 align-[-0.1em] text-zsd-primary-text rtl:rotate-180"
 
 // The Projects (docs/design-brief.md › Ритм главной): dense, every Project as
 // one row, no covers: the title and the status, a two-line description and
 // the technologies. A row with a Case Study is one link to its page, named by
-// the title; on hover and focus, as a card, a rust tile shows at its start
+// the title, with an arrow after it; on hover and focus, as a card, a rust tile shows at its start
 // and the title moves 4px along the reading direction. Leads to the Projects
 // page. Not shown without a Project.
 export function ProjectsSection({
@@ -71,7 +75,14 @@ export function ProjectsSection({
                       params={{ lang, slug: project.slug }}
                       className={`card-link min-w-0 after:absolute after:inset-0 ${FOCUS_RING}`}
                     >
-                      <span className={CARD_TITLE_SHIFT}>{project.title}</span>
+                      <span className={CARD_TITLE_SHIFT}>
+                        {project.title}
+                        <ArrowRight
+                          aria-hidden
+                          strokeWidth={1.5}
+                          className={ROW_ARROW}
+                        />
+                      </span>
                     </Link>
                   ) : (
                     <span className="min-w-0">{project.title}</span>
