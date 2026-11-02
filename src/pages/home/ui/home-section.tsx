@@ -13,26 +13,29 @@ const FOCUS_RING =
 export const CONTENT =
   "mx-auto w-full max-w-(--zsd-x-zsd-layout-content-max) px-zsd-lg md:px-zsd-xxl"
 
-// A section of the home page below the hero (docs/design-brief.md › Home
-// rhythm): its index in `label-mono`, a `headline-md` title rising word by
+// A section of the home page below the hero (docs/design-brief.md › Ритм
+// главной): its index in `label-mono`, a `headline-md` title rising word by
 // word, the content, and one link to its part of the site at the end. The
 // index is a CSS counter on the sections actually shown (the hero is 01), so
-// a hidden empty section leaves no gap. `className` sets the section's own
-// spacing; `content` is false when the content lays itself out past the
-// content box (the gallery strip).
+// a hidden empty section leaves no gap. `actions` stand beside the link (the
+// CV PDF); a section whose content is itself the link (the Gallery banner)
+// has none. `className` sets the section's own spacing; `content` is false
+// when the content lays itself out past the content box.
 export function HomeSection({
   id,
   title,
   link,
   linkText,
+  actions,
   className,
   content = true,
   children,
 }: {
   id: string
   title: string
-  link: "/$lang/cv" | "/$lang/projects" | "/$lang/blog" | "/$lang/gallery"
-  linkText: string
+  link?: "/$lang/cv" | "/$lang/projects" | "/$lang/blog"
+  linkText?: string
+  actions?: ReactNode
   className?: string
   content?: boolean
   children: ReactNode
@@ -65,22 +68,25 @@ export function HomeSection({
         </div>
       </div>
       {content ? <div className={CONTENT}>{children}</div> : children}
-      <div className={CONTENT}>
-        <Reveal className="mt-zsd-xl">
-          <Link
-            to={link}
-            params={{ lang }}
-            className={`group/more inline-flex min-h-zsd-control-height items-center gap-zsd-sm font-zsd-label-md text-zsd-label-md text-zsd-primary-text underline-offset-4 hover:underline focus-visible:underline ${FOCUS_RING}`}
-          >
-            {linkText}
-            <ArrowRight
-              aria-hidden
-              strokeWidth={1.5}
-              className="size-4 transition-transform duration-(--zsd-x-zsd-motion-duration-fast) ease-zsd-hover group-hover/more:translate-x-1 group-focus-visible/more:translate-x-1 motion-reduce:transition-none rtl:rotate-180 rtl:group-hover/more:-translate-x-1 rtl:group-focus-visible/more:-translate-x-1"
-            />
-          </Link>
-        </Reveal>
-      </div>
+      {link && (
+        <div className={CONTENT}>
+          <Reveal className="mt-zsd-xl flex flex-wrap items-center gap-x-zsd-xl gap-y-zsd-md">
+            <Link
+              to={link}
+              params={{ lang }}
+              className={`group/more inline-flex min-h-zsd-control-height items-center gap-zsd-sm font-zsd-label-md text-zsd-label-md text-zsd-primary-text underline-offset-4 hover:underline focus-visible:underline ${FOCUS_RING}`}
+            >
+              {linkText}
+              <ArrowRight
+                aria-hidden
+                strokeWidth={1.5}
+                className="size-4 transition-transform duration-(--zsd-x-zsd-motion-duration-fast) ease-zsd-hover group-hover/more:translate-x-1 group-focus-visible/more:translate-x-1 motion-reduce:transition-none rtl:rotate-180 rtl:group-hover/more:-translate-x-1 rtl:group-focus-visible/more:-translate-x-1"
+              />
+            </Link>
+            {actions}
+          </Reveal>
+        </div>
+      )}
     </section>
   )
 }

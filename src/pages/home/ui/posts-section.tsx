@@ -13,11 +13,11 @@ const FOCUS_RING =
 const MOTION_FAST =
   "duration-(--zsd-x-zsd-motion-duration-fast) ease-zsd-hover motion-reduce:transition-none"
 
-// The latest Posts (docs/design-brief.md › Home rhythm): dense and
+// The Blog (docs/design-brief.md › Ритм главной): dense and
 // chamber-sized, a list of three, the date and the title, no covers. Each
 // row links to its post; on hover and focus, as a card, a rust tile shows
 // at its start and the title moves 4px along the reading direction. Leads to
-// the Blog. Not shown without a published Post.
+// all the publications. Not shown without a published Post.
 export function PostsSection({ posts }: { posts: Promise<Post[]> }) {
   const lang = useLang()
   const t = useT()
@@ -27,7 +27,7 @@ export function PostsSection({ posts }: { posts: Promise<Post[]> }) {
   return (
     <HomeSection
       id="posts"
-      title={t("home.posts.title")}
+      title={t("nav.blog")}
       link="/$lang/blog"
       linkText={t("home.posts.link")}
       className="pt-zsd-section"

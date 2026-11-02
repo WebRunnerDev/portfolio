@@ -2,10 +2,11 @@ import { expect, test, type Page } from "@playwright/test"
 
 import { expectNoPageOverflow } from "./overflow"
 
-// Issue #118: the sections of the home page below the hero
-// (docs/design-brief.md › Home rhythm), each from its /api/public/* list and
-// leading to its part of the site; one with nothing to show isn't rendered.
-// Against an in-memory API (the D1 behind `vite preview` is empty).
+// The sections of the home page below the hero (docs/design-brief.md › Ритм
+// главной): the CV in short, every Project as a row, a banner to the Gallery
+// and the latest Posts, each from its /api/public/* list and leading to its
+// part of the site; one with nothing to show isn't rendered. Against an
+// in-memory API (the D1 behind `vite preview` is empty).
 
 const PROFILE = {
   fallback: false,
@@ -20,7 +21,59 @@ const PROFILE = {
   photoKey: null,
 }
 
-const project = (id: number, slug: string, featured: boolean) => ({
+const job = (id: number, role: string, endMonth: string | null) => ({
+  fallback: false,
+  id,
+  company: `Company ${id}`,
+  companyUrl: null,
+  role,
+  location: null,
+  startMonth: "2022-03",
+  endMonth,
+  bullets: ["Did things."],
+  technologies: [],
+})
+
+const EXPERIENCE = [
+  job(1, "Frontend engineer", null),
+  job(2, "QA engineer", "2023-12"),
+  job(3, "Intern", "2021-06"),
+  job(4, "Older role", "2020-01"),
+]
+
+const EDUCATION = [
+  {
+    fallback: false,
+    id: 1,
+    institution: "Nazarbayev University",
+    degree: "BSc in Computer Science",
+    diploma: null,
+    gpa: null,
+    startMonth: "2018-09",
+    endMonth: "2022-06",
+  },
+]
+
+const tech = (id: number, name: string, category: string) => ({
+  id,
+  name,
+  category,
+  icon: null,
+})
+
+const TECHNOLOGIES = [
+  tech(1, "React", "frontend"),
+  tech(2, "TypeScript", "frontend"),
+  tech(3, "Cloudflare", "backend_cloud"),
+]
+
+const CV_PDF = {
+  fallback: false,
+  lang: "en",
+  generatedAt: "2026-10-01T00:00:00.000Z",
+}
+
+const project = (id: number, slug: string, hasCaseStudy: boolean) => ({
   fallback: false,
   id,
   slug,
@@ -30,11 +83,11 @@ const project = (id: number, slug: string, featured: boolean) => ({
   coverKey: id === 1 ? "projects/one.png" : null,
   githubUrl: null,
   demoUrl: null,
-  featured,
+  featured: id === 1,
   inCv: false,
   cvBullets: [],
-  hasCaseStudy: true,
-  technologies: [],
+  hasCaseStudy,
+  technologies: [tech(1, "React", "frontend")],
 })
 
 const PROJECTS = [
@@ -85,6 +138,10 @@ const ALBUMS = [
 
 type Data = {
   profile: Omit<typeof PROFILE, "about"> & { about: string | null }
+  experience: unknown[]
+  education: unknown[]
+  technologies: unknown[]
+  "cv-pdf": unknown
   projects: unknown[]
   posts: unknown[]
   albums: unknown[]
@@ -92,6 +149,10 @@ type Data = {
 
 const FULL: Data = {
   profile: PROFILE,
+  experience: EXPERIENCE,
+  education: EDUCATION,
+  technologies: TECHNOLOGIES,
+  "cv-pdf": CV_PDF,
   projects: PROJECTS,
   posts: POSTS,
   albums: ALBUMS,
@@ -115,7 +176,7 @@ async function mockPublicApi(page: Page, data: Data = FULL) {
 }
 
 const section = (page: Page, id: string) => page.getByTestId(`home-${id}`)
-const SECTIONS = ["about", "projects", "posts", "gallery"]
+const SECTIONS = ["cv", "projects", "gallery", "posts"]
 
 test("the sections follow the hero in order, each with its data", async ({
   page,
@@ -123,25 +184,52 @@ test("the sections follow the hero in order, each with its data", async ({
   await mockPublicApi(page)
   await page.goto("/en")
 
-  const shown = page.locator("[data-testid^=home-]")
+  const shown = page.locator("section[data-testid^=home-]")
   await expect(shown).toHaveCount(4)
   for (const [i, id] of SECTIONS.entries()) {
     await expect(shown.nth(i)).toHaveAttribute("data-testid", `home-${id}`)
   }
 
-  await expect(
-    section(page, "about").getByRole("heading", { level: 2 })
-  ).toHaveAccessibleName("About me")
-  await expect(section(page, "about")).toContainText(PROFILE.about)
+  // The CV: the about text, the first three jobs, the Education, the
+  // technologies by category and the CV PDF.
+  const cv = section(page, "cv")
+  await expect(cv.getByRole("heading", { level: 2 })).toHaveAccessibleName("CV")
+  await expect(cv).toContainText(PROFILE.about)
+  const jobs = cv.getByTestId("home-cv-experience").getByRole("listitem")
+  await expect(jobs).toHaveCount(3)
+  await expect(jobs.first()).toContainText("Frontend engineer")
+  await expect(jobs.first()).toContainText("Company 1")
+  await expect(jobs.first()).toContainText("Mar 2022 – Present")
+  const education = cv.getByTestId("home-cv-education").getByRole("listitem")
+  await expect(education).toHaveCount(1)
+  await expect(education).toContainText("Nazarbayev University")
+  await expect(education).toContainText("BSc in Computer Science")
+  await expect(education).toContainText("Sep 2018 – Jun 2022")
+  const groups = cv.getByTestId("home-cv-technologies").locator(":scope > li")
+  await expect(groups).toHaveCount(2)
+  await expect(groups.first()).toContainText("React")
+  await expect(cv.getByTestId("cv-pdf-link")).toBeVisible()
 
-  // The Featured ones only, three at most, the first one wide.
-  const cards = section(page, "projects").getByTestId("project-card")
-  await expect(cards).toHaveCount(3)
-  await expect(cards.getByRole("heading", { level: 3 })).toHaveText([
-    "Project plotops",
-    "Project notes",
-    "Project radio",
-  ])
+  // Every Project, in the API's order, as a row without a cover.
+  const rows = section(page, "projects").getByTestId("project-row")
+  await expect(rows).toHaveCount(PROJECTS.length)
+  await expect(rows.getByRole("heading", { level: 3 })).toHaveText(
+    PROJECTS.map((p) => p.title)
+  )
+  await expect(rows.first()).toContainText("What it does.")
+  await expect(rows.first().getByTestId("project-status")).toBeVisible()
+  await expect(section(page, "projects").locator("img")).toHaveCount(0)
+
+  // The banner counts the Albums with photos and shows three covers, lazy
+  // and sized against layout shift.
+  const banner = section(page, "gallery").getByRole("link")
+  await expect(banner).toHaveCount(1)
+  await expect(banner).toContainText("4 albums · 16 photos")
+  const covers = banner.locator("img")
+  await expect(covers).toHaveCount(3)
+  await expect(covers.first()).toHaveAttribute("loading", "lazy")
+  await expect(covers.first()).toHaveAttribute("width", "1200")
+  await expect(covers.first()).toHaveAttribute("height", "900")
 
   // The three newest, date and title.
   const posts = section(page, "posts").getByRole("listitem")
@@ -151,22 +239,13 @@ test("the sections follow the hero in order, each with its data", async ({
     "datetime",
     POSTS[0].publishedAt
   )
-
-  // Albums with photos only; covers lazy, sized against layout shift.
-  const albums = section(page, "gallery").getByRole("listitem")
-  await expect(albums).toHaveCount(4)
-  const cover = albums.first().locator("img")
-  await expect(cover).toHaveAttribute("loading", "lazy")
-  await expect(cover).toHaveAttribute("width", "1200")
-  await expect(cover).toHaveAttribute("height", "900")
-  await expect(cover).toHaveAttribute("srcset", /640w/)
 })
 
-const LINKS: [string, string, string][] = [
-  ["about", "Full CV", "/en/cv"],
+const LINKS: [string, string | RegExp, string][] = [
+  ["cv", "Full CV", "/en/cv"],
   ["projects", "All projects", "/en/projects"],
+  ["gallery", /Open the gallery/, "/en/gallery"],
   ["posts", "All posts", "/en/blog"],
-  ["gallery", "All albums", "/en/gallery"],
 ]
 
 for (const [id, name, path] of LINKS) {
@@ -178,29 +257,61 @@ for (const [id, name, path] of LINKS) {
   })
 }
 
-test("a post and an album link to their pages", async ({ page }) => {
+test("a project with a Case Study and a post link to their pages", async ({
+  page,
+}) => {
   await mockPublicApi(page)
   await page.goto("/en")
+  const projects = section(page, "projects")
+  await expect(
+    projects.getByRole("link", { name: "Project notes" })
+  ).toHaveAttribute("href", "/en/projects/notes")
+  // No Case Study, no page: the row isn't a link.
+  await expect(projects.getByRole("link", { name: "Project ams" })).toHaveCount(
+    0
+  )
   await expect(
     section(page, "posts").getByRole("link", { name: /Post rtl-tests/ })
   ).toHaveAttribute("href", "/en/blog/rtl-tests")
-  await expect(
-    section(page, "gallery").getByRole("link", { name: /Album cats/ })
-  ).toHaveAttribute("href", "/en/gallery/cats")
+})
+
+test("a project row opens its page from anywhere on it", async ({ page }) => {
+  await mockPublicApi(page)
+  await page.goto("/en")
+  const row = section(page, "projects").getByTestId("project-row").nth(2)
+  // The title's link stretches over the row.
+  await row.click()
+  await expect(page).toHaveURL("/en/projects/notes")
 })
 
 test("a section with nothing to show isn't rendered", async ({ page }) => {
   await mockPublicApi(page, {
     profile: { ...PROFILE, about: null },
-    projects: PROJECTS.map((p) => ({ ...p, featured: false })),
-    posts: POSTS,
+    experience: [],
+    education: [],
+    technologies: [],
+    "cv-pdf": null,
+    projects: [],
+    posts: [],
     albums: [album(3, "empty", false)],
   })
   await page.goto("/en")
-  await expect(section(page, "posts")).toBeVisible()
-  for (const id of ["about", "projects", "gallery"]) {
-    await expect(section(page, id)).toHaveCount(0)
-  }
+  await expect(page.locator("section[data-tier]")).toBeVisible()
+  await expect(page.locator("section[data-testid^=home-]")).toHaveCount(0)
+})
+
+test("the CV shows without the about text and without a PDF", async ({
+  page,
+}) => {
+  await mockPublicApi(page, {
+    ...FULL,
+    profile: { ...PROFILE, about: null },
+    "cv-pdf": null,
+  })
+  await page.goto("/en")
+  const cv = section(page, "cv")
+  await expect(cv.getByTestId("home-cv-experience")).toBeVisible()
+  await expect(cv.getByTestId("cv-pdf-link")).toHaveCount(0)
 })
 
 test("no section when the API fails", async ({ page }) => {
@@ -209,7 +320,7 @@ test("no section when the API fails", async ({ page }) => {
   )
   await page.goto("/en")
   await expect(page.locator("section[data-tier]")).toBeVisible()
-  await expect(page.locator("[data-testid^=home-]")).toHaveCount(0)
+  await expect(page.locator("section[data-testid^=home-]")).toHaveCount(0)
 })
 
 test("reduced motion shows the sections as they are", async ({ page }) => {
@@ -228,37 +339,38 @@ test("reduced motion shows the sections as they are", async ({ page }) => {
   )
 })
 
-test("/ar/ mirrors the sections; the gallery strip scrolls on its own", async ({
-  page,
-}) => {
+test("/ar/ mirrors the sections", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 })
   await mockPublicApi(page)
   await page.goto("/ar")
 
   // The about text sits a third in from the start: from the right in RTL,
   // so more room is left on its right than on its left.
-  const about = section(page, "about").locator("p").last()
+  const about = section(page, "cv").locator("p", { hasText: PROFILE.about })
   await about.scrollIntoViewIfNeeded()
   const box = (await about.boundingBox())!
   expect(1280 - (box.x + box.width)).toBeGreaterThan(box.x)
 
-  // The strip runs from the start edge of the content to the end edge of
-  // the viewport, and the page itself doesn't scroll sideways.
-  const albums = section(page, "gallery").getByRole("listitem")
-  await albums.first().scrollIntoViewIfNeeded()
-  const first = (await albums.first().boundingBox())!
-  const second = (await albums.nth(1).boundingBox())!
-  expect(second.x).toBeLessThan(first.x)
+  // The status stands at the row's end: on the left in RTL.
+  const row = section(page, "projects").getByTestId("project-row").first()
+  await row.scrollIntoViewIfNeeded()
+  const rowBox = (await row.boundingBox())!
+  const status = (await row.getByTestId("project-status").boundingBox())!
+  expect(status.x - rowBox.x).toBeLessThan(
+    rowBox.x + rowBox.width - (status.x + status.width)
+  )
   await expectNoPageOverflow(page)
 })
 
-test("the strip doesn't scroll the page sideways at 360px", async ({
+test("the sections don't scroll the page sideways at 360px", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 360, height: 740 })
   await mockPublicApi(page)
   await page.goto("/en")
-  await section(page, "gallery").scrollIntoViewIfNeeded()
-  await expect(section(page, "gallery").getByRole("listitem")).toHaveCount(4)
+  for (const id of SECTIONS) {
+    await section(page, id).scrollIntoViewIfNeeded()
+  }
+  await expect(section(page, "gallery").locator("img")).toHaveCount(3)
   await expectNoPageOverflow(page)
 })
