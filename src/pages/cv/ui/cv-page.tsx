@@ -1,11 +1,11 @@
 import { getRouteApi } from "@tanstack/react-router"
 
 import type { CvSection } from "@contracts/api/public"
+import { CvPdfLink } from "@/entities/cv"
 import { useT } from "@/shared/i18n"
 
 import type { CvData } from "../api/load-cv"
 import { CvHeader } from "./cv-header"
-import { CvPdfLink } from "./cv-pdf-link"
 import {
   CertificationList,
   EducationList,
