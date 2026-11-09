@@ -662,6 +662,29 @@ html:active-view-transition-type(forward, back) {
     var(--zsd-x-zsd-motion-easing-enter) var(--reveal-delay, 0s) backwards;
 }
 
+/* docs/design-brief.md › Футер: the rust tile that ends the footer's title
+ * like a full stop. It rides in its word's mask, so it waits under it with
+ * the word; once the word has half risen, the tile turns into place from
+ * nothing on the tile curve. Reduced motion renders the title without the
+ * rise, so the tile just stands. */
+@keyframes stop-in {
+  from {
+    transform: rotate(-135deg) scale(0);
+  }
+}
+
+@utility reveal-stop {
+  transform: rotate(45deg);
+  .reveal-rise > & {
+    animation: stop-in var(--zsd-x-zsd-motion-duration-slow)
+      var(--zsd-x-zsd-motion-easing-layout)
+      calc(
+        var(--reveal-delay, 0s) + var(--zsd-x-zsd-motion-duration-reveal) / 2
+      )
+      backwards;
+  }
+}
+
 /* docs/design-brief.md › Hero (`Hero` in src/pages/home). CSS, not Motion:
  * the brand is the LCP element and must not wait for a script. The opacity
  * in `hero-rise` is for LCP: Chrome skips text hidden under its mask at the

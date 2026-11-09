@@ -16,6 +16,10 @@ export type RevealTextProps = {
   className?: string
   // Seconds before the first part starts.
   delay?: number
+  // Decoration right after the last word, inside its mask, so it never
+  // wraps onto a line of its own (the footer's rhombus full stop). It
+  // inherits that word's `--reveal-delay`. Hide it from assistive technology.
+  after?: React.ReactNode
 }
 
 // The mask is taller than the text by this much on both sides, so accents
@@ -32,9 +36,11 @@ export function RevealText({
   by = "word",
   className,
   delay = 0,
+  after,
 }: RevealTextProps) {
   const { ref, animated, inView, onAnimationStart } = useReveal<HTMLElement>()
   const lines = text.split("\n")
+  const lastLine = lines.length - 1
 
   if (!animated) {
     return (
@@ -42,6 +48,7 @@ export function RevealText({
         {lines.map((line, i) => (
           <span key={i} className="block">
             {line}
+            {i === lastLine && after}
           </span>
         ))}
       </Tag>
@@ -56,6 +63,8 @@ export function RevealText({
     parts.slice(0, i).reduce((sum, line) => sum + line.length, 0)
   )
 
+  const total = parts.reduce((sum, line) => sum + line.length, 0)
+
   const part = (content: string, order: number, className: string) => (
     <span key={order} className={cn(MASK, className)}>
       <span
@@ -67,6 +76,7 @@ export function RevealText({
         }
       >
         {content}
+        {order === total - 1 && after}
       </span>
     </span>
   )
