@@ -1,9 +1,18 @@
 import { expect, test, type Page } from "@playwright/test"
 
+import {
+  expectTakeOff,
+  headerLogo,
+  heroTiles,
+  scrollPastHero,
+} from "./logo-flight"
+
 // Issue #115: the header stays in view (the only way to the menu); on the
 // home page its controls rise in after the brand, transform and opacity only.
 type Animated = {
+  ownerDocument: { timeline: unknown }
   getAnimations(options: { subtree: true }): {
+    timeline: unknown
     effect: {
       getTiming(): { delay: number }
       getKeyframes(): Record<string, unknown>[]
@@ -12,11 +21,16 @@ type Animated = {
 }
 const TIMING_KEYS = ["offset", "computedOffset", "easing", "composite"]
 
+// On the document's timeline: the logo flight runs on the hero's scroll.
 const headerAnimations = (page: Page) =>
   page.getByRole("banner").evaluate(
     (element, timingKeys) =>
       (element as unknown as Animated)
         .getAnimations({ subtree: true })
+        .filter(
+          ({ timeline }) =>
+            timeline === (element as unknown as Animated).ownerDocument.timeline
+        )
         .map(({ effect }) => ({
           delay: effect.getTiming().delay,
           properties: effect
@@ -57,6 +71,10 @@ test("on the home page the controls rise in one after another", async ({
 test("other pages show the header as is", async ({ page }) => {
   await page.goto("/en/projects")
   expect(await headerAnimations(page)).toEqual([])
+  await expect(headerLogo(page)).toHaveCSS("opacity", "1")
+  expect(
+    await headerLogo(page).evaluate((logo) => logo.getAnimations().length)
+  ).toBe(0)
 })
 
 test.describe("with reduced motion", () => {
@@ -66,6 +84,51 @@ test.describe("with reduced motion", () => {
     await page.goto("/en")
     expect(await headerAnimations(page)).toEqual([])
   })
+
+  test("the logo tiles stand in the header at once", async ({ page }) => {
+    await page.goto("/en")
+    await expect(headerLogo(page)).toHaveCSS("opacity", "1")
+    await expect(headerLogo(page)).toHaveCSS("transform", "none")
+  })
+})
+
+// Issue #158, DESIGN.md › Tile: on the home page the hero's logo tiles fly
+// into the header logo as the hero scrolls away.
+test("the home page header logo fills once the hero has gone", async ({
+  page,
+}) => {
+  await page.goto("/en")
+  await expect(heroTiles(page)).toHaveCSS("opacity", "1")
+  await expect(headerLogo(page)).toHaveCSS("opacity", "0")
+  // The slot keeps its place: the name doesn't move when the tiles land.
+  const name = page
+    .getByRole("banner")
+    .getByTestId("brand")
+    .locator(":scope > span")
+    .last()
+  const before = (await name.boundingBox())!
+
+  await scrollPastHero(page)
+  await expect(headerLogo(page)).toHaveCSS("opacity", "1")
+  await expect(headerLogo(page)).toHaveCSS(
+    "transform",
+    "matrix(1, 0, 0, 1, 0, 0)"
+  )
+  await expect(heroTiles(page)).toHaveCSS("opacity", "0")
+  expect(await name.boundingBox()).toEqual(before)
+
+  // And back into the hero.
+  await page.evaluate("scrollTo(0, 0)")
+  await expect(headerLogo(page)).toHaveCSS("opacity", "0")
+  await expect(heroTiles(page)).toHaveCSS("opacity", "1")
+})
+
+test("the header logo takes off from over the hero's tiles", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 640 })
+  await page.goto("/en")
+  await expectTakeOff(page)
 })
 
 test("the Lang menu hangs from the header and marks the current Lang", async ({
