@@ -1,10 +1,11 @@
 import * as React from "react"
 
+import { fpsMeter, MIN_FULL_FPS, PROBE_MS } from "@/shared/lib/motion-tier"
+
 import { kineticGrid, type KineticGrid } from "../lib/kinetic-grid"
 import { usePlaying } from "../lib/use-playing"
-import { fpsMeter, MIN_FULL_FPS, PROBE_MS } from "../model/tier"
 
-// The `full` Hero Tier: the Kinetic Grid on a canvas over the whole hero
+// The full layer of the hero: the Kinetic Grid on a canvas over the whole hero
 // (docs/design-brief.md › Hero effect). Loaded lazily, paused off screen and
 // on a hidden tab. Falls back to `lite` through `onFail` when the frame rate
 // drops below the probe's while it runs, or when the canvas loses its

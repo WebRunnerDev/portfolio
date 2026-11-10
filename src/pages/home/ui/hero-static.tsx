@@ -8,8 +8,8 @@ const HEIGHT = 1440
 
 const IMAGE = "absolute inset-0 size-full object-none object-center"
 
-// The `static` Hero Tier: the grid of the Kinetic Grid as a still image, one
-// per theme. Lazy, so the hidden theme's image never loads. It sits in an
+// The hero at the `static` Motion Tier: the grid of the Kinetic Grid as a
+// still image, one per theme. Lazy, so the hidden theme's image never loads. It sits in an
 // absolute layer: CLS 0 whenever it arrives.
 export function HeroStatic() {
   return (

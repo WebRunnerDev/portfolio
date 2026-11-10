@@ -1,7 +1,8 @@
 import { Suspense } from "react"
 import { getRouteApi } from "@tanstack/react-router"
 
-import { useHeroTier } from "../model/use-hero-tier"
+import { useMotionTier } from "@/shared/lib/motion-tier"
+
 import { CvSection } from "./cv-section"
 import { GallerySection } from "./gallery-section"
 import { Hero } from "./hero"
@@ -17,7 +18,7 @@ const route = getRouteApi("/$lang/")
 // shown, after the hero's 01.
 export function HomePage() {
   const { profile, cv, projects, posts, albums } = route.useLoaderData()
-  const { tier, fallBack } = useHeroTier()
+  const { tier, fallBack } = useMotionTier()
 
   return (
     <>

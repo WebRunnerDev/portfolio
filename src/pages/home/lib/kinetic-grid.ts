@@ -1,5 +1,5 @@
 /*!
- * The `full` Hero Tier's grid, after Kinetic Grid from OriginKit
+ * The hero's full layer's grid, after Kinetic Grid from OriginKit
  * (https://www.originkit.dev/, https://github.com/vellum-ai/originkit).
  * Reworked for the hero (docs/design-brief.md › Hero effect): a rhombus
  * lattice, lit cells, a wave without a pointer, every line in one path.

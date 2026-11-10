@@ -1,6 +1,7 @@
-// ADR-0006: how much of the Hero effect a device gets.
-// `full` the Kinetic Grid, `lite` the logo tiles in CSS, `static` an image.
-export type HeroTier = "full" | "lite" | "static"
+// ADR-0006, ADR-0012: how much motion a device gets on the public pages,
+// picked once a visit. `full` the full layer over `lite`, `lite` CSS and Web
+// Animations, `static` the end state (reduced motion).
+export type MotionTier = "full" | "lite" | "static"
 
 export const REDUCED_MOTION = "(prefers-reduced-motion: reduce)"
 // A device at or below these runs `lite` without a probe.
@@ -21,8 +22,8 @@ type DeviceHints = {
 }
 
 // The tier from what the browser tells at once. `full` here is only a
-// candidate: the FPS probe still has to pass (useHeroTier).
-export function detectTier(): HeroTier {
+// candidate: the FPS probe still has to pass (MotionTierProvider).
+export function detectTier(): MotionTier {
   if (window.matchMedia(REDUCED_MOTION).matches) return "static"
   const { hardwareConcurrency, deviceMemory, connection } =
     navigator as DeviceHints

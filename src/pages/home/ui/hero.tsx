@@ -4,9 +4,9 @@ import { Link } from "@tanstack/react-router"
 import type { Profile } from "@contracts/api/public"
 import { useLang, useT } from "@/shared/i18n"
 import { STAGGER } from "@/shared/lib/motion"
+import type { MotionTier } from "@/shared/lib/motion-tier"
 import { fallbackLang } from "@/shared/ui/fallback-notice"
 
-import type { HeroTier } from "../model/tier"
 import { HeroBrand } from "./hero-brand"
 import { CONTENT_START } from "./home-section"
 import { HeroLite } from "./hero-lite"
@@ -26,8 +26,10 @@ const ACTIONS_START = 0.6
 const delay = (seconds: number) =>
   ({ "--hero-delay": `${seconds}s` }) as CSSProperties
 
-// Lazy: the Kinetic Grid stays out of the initial JS (ADR-0006). If its
-// chunk doesn't load, `lite` stays.
+// Lazy: the full layer, now the Kinetic Grid, stays out of the initial JS
+// and the modulepreloads; it is imported only once the tier is `full`, which
+// waits for the input gate (ADR-0012). If its chunk doesn't load, `lite`
+// stays.
 const HeroFull = lazy(() =>
   import("./hero-full").then(
     (m) => ({ default: m.HeroFull }),
@@ -40,7 +42,7 @@ function HeroEffect({
   tier,
   onFullFail,
 }: {
-  tier: HeroTier
+  tier: MotionTier
   onFullFail: () => void
 }) {
   if (tier === "static") return <HeroStatic />
@@ -66,8 +68,9 @@ function HeroSubtitle({ profile }: { profile: Promise<HeroProfile | null> }) {
   )
 }
 
-// The home page's hero (docs/design-brief.md › Hero, ADR-0006): the brand,
-// the subtitle and the two main actions over the effect of the Hero Tier.
+// The home page's hero (docs/design-brief.md › Hero, ADR-0006, ADR-0012):
+// the brand, the subtitle and the two main actions over the effect of the
+// Motion Tier.
 // One viewport tall less the header. The effect spans the whole hero up to
 // the viewport's edges and is never mirrored; the text follows the Direction.
 // `onFullFail` is called when `full` can't hold on this device after all.
@@ -76,7 +79,7 @@ export function Hero({
   profile,
   onFullFail,
 }: {
-  tier: HeroTier
+  tier: MotionTier
   profile: Promise<HeroProfile | null>
   onFullFail: () => void
 }) {

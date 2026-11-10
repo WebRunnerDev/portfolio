@@ -1,11 +1,12 @@
 import { expect, test, type Page } from "@playwright/test"
 
-// The home page's hero (docs/design-brief.md › Hero, ADR-0006).
+// The home page's hero (docs/design-brief.md › Hero, ADR-0006). When the
+// full layer loads at all: e2e/full-layer.spec.ts.
 const hero = (page: Page) => page.locator("section[data-tier]")
 const effect = (page: Page) => hero(page).locator("[data-effect]")
 
 // The device hints tier detection reads: 2 cores make `lite`, 8 a `full`
-// candidate (the FPS probe still has to pass).
+// candidate (the FPS probe and the input gate still have to pass).
 async function cores(page: Page, count: number) {
   await page.addInitScript((count) => {
     Object.defineProperty(navigator, "hardwareConcurrency", {
@@ -96,7 +97,9 @@ test("the full tier draws the Kinetic Grid and pauses off screen", async ({
   const errors = consoleErrors(page)
   await cores(page, 8)
   await page.goto("/en")
-  // `lite` while the FPS probe runs, then the grid.
+  // The input gate (ADR-0012).
+  await page.mouse.move(200, 200)
+  // `lite` while the FPS probe runs and before the input, then the grid.
   await expect(hero(page)).toHaveAttribute("data-tier", "full", {
     timeout: 10_000,
   })
@@ -127,6 +130,8 @@ test("the full tier falls back to lite when the canvas is lost", async ({
   const errors = consoleErrors(page)
   await cores(page, 8)
   await page.goto("/en")
+  // The input gate (ADR-0012).
+  await page.mouse.move(200, 200)
   await expect(effect(page)).toHaveAttribute("data-effect", "full", {
     timeout: 10_000,
   })
@@ -141,6 +146,8 @@ test("the full tier falls back to lite when the frame rate drops", async ({
 }) => {
   await cores(page, 8)
   await page.goto("/en")
+  // The input gate (ADR-0012).
+  await page.mouse.move(200, 200)
   await expect(effect(page)).toHaveAttribute("data-effect", "full", {
     timeout: 10_000,
   })
