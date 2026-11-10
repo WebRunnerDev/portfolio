@@ -49,7 +49,7 @@ export function SiteFooter() {
             after={
               <span
                 aria-hidden="true"
-                className="ms-[0.12em] mb-[0.05em] inline-block size-[0.2em] reveal-stop bg-zsd-primary"
+                className="ms-[0.12em] me-[0.05em] mb-[0.05em] inline-block size-[0.2em] reveal-stop bg-zsd-primary"
               />
             }
           />
