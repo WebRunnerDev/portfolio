@@ -37,7 +37,7 @@ x-zsd:
       - Mirrored logo, hero, music player, or code blocks.
       - The easing keywords ease, ease-in, ease-out, ease-in-out, and linear.
       - Smooth scroll libraries and scroll hijacking.
-      - A custom cursor.
+      - Replacing the native cursor.
     preserve:
       - Rust value from the source palette as the primary color in both modes.
       - Dark text and surface values from the source palette.
@@ -58,7 +58,6 @@ x-zsd:
     icon-assets:
       - lucide-react
   unresolved:
-    - External reference sites.
     - Gallery photo crop ratios.
   layout:
     viewport-min: 320px
@@ -299,7 +298,9 @@ Record unresolved choices in `x-zsd.unresolved`.
 Every public page holds Lighthouse mobile ≥ 90 in each category, LCP ≤ 2.5 s, and JS ≤ 150 KB transferred, counting all the page load fetches.
 The `lighthouse` check enforces it on each PR against `lighthouserc.json` and blocks the merge.
 Check a new library, font, or effect against the budget before you add it.
-Load heavy code outside the initial JS: the hero tiers in ADR 0006 show how.
+Load heavy code outside the initial JS: the Motion Tiers in ADR 0006 and ADR 0012 show how.
+WebGL and animation libraries live only in the full layer: it loads after the first user input on the `full` tier, outside the page load and the Lighthouse run, at 30 KB gzip or less per chunk.
+The `lite` and `static` tiers stay complete without it.
 Prefer CSS and Web Animations to a motion library (ADR 0010).
 
 ## Colors
@@ -422,6 +423,8 @@ Use `tile` for rhombus decoration, the loader, the player button, and the menu a
 The logo uses `on-surface` through `currentColor`. Hide decorative tiles from assistive technology.
 
 The seven logo tiles move as one element between the hero, the header, and the menu.
+On the home page they fly from the hero into the header logo as the hero scrolls away, in every Motion Tier but `static`, where they stand in the header.
+A small `outline` tile follows a fine pointer beside the native cursor and turns `primary` over a link or button. Do not show it with reduced motion or a coarse pointer.
 
 ### Alert
 
@@ -433,8 +436,8 @@ Use `alert-error` when a task fails. State what failed and give a recovery actio
 - Do test real Kazakh, German, and Arabic text in narrow layouts.
 - Do not use rust for large fills or for body text in dark mode.
 - Do not mirror the logo, the hero, the music player, or code blocks.
-- Do not use a custom cursor or a smooth scroll library.
-- Do not add an animation library, WebGL, video, or a new font without checking the performance budget.
+- Do not replace the native cursor or add a smooth scroll library.
+- Do not add WebGL or an animation library outside the full layer (ADR 0012). Check video or a new font against the performance budget first.
 
 ## Motion
 
@@ -444,6 +447,7 @@ Use `x-zsd.motion.duration-fast` for hover and press and `x-zsd.motion.duration-
 Use `x-zsd.motion.duration-slow` for the menu tile layout and page transitions.
 
 Text moves up from under a mask in `duration-reveal`, `stagger-word` apart.
+Scroll may drive decor and tiles, never text. Use `animation-timeline` in `@supports`; without it, show the end state when the element enters the viewport.
 Horizontal motion goes in the reading direction, so the ar Lang inverts it.
 With reduced motion, change states immediately and use a fade for page transitions. Show the loader as static tiles with a text label.
 

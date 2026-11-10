@@ -1,6 +1,6 @@
 # 0005. Motion + View Transitions для анимаций
 
-- Статус: принято; библиотеку Motion заменил ADR-0010 (CSS-анимации), View Transitions в силе
+- Статус: принято; библиотеку Motion заменил ADR-0010 (CSS-анимации), View Transitions в силе; GSAP и WebGL регулирует ADR-0012
 - Дата: 2026-10-14
 
 ## Решение
