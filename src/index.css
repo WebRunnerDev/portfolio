@@ -755,9 +755,9 @@ html:active-view-transition-type(forward, back) {
   letter-spacing: var(--zsd-typography-display-lg-letter-spacing);
 }
 
-/* The `lite` Hero Tier: the logo tiles spread from the logo and gather back,
- * a wave from left to right; the rust copy on top lights up while they are
- * out. The spread is each tile's placement (`LogoTiles`): the keyframes start
+/* The hero at the `lite` Motion Tier: the logo tiles spread from the logo
+ * and gather back, a wave from left to right; the rust copy on top lights up
+ * while they are out. The spread is each tile's placement (`LogoTiles`): the keyframes start
  * from none and end on it, back and forth. `--hero-play` pauses them off
  * screen and on a hidden tab. Never mirrored. */
 @keyframes hero-breathe {

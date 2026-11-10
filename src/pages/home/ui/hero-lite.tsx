@@ -17,9 +17,10 @@ const PLACEMENTS: TilePlacement[] = spread(0.3).map((offset, i) => ({
   delay: START + waveStep[i] * WAVE_STEP,
 }))
 
-// The `lite` Hero Tier: a large logo at the end of the hero whose tiles
-// breathe out and back in a wave, lighting rust while out (index.css › lite
-// Hero Tier). CSS only; paused off screen and on a hidden tab.
+// The hero at the `lite` Motion Tier: a large logo at the end of the hero
+// whose tiles breathe out and back in a wave, lighting rust while out
+// (index.css › lite Motion Tier). CSS only; paused off screen and on a
+// hidden tab.
 export function HeroLite() {
   const { ref, playing } = usePlaying<HTMLDivElement>()
 
