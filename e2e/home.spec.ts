@@ -339,6 +339,83 @@ test("reduced motion shows the sections as they are", async ({ page }) => {
   )
 })
 
+// A chapter's rule opens with the scroll (issue #159): its hairline draws
+// from the start edge as the rule enters, the tile turns into place, and the
+// index rises from under its mask.
+const rule = (page: Page, id: string) =>
+  section(page, id).locator(".chapter-open")
+
+// The rule in the page's script (e2e has no DOM types).
+const RULE = (id: string) =>
+  `document.querySelector("[data-testid=home-${id}] .chapter-open")`
+
+// The hairline's computed style, read from its `::before`.
+const line = (page: Page, id: string) =>
+  page.evaluate<{ transform: string; origin: string }>(`(() => {
+    const style = getComputedStyle(${RULE(id)}, "::before")
+    return { transform: style.transform, origin: style.transformOrigin }
+  })()`)
+
+// Scrolls the rule's top to `fraction` of the viewport's height from its top.
+const placeRule = (page: Page, id: string, fraction: number) =>
+  page.evaluate(`scrollTo(0,
+    ${RULE(id)}.getBoundingClientRect().top + scrollY - innerHeight * ${fraction}
+  )`)
+
+const scaleX = (transform: string) =>
+  transform === "none" ? 1 : Number(transform.match(/matrix\(([^,]+)/)![1])
+
+for (const lang of ["en", "ar"]) {
+  test(`/${lang}/ draws a chapter's hairline from the reading start`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 800 })
+    await mockPublicApi(page)
+    await page.goto(`/${lang}`)
+    await expect(rule(page, "cv")).toBeAttached()
+    const { width } = (await rule(page, "cv").boundingBox())!
+
+    // Just in: the line has barely started.
+    await placeRule(page, "cv", 0.98)
+    await expect
+      .poll(async () => scaleX((await line(page, "cv")).transform))
+      .toBeLessThan(0.5)
+    // From the left in LTR, from the right in RTL.
+    const { origin } = await line(page, "cv")
+    expect(Number.parseFloat(origin)).toBeCloseTo(lang === "ar" ? width : 0, 0)
+
+    // Up the viewport: drawn whole, the tile turned, the index risen.
+    await placeRule(page, "cv", 0.3)
+    await expect
+      .poll(async () => scaleX((await line(page, "cv")).transform))
+      .toBe(1)
+    await expect(rule(page, "cv").locator(".chapter-tile")).toHaveCSS(
+      "transform",
+      /^matrix\(0\.707/
+    )
+    await expect(rule(page, "cv").locator(".chapter-index")).toHaveCSS(
+      "transform",
+      "none",
+      { pseudo: "before" }
+    )
+    await expect(rule(page, "cv")).toHaveCSS("opacity", "1")
+  })
+}
+
+test("reduced motion stands a chapter's rule as it is", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" })
+  await mockPublicApi(page)
+  await page.goto("/en")
+  await expect(rule(page, "cv")).toBeAttached()
+  await placeRule(page, "cv", 0.98)
+  expect((await line(page, "cv")).transform).toBe("none")
+  expect(
+    await rule(page, "cv").evaluate(
+      (element) => element.getAnimations({ subtree: true }).length
+    )
+  ).toBe(0)
+})
+
 test("/ar/ mirrors the sections", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 })
   await mockPublicApi(page)
