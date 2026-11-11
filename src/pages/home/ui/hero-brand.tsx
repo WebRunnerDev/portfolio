@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react"
+import type { CSSProperties, Ref } from "react"
 
 import { STAGGER } from "@/shared/lib/motion"
 import { LogoTiles, type TilePlacement } from "@/shared/ui/logo"
@@ -22,8 +22,9 @@ const delay = (seconds: number) =>
 // "Web" / "Runner" below `lg`, each word rising from under a mask in CSS, so
 // it paints before any script. The logo tiles gather at its end, at the
 // height of the capitals; their place follows the Direction, the brand and
-// the logo stay LTR. Screen readers get "WebRunner" in one piece.
-export function HeroBrand() {
+// the logo stay LTR. Screen readers get "WebRunner" in one piece. `tiles`
+// takes the logo for the flight into the header (@/shared/lib/logo-flight).
+export function HeroBrand({ tiles }: { tiles?: Ref<SVGSVGElement> }) {
   return (
     <h1 className="flex items-start gap-[0.12em] text-hero-brand">
       <span className="sr-only">WebRunner</span>
@@ -43,9 +44,10 @@ export function HeroBrand() {
         ))}
       </span>
       <LogoTiles
+        ref={tiles}
         placements={GATHER}
         tileClassName="hero-gather"
-        className="mt-[0.06em] size-[0.62em] shrink-0 overflow-visible"
+        className="logo-flight-from mt-[0.06em] size-[0.62em] shrink-0 overflow-visible"
       />
     </h1>
   )

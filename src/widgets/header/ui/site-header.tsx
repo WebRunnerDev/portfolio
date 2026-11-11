@@ -6,7 +6,7 @@ import { ThemeSwitcher } from "@/features/theme-switcher"
 import { isHome, SECTIONS } from "@/shared/config"
 import { useLang, useT } from "@/shared/i18n"
 import { STAGGER } from "@/shared/lib/motion"
-import { BrandLockup } from "@/shared/ui/logo"
+import { BrandLockup, Logo } from "@/shared/ui/logo"
 
 const FOCUS_RING =
   "outline-offset-2 focus-visible:outline-2 focus-visible:outline-ring"
@@ -53,7 +53,15 @@ export function SiteHeader({ menu }: { menu: ReactNode }) {
           aria-label={`WebRunner, ${t("nav.home")}`}
           className={`shrink-0 ${FOCUS_RING}`}
         >
-          <BrandLockup />
+          {/* The slot the hero's tiles fly into on the home page; the logo
+              in it moves (@/shared/lib/logo-flight). */}
+          <BrandLockup
+            logo={
+              <span className="size-6 shrink-0">
+                <Logo className="logo-flight-to size-full" />
+              </span>
+            }
+          />
         </Link>
         {current && (
           <span

@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router"
 
 import type { Profile } from "@contracts/api/public"
 import { useLang, useT } from "@/shared/i18n"
+import { useLogoFlight } from "@/shared/lib/logo-flight"
 import { STAGGER } from "@/shared/lib/motion"
 import type { MotionTier } from "@/shared/lib/motion-tier"
 import { fallbackLang } from "@/shared/ui/fallback-notice"
@@ -73,6 +74,7 @@ function HeroSubtitle({ profile }: { profile: Promise<HeroProfile | null> }) {
 // Motion Tier.
 // One viewport tall less the header. The effect spans the whole hero up to
 // the viewport's edges and is never mirrored; the text follows the Direction.
+// Its logo tiles fly into the header's as it scrolls away, but at `static`.
 // `onFullFail` is called when `full` can't hold on this device after all.
 export function Hero({
   tier,
@@ -85,17 +87,19 @@ export function Hero({
 }) {
   const lang = useLang()
   const t = useT()
+  const { heroRef, tilesRef } = useLogoFlight(tier !== "static")
 
   return (
     <section
+      ref={heroRef}
       data-tier={tier}
-      className="relative isolate flex min-h-[max(480px,calc(100svh-var(--zsd-x-zsd-layout-header-height)-var(--zsd-x-zsd-border-width-default)))] overflow-hidden"
+      className={`${tier === "static" ? "" : "logo-flight-hero"} relative isolate flex min-h-[max(480px,calc(100svh-var(--zsd-x-zsd-layout-header-height)-var(--zsd-x-zsd-border-width-default)))] overflow-hidden`}
     >
       <div aria-hidden="true" dir="ltr" className="absolute inset-0 -z-10">
         <HeroEffect tier={tier} onFullFail={onFullFail} />
       </div>
       <div className="mx-auto flex w-full max-w-(--zsd-x-zsd-layout-content-max) flex-col justify-center px-zsd-lg py-zsd-section md:px-zsd-xxl">
-        <HeroBrand />
+        <HeroBrand tiles={tilesRef} />
         <p
           style={delay(SUBTITLE_START)}
           className={`mt-zsd-xl min-h-[3lh] max-w-(--zsd-x-zsd-layout-prose-max) font-zsd-body-lg text-zsd-body-lg text-balance text-zsd-on-surface-muted ${CONTENT_START}`}

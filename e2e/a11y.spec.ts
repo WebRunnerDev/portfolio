@@ -25,10 +25,13 @@ const TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]
 async function open(page: Page, path: string) {
   await page.goto(path)
   await expect(page.locator("main h1").first()).toBeVisible()
-  // Entrances (ADR-0005) run before axe reads the colours.
+  // Entrances (ADR-0005) run before axe reads the colours. Those on the
+  // document's timeline only: one driven by the scroll (the logo flight)
+  // finishes only at the end of its range.
   await page.evaluate(
     `Promise.allSettled(document.getAnimations()
-      .filter((a) => a.effect?.getTiming().iterations !== Infinity)
+      .filter((a) => a.timeline === document.timeline &&
+        a.effect?.getTiming().iterations !== Infinity)
       .map((a) => a.finished))`
   )
 }

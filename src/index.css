@@ -742,6 +742,86 @@ html:active-view-transition-type(forward, back) {
   }
 }
 
+/* DESIGN.md › Tile, docs/design-brief.md › Хедер: the logo flight
+ * (`useLogoFlight` in @/shared/lib/logo-flight). The hero
+ * (`logo-flight-hero`, not at `static`) lends its view timeline to the page;
+ * over its `exit` the header logo (`logo-flight-to`) flies from over the
+ * hero's tiles (`logo-flight-from`) into its slot on the tile curve. Step
+ * curves swap the two as the flight starts, so one set of tiles is on screen.
+ * Without `timeline-scope`, an IntersectionObserver flips the two end states
+ * (`data-logo-flight`) and a transition carries the tiles between them.
+ * Pages without the hero, and reduced motion, keep the header logo as is. */
+@keyframes logo-flight-move {
+  from {
+    transform: translate(
+        calc(var(--logo-flight-x, 0) * 1px),
+        calc(var(--logo-flight-y, 0) * 1px)
+      )
+      scale(var(--logo-flight-scale, 1));
+  }
+}
+
+@keyframes logo-flight-show {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes logo-flight-hide {
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :root:has(.logo-flight-hero) .logo-flight-to {
+    transform-origin: 0 0;
+  }
+
+  @supports (timeline-scope: --logo-flight) {
+    :root:has(.logo-flight-hero) {
+      timeline-scope: --logo-flight;
+    }
+    .logo-flight-hero {
+      view-timeline: --logo-flight block;
+    }
+    /* The timeline sees the viewport below the header (`scroll-padding-top`):
+     * at the top of the page the hero's `exit` is at 0%, so the swap waits
+     * 1px for the first scroll. */
+    :root:has(.logo-flight-hero) .logo-flight-to {
+      animation:
+        logo-flight-move var(--zsd-x-zsd-motion-easing-layout) both,
+        logo-flight-show steps(1, jump-start) both;
+      animation-timeline: --logo-flight;
+      animation-range:
+        exit,
+        exit 1px exit 100%;
+    }
+    .logo-flight-hero .logo-flight-from {
+      animation: logo-flight-hide steps(1, jump-start) both;
+      animation-timeline: --logo-flight;
+      animation-range: exit 1px exit 100%;
+    }
+  }
+
+  @supports not (timeline-scope: --logo-flight) {
+    :root:has(.logo-flight-hero) .logo-flight-to {
+      transition-property: transform, opacity;
+      transition-duration: var(--zsd-x-zsd-motion-duration-slow);
+      transition-timing-function: var(--zsd-x-zsd-motion-easing-layout);
+    }
+    :root:has(.logo-flight-hero):not([data-logo-flight="header"])
+      .logo-flight-to {
+      opacity: 0;
+      transform: translate(
+          calc(var(--logo-flight-x, 0) * 1px),
+          calc(var(--logo-flight-y, 0) * 1px)
+        )
+        scale(var(--logo-flight-scale, 1));
+    }
+  }
+}
+
 /* The brand: `display-lg` on `xl`, down to `display-sm` at 320px. */
 @utility text-hero-brand {
   font-family: var(--zsd-typography-display-lg-font-family);

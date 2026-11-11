@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test"
 
+import { expectTakeOff, headerLogo, scrollPastHero } from "./logo-flight"
+
 // ADR-0007: the header and menu mirror in RTL; the logo and code don't.
 // Below `lg`, where the menu is full screen with a bar of its own (the panel
 // above it: e2e/menu.spec.ts).
@@ -27,7 +29,7 @@ test("/ar/ mirrors the header and menu but not the logo", async ({ page }) => {
   // The lockup keeps its LTR order: logo, then the name.
   const brand = page.getByRole("banner").getByTestId("brand")
   await expect(brand).toHaveCSS("direction", "ltr")
-  const nameBox = (await brand.locator("span").boundingBox())!
+  const nameBox = (await brand.locator(":scope > span").last().boundingBox())!
   expect(logoBox.x).toBeLessThan(nameBox.x)
   await expect(logo).toHaveCSS("transform", "none")
 
@@ -63,6 +65,38 @@ test("/en/ keeps the LTR header", async ({ page }) => {
     .first()
     .locator('a[aria-current="page"]')
   await expect(active).toHaveCSS("border-left-width", "2px")
+})
+
+// Issue #158: the tiles' place mirrors, their layout doesn't. They fly from
+// the brand's end on the left to the header's start on the right, unflipped.
+test("on /ar/ the logo flies from the left into the right", async ({
+  page,
+}) => {
+  await page.goto("/ar")
+  const { tiles, logo } = await expectTakeOff(page)
+  const { menuBox } = await header(page)
+  expect(tiles.x + tiles.width).toBeLessThan(400)
+  // Scaled up, not flipped: matrix(a, 0, 0, d, …) with a = d > 1.
+  const transform = await headerLogo(page).evaluate(
+    (svg) =>
+      (
+        svg.ownerDocument.defaultView as unknown as {
+          getComputedStyle(el: unknown): { transform: string }
+        }
+      ).getComputedStyle(svg).transform
+  )
+  const [a, , , d] = transform.slice(7, -1).split(",").map(Number)
+  expect(a).toBeGreaterThan(1)
+  expect(d).toBe(a)
+
+  await scrollPastHero(page)
+  await expect(headerLogo(page)).toHaveCSS(
+    "transform",
+    "matrix(1, 0, 0, 1, 0, 0)"
+  )
+  const landed = (await headerLogo(page).boundingBox())!
+  expect(landed.x).toBeGreaterThan(logo.x)
+  expect(landed.x).toBeGreaterThan(menuBox.x)
 })
 
 test("code blocks stay LTR on /ar/", async ({ page }) => {
