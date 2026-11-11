@@ -195,10 +195,13 @@ export function castLattice(
     dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR)
     const w = Math.round(width * dpr)
     const h = Math.round(height * dpr)
-    // Setting the size, even the same, clears the canvas.
-    if (w === canvas.width && h === canvas.height) return
-    canvas.width = w
-    canvas.height = h
+    // Setting the size, even the same, clears the canvas. Laying goes on
+    // anyway: under StrictMode's rerun a new scene finds the canvas already
+    // sized by the one before it, with no lattice of its own yet.
+    if (w !== canvas.width || h !== canvas.height) {
+      canvas.width = w
+      canvas.height = h
+    }
     gl.viewport(0, 0, w, h)
     void lay()
     // A paused scene draws again at once, with the old lattice until the
