@@ -26,12 +26,14 @@ export const CONTENT_START =
 // A section of the home page below the hero (docs/design-brief.md › Ритм
 // главной), opened as a chapter: a hairline across the content box with a
 // rust tile and the index in `label-mono` on it (`chapter-open` in
-// index.css: they open with the scroll), then a `headline-md` title
-// rising word by word, the content, and one link to its part of the site at
-// the end, as a `button-secondary` with an arrow, so it reads as the way on.
-// From `lg` the title holds the first quarter and stays in view under the
-// header while its section scrolls by; the content takes the other three
-// quarters, on the line of the hero's subtitle. A `wide` section (the Gallery
+// index.css: they open with the scroll), then the index again as a large
+// `outline-muted` figure (`chapter-numeral`, decoration: it rises with the
+// rule) over a `headline-lg` title rising word by word, the content, and one
+// link to its part of the site at the end, as a `button-secondary` with an
+// arrow, so it reads as the way on. From `lg` the figure and the title hold
+// the first quarter and stay in view under the header while their section
+// scrolls by; the content takes the other three quarters, on the line of the
+// hero's subtitle. A `wide` section (the Gallery
 // banner) keeps the title above and its content across the whole box, for
 // the airy beat of the rhythm. The index is a CSS counter on the sections
 // actually shown (the hero is 01), so a hidden empty section leaves no gap.
@@ -62,7 +64,7 @@ export function HomeSection({
     <section
       data-testid={`home-${id}`}
       aria-labelledby={`home-${id}-title`}
-      className={cn("[counter-increment:home-section]", className)}
+      className={cn("chapter [counter-increment:home-section]", className)}
     >
       <div className={CONTENT}>
         <Reveal
@@ -81,11 +83,12 @@ export function HomeSection({
                 "lg:sticky lg:top-[calc(var(--zsd-x-zsd-layout-header-height)+var(--zsd-spacing-xl))] lg:self-start"
             )}
           >
+            <span aria-hidden="true" className="mb-zsd-md chapter-numeral" />
             <RevealText
               as="h2"
               text={title}
               delay={0.1}
-              className="font-heading text-zsd-headline-md break-words hyphens-auto text-zsd-on-surface"
+              className="font-heading text-zsd-headline-lg break-words hyphens-auto text-zsd-on-surface [&:lang(ar)]:tracking-normal"
             />
           </div>
           <div className={cn(!wide && "lg:[&>*:first-child]:mt-0")}>
