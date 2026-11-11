@@ -909,6 +909,52 @@ html:active-view-transition-type(forward, back) {
   }
 }
 
+/* › Арт-дирекция этапа 7 › База, п. 3: the chapter's index again as a large
+ * Tektur figure over its title, `display-sm` and from `lg` up to
+ * `display-md` at the content box's full width; `outline-muted`, decoration
+ * (the label on the rule says it). The same counter, so the digits are
+ * Western in every Lang; tracking 0 in Arabic. A mask: the figure rises from
+ * under it together with the rule's Reveal (`chapter` on the section), on
+ * the timeline or not; without `:has()`, reduced motion or once the Reveal
+ * has stalled, it just stands. */
+@utility chapter-numeral {
+  display: block;
+  overflow: hidden;
+  font-family: var(--zsd-typography-display-md-font-family);
+  font-size: var(--zsd-typography-display-sm-font-size);
+  font-weight: var(--zsd-typography-display-md-font-weight);
+  line-height: var(--zsd-typography-display-md-line-height);
+  letter-spacing: var(--zsd-typography-display-md-letter-spacing);
+  color: var(--zsd-colors-outline-muted);
+  &:lang(ar) {
+    letter-spacing: 0;
+  }
+  /* From 72px at `lg` (1024px) to 120px where the content box stops
+   * growing (`content-max` and the `xxl` padding: 1264px). */
+  @media (width >= 64rem) {
+    font-size: clamp(
+      var(--zsd-typography-display-sm-font-size),
+      20vw - 132.8px,
+      var(--zsd-typography-display-md-font-size)
+    );
+  }
+  &::before {
+    content: counter(home-section, decimal-leading-zero);
+    display: block;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .chapter:has(.chapter-open.reveal-out) .chapter-numeral::before {
+    transform: translateY(120%);
+  }
+  .chapter:has(.chapter-open.reveal-in) .chapter-numeral::before {
+    animation: reveal-rise var(--zsd-x-zsd-motion-duration-reveal)
+      var(--zsd-x-zsd-motion-easing-enter) var(--zsd-x-zsd-motion-stagger-item)
+      backwards;
+  }
+}
+
 @keyframes chapter-line {
   from {
     transform: scaleX(0);

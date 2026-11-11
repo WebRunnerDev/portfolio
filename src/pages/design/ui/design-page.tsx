@@ -57,6 +57,11 @@ const COLOR_VARS = COLOR_TOKENS.map(([t]) => `--zsd-colors-${t}`)
 
 const TYPE_TOKENS = [
   ["display-lg", "font-zsd-display-lg text-zsd-display-lg", "Hero brand, once"],
+  [
+    "display-md",
+    "font-zsd-display-md text-zsd-display-md text-zsd-outline-muted",
+    "Chapter index, home",
+  ],
   ["headline-lg", "font-zsd-headline-lg text-zsd-headline-lg", "Page title"],
   ["headline-md", "font-zsd-headline-md text-zsd-headline-md", "Section title"],
   ["headline-sm", "font-zsd-headline-sm text-zsd-headline-sm", "Card title"],
@@ -343,7 +348,11 @@ function TypographySection() {
               </p>
             </div>
             <p className={cn(className, "min-w-0 wrap-break-word")}>
-              {token === "display-lg" ? "WebRunner" : SAMPLES.en}
+              {token === "display-lg"
+                ? "WebRunner"
+                : token === "display-md"
+                  ? "02"
+                  : SAMPLES.en}
             </p>
           </li>
         ))}

@@ -135,6 +135,12 @@ typography:
     fontWeight: 800
     lineHeight: 0.9
     letterSpacing: -0.04em
+  display-md:
+    fontFamily: "Tektur Variable, Readex Pro Variable, system-ui, sans-serif"
+    fontSize: 120px
+    fontWeight: 800
+    lineHeight: 0.9
+    letterSpacing: -0.03em
   display-sm:
     fontFamily: "Tektur Variable, Readex Pro Variable, system-ui, sans-serif"
     fontSize: 72px
@@ -336,8 +342,9 @@ Each family contains Kazakh Cyrillic and Latin diacritics.
 The browser loads Readex Pro only for Arabic text.
 
 - `display-lg`: Use for the brand name in the hero, one time on the home page.
+- `display-md`: Use for the chapter index on the home page from `lg`. Below `lg`, it is `display-sm`.
 - `display-sm`: Use for the hero brand below `lg` and in the footer.
-- `headline-lg`: Use for the page title. Use one page title in each view.
+- `headline-lg`: Use for the page title and the chapter titles on the home page. Use one page title in each view.
 - `headline-md`: Use for section titles.
 - `headline-sm`: Use for card titles and dialog titles.
 - `body-lg`: Use for the hero subtitle and the intro paragraph of a post.
@@ -349,6 +356,7 @@ The browser loads Readex Pro only for Arabic text.
 
 Below `md`, use `headline-md` for page titles. Below `lg`, break the hero brand by hand into "Web" and "Runner".
 Arabic text has no negative letter spacing.
+The chapter index is `outline-muted` decoration, and assistive technology does not get it. It uses Western digits in each Lang.
 
 Limit prose lines to `x-zsd.layout.prose-max`. Wrap long words and URLs.
 

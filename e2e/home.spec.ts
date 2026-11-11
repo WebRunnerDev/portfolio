@@ -416,6 +416,74 @@ test("reduced motion stands a chapter's rule as it is", async ({ page }) => {
   ).toBe(0)
 })
 
+// A chapter's index again as a large figure over its `headline-lg` title
+// (issue #166): decoration, sticky with the title from `lg`, `display-sm`
+// below it and up to `display-md` where the content box stops growing.
+const numeral = (page: Page, id: string) =>
+  section(page, id).locator(".chapter-numeral")
+
+for (const [width, size] of [
+  [360, "72px"],
+  [1024, "72px"],
+  [1280, "120px"],
+] as const) {
+  test(`a chapter's figure is ${size} at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 800 })
+    await mockPublicApi(page)
+    await page.goto("/en")
+    await expect(numeral(page, "cv")).toHaveAttribute("aria-hidden", "true")
+    await expect(numeral(page, "cv")).toHaveCSS("font-size", size)
+    await expect(
+      section(page, "cv").getByRole("heading", { level: 2 })
+    ).toHaveCSS("font-size", "40px")
+    // It goes with the title: in its sticky box from `lg`, above it below.
+    await expect(numeral(page, "cv").locator("..")).toHaveCSS(
+      "position",
+      width >= 1024 ? "sticky" : "static"
+    )
+  })
+}
+
+test("/ar/ sets a chapter's figure and title without tracking", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await mockPublicApi(page)
+  await page.goto("/ar")
+  // Chrome reports a zero letter-spacing as `normal`.
+  await expect(numeral(page, "cv")).toHaveCSS("letter-spacing", "normal")
+  await expect(
+    section(page, "cv").getByRole("heading", { level: 2 })
+  ).toHaveCSS("letter-spacing", "normal")
+  await expectNoPageOverflow(page)
+})
+
+test("a chapter's figure rises with its rule", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await mockPublicApi(page)
+  await page.goto("/en")
+  await expect(rule(page, "projects")).toBeAttached()
+  // Under its mask until the rule is in view.
+  await expect(numeral(page, "projects")).toHaveCSS(
+    "transform",
+    /^matrix\(1, 0, 0, 1, 0, [1-9]/,
+    { pseudo: "before" }
+  )
+  await placeRule(page, "projects", 0.3)
+  await expect(numeral(page, "projects")).toHaveCSS("transform", "none", {
+    pseudo: "before",
+  })
+})
+
+test("reduced motion stands a chapter's figure as it is", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" })
+  await mockPublicApi(page)
+  await page.goto("/en")
+  await expect(numeral(page, "projects")).toHaveCSS("transform", "none", {
+    pseudo: "before",
+  })
+})
+
 test("/ar/ mirrors the sections", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 })
   await mockPublicApi(page)
@@ -450,4 +518,18 @@ test("the sections don't scroll the page sideways at 360px", async ({
   }
   await expect(section(page, "gallery").locator("img")).toHaveCount(3)
   await expectNoPageOverflow(page)
+})
+
+// The chapter titles are `headline-lg` over a 72px figure: the long kk and
+// de words wrap at the narrowest viewport, nothing runs off the page.
+test("the chapters don't scroll the page sideways at 320px in any Lang", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 640 })
+  await mockPublicApi(page)
+  for (const lang of ["en", "ru", "kk", "de", "es", "ar"]) {
+    await page.goto(`/${lang}`)
+    await expect(section(page, "posts")).toBeAttached()
+    await expectNoPageOverflow(page, `/${lang}`)
+  }
 })

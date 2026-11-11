@@ -34,6 +34,11 @@
   --zsd-typography-display-lg-font-weight: 800;
   --zsd-typography-display-lg-line-height: 0.9;
   --zsd-typography-display-lg-letter-spacing: -0.04em;
+  --zsd-typography-display-md-font-family: Tektur Variable, Readex Pro Variable, system-ui, sans-serif;
+  --zsd-typography-display-md-font-size: 120px;
+  --zsd-typography-display-md-font-weight: 800;
+  --zsd-typography-display-md-line-height: 0.9;
+  --zsd-typography-display-md-letter-spacing: -0.03em;
   --zsd-typography-display-sm-font-family: Tektur Variable, Readex Pro Variable, system-ui, sans-serif;
   --zsd-typography-display-sm-font-size: 72px;
   --zsd-typography-display-sm-font-weight: 800;
@@ -274,6 +279,11 @@
   --text-zsd-display-lg--font-weight: var(--zsd-typography-display-lg-font-weight);
   --text-zsd-display-lg--line-height: var(--zsd-typography-display-lg-line-height);
   --text-zsd-display-lg--letter-spacing: var(--zsd-typography-display-lg-letter-spacing);
+  --font-zsd-display-md: var(--zsd-typography-display-md-font-family);
+  --text-zsd-display-md: var(--zsd-typography-display-md-font-size);
+  --text-zsd-display-md--font-weight: var(--zsd-typography-display-md-font-weight);
+  --text-zsd-display-md--line-height: var(--zsd-typography-display-md-line-height);
+  --text-zsd-display-md--letter-spacing: var(--zsd-typography-display-md-letter-spacing);
   --font-zsd-display-sm: var(--zsd-typography-display-sm-font-family);
   --text-zsd-display-sm: var(--zsd-typography-display-sm-font-size);
   --text-zsd-display-sm--font-weight: var(--zsd-typography-display-sm-font-weight);
