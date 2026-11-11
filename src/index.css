@@ -778,6 +778,16 @@ html:active-view-transition-type(forward, back) {
   }
 }
 
+/* The header's name waits under its mask, at the logo's side, and comes out
+ * as the logo lands: no point of the flight puts the logo over it. The
+ * hero's brand says the name meanwhile. A keyboard focus shows it at once. */
+@keyframes logo-flight-name {
+  from {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   :root:has(.logo-flight-hero) .logo-flight-to {
     transform-origin: 0 0;
@@ -815,6 +825,11 @@ html:active-view-transition-type(forward, back) {
       animation-range: exit max(1px, var(--logo-flight-rise, 0) * 100%) exit
         100%;
     }
+    :root:has(.logo-flight-hero) .logo-flight-name {
+      animation: logo-flight-name var(--zsd-x-zsd-motion-easing-enter) both;
+      animation-timeline: --logo-flight;
+      animation-range: exit 85% exit 100%;
+    }
   }
 
   @supports not (timeline-scope: --logo-flight) {
@@ -832,6 +847,22 @@ html:active-view-transition-type(forward, back) {
         )
         scale(var(--logo-flight-scale, 1));
     }
+    :root:has(.logo-flight-hero) .logo-flight-name {
+      transition-property: transform, opacity;
+      transition-duration: var(--zsd-x-zsd-motion-duration-slow);
+      transition-timing-function: var(--zsd-x-zsd-motion-easing-enter);
+    }
+    :root:has(.logo-flight-hero):not([data-logo-flight="header"])
+      .logo-flight-name {
+      opacity: 0;
+      transform: translateX(-100%);
+    }
+  }
+
+  :root:has(.logo-flight-hero) :focus-visible .logo-flight-name {
+    animation: none;
+    opacity: 1;
+    transform: none;
   }
 }
 

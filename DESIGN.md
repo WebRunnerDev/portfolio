@@ -424,6 +424,7 @@ The logo uses `on-surface` through `currentColor`. Hide decorative tiles from as
 
 The seven logo tiles move as one element between the hero, the header, and the menu.
 On the home page they fly from the hero into the header logo as the hero scrolls away, in every Motion Tier but `static`, where they stand in the header.
+The header's name waits until the logo lands and comes out from under it, so the logo never passes over the name. The menu's tiles leave from the logo where it shows, in flight or in the hero.
 A small `outline` tile follows a fine pointer beside the native cursor and turns `primary` over a link or button. Do not show it with reduced motion or a coarse pointer.
 
 ### Alert
