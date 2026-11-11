@@ -107,6 +107,8 @@ test("the home page header logo fills once the hero has gone", async ({
     .locator(":scope > span")
     .last()
   const before = (await name.boundingBox())!
+  // The hero's brand says the name: the header's waits under its mask.
+  await expect(name.locator("span")).toHaveCSS("opacity", "0")
 
   await scrollPastHero(page)
   await expect(headerLogo(page)).toHaveCSS("opacity", "1")
@@ -116,11 +118,50 @@ test("the home page header logo fills once the hero has gone", async ({
   )
   await expect(heroTiles(page)).toHaveCSS("opacity", "0")
   expect(await name.boundingBox()).toEqual(before)
+  await expect(name.locator("span")).toHaveCSS("opacity", "1")
+  await expect(name.locator("span")).toHaveCSS(
+    "transform",
+    "matrix(1, 0, 0, 1, 0, 0)"
+  )
 
   // And back into the hero.
   await page.evaluate("scrollTo(0, 0)")
   await expect(headerLogo(page)).toHaveCSS("opacity", "0")
   await expect(heroTiles(page)).toHaveCSS("opacity", "1")
+})
+
+// The logo never stops over the name: the name comes out from under it only
+// as it lands, and a keyboard focus on the home link shows it at once.
+test("the header's name waits for the logo to land", async ({ page }) => {
+  await page.goto("/en")
+  await expect(heroTiles(page)).toHaveCSS("opacity", "1")
+  const name = page
+    .getByRole("banner")
+    .getByTestId("brand")
+    .locator(":scope > span")
+    .last()
+    .locator("span")
+  // Halfway through the hero's exit the logo is over the header's start.
+  await page.evaluate(`
+    document.body.style.paddingBottom = "200vh"
+    scrollTo(0, document.querySelector("section[data-tier]").getBoundingClientRect().height / 2)
+  `)
+  await expect(headerLogo(page)).toHaveCSS("opacity", "1")
+  await expect(name).toHaveCSS("opacity", "0")
+
+  const home = page
+    .getByRole("banner")
+    .getByRole("link", { name: "WebRunner, Home" })
+  for (
+    let i = 0;
+    i < 3 && !(await home.evaluate((a) => a.matches(":focus")));
+    i++
+  ) {
+    await page.keyboard.press("Tab")
+  }
+  await expect(home).toBeFocused()
+  await expect(name).toHaveCSS("opacity", "1")
+  await expect(name).toHaveCSS("transform", "none")
 })
 
 test("the header logo takes off from over the hero's tiles", async ({

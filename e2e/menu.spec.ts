@@ -150,6 +150,53 @@ test("on /ar/ the layout mirrors, the tiles don't", async ({ page }) => {
   expect((await close.boundingBox())!.x).toBeLessThan(200)
 })
 
+// On the home page the header logo may be on its way from the hero: the
+// tiles leave from where it is, not out of its empty slot.
+test("the tiles leave the logo where it shows", async ({ page }) => {
+  await page.goto("/en")
+  const header = page
+    .getByRole("banner")
+    .getByRole("img", { name: "WebRunner" })
+  await expect(header).toHaveCSS("opacity", "0")
+  await page.evaluate("document.fonts.ready")
+  await trigger(page).hover()
+  await expect(trigger(page)).toHaveAttribute("aria-haspopup", "dialog")
+  await page.evaluate(`
+    document.body.style.paddingBottom = "200vh"
+    scrollTo(0, document.querySelector("section[data-tier]").getBoundingClientRect().height / 2)
+  `)
+  await expect(header).toHaveCSS("opacity", "1")
+  const logo = (await header.boundingBox())!
+  // The set where its opening starts.
+  const start = (await trigger(page).evaluate(async (element) => {
+    const button = element as unknown as {
+      click(): void
+      ownerDocument: {
+        querySelector(selector: string): {
+          getAnimations(): { pause(): void; currentTime: number }[]
+          getBoundingClientRect(): { x: number; y: number; width: number }
+        }
+        defaultView: { requestAnimationFrame(callback: () => void): void }
+      }
+    }
+    const { ownerDocument } = button
+    button.click()
+    await new Promise<void>((resolve) =>
+      ownerDocument.defaultView.requestAnimationFrame(resolve)
+    )
+    const set = ownerDocument.querySelector('[data-testid="menu-tiles"]')
+    for (const animation of set.getAnimations()) {
+      animation.pause()
+      animation.currentTime = 0
+    }
+    const { x, y, width } = set.getBoundingClientRect()
+    return { x, y, width }
+  })) as { x: number; y: number; width: number }
+  for (const key of ["x", "y", "width"] as const) {
+    expect(Math.abs(start[key] - logo[key])).toBeLessThanOrEqual(2)
+  }
+})
+
 test("the panel hangs from the header and leaves the page in use", async ({
   page,
 }) => {
