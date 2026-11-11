@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest"
 import { CELL, HALF, lattice, LIFT, PRESS, pressure, RADIUS } from "./lattice"
 
 // Lays a lattice to the end, counting its slices.
-function lay(width: number, height: number) {
-  const cells = lattice(width, height)
+function lay(width: number, height: number, reach?: number) {
+  const cells = lattice(width, height, reach)
   let slices = 0
   let next = cells.next()
   while (!next.done) {
@@ -55,6 +55,13 @@ describe("lattice", () => {
     expect(Math.max(...xs)).toBeGreaterThan(480)
     // One cell per STEP² / 2 of area, give or take the bleed.
     expect(cells.length / CELL).toBeGreaterThan((480 * 240) / 1152)
+  })
+
+  it("reaches past the sides for the pitched field", () => {
+    const { cells } = lay(480, 240, 100)
+    const xs = [...cells].filter((_, k) => k % CELL === 0)
+    expect(Math.min(...xs)).toBeLessThanOrEqual(-100)
+    expect(Math.max(...xs)).toBeGreaterThanOrEqual(580)
   })
 
   it("is laid in slices, the same each time", () => {

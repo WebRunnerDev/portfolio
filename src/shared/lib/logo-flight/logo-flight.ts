@@ -9,27 +9,63 @@ import { useEffect, useRef } from "react"
 // - `logo-flight-hero` on the hero (the hook's `heroRef`), but at `static`;
 // - `logo-flight-from` on its tiles (`tilesRef`);
 // - `logo-flight-to` on the header logo, alone in a slot of its size: the
-//   slot's box is measured, the logo in it moves.
+//   slot's box is measured, the logo in it moves;
+// - `data-rise` in the hero, at `full`, once the Cast Lattice's copies rise
+//   into the tiles: the flight starts `--logo-flight-rise` into the exit.
 // A class, not an import: the header stays out of the home page's chunk.
 
 type Box = Pick<DOMRect, "left" | "top" | "bottom" | "width">
+type View = Pick<Box, "top" | "bottom">
+
+// The hero's view timeline sees the viewport below the header (`view`:
+// `scroll-padding-top` to the bottom). How far the hero still is from
+// `exit 0%`: its top from the header, or its bottom from the viewport's
+// bottom when it is taller; negative once it is leaving.
+const toExit = (hero: Box, view: View) =>
+  Math.max(hero.top - view.top, hero.bottom - view.bottom)
+
+// The length of the hero's `exit`: its height, or the view's when it is
+// taller.
+const exitLength = (hero: Box, view: View) =>
+  Math.min(hero.bottom - hero.top, view.bottom - view.top)
+
+// How far into its `exit` the hero is, 0 to 1: the progress of the
+// `exit` range of its view timeline, read from boxes.
+export function exitProgress(hero: Box, view: View) {
+  const length = exitLength(hero, view)
+  if (length <= 0) return 0
+  return Math.min(1, Math.max(0, -toExit(hero, view) / length))
+}
+
+// At `full`, the Cast Lattice lifts copies of the tiles out of its field
+// into the hero's tiles first, and the flight waits for them
+// (docs/design-brief.md › Cast Lattice): the share of the `exit` they take.
+// RISE at most, and less when the tiles are near the header, so they keep
+// a quarter of their way to it and never go under it before they fly.
+const RISE = 0.3
+const KEEP = 0.75
+export function riseShare(tiles: Box, hero: Box, view: View) {
+  const length = exitLength(hero, view)
+  if (length <= 0) return 0
+  const way = tiles.top - toExit(hero, view) - view.top
+  return Math.min(RISE, Math.max(0, (KEEP * way) / length))
+}
 
 // Where the header logo starts, from its slot, and how much larger: over the
-// hero's tiles as they are when the flight starts, at `exit 0%` of the hero's
-// view timeline. That timeline sees the viewport below the header (`view`:
-// `scroll-padding-top` to the bottom), so the flight starts once the hero's
-// top reaches the header, or its bottom the viewport's bottom when it is
+// hero's tiles as they are when the flight starts, `at` into the hero's
+// `exit` (`exit 0%` by default). The flight starts once the hero's top
+// reaches the header, or its bottom the viewport's bottom when it is
 // taller. Boxes from getBoundingClientRect, at any scroll.
 export function flightStart(
   tiles: Box,
   slot: Box,
   hero: Box,
-  view: Pick<Box, "top" | "bottom">
+  view: View,
+  at = 0
 ) {
-  const scrolled = Math.max(hero.top - view.top, hero.bottom - view.bottom)
   return {
     x: tiles.left - slot.left,
-    y: tiles.top - scrolled - slot.top,
+    y: tiles.top - toExit(hero, view) - at * exitLength(hero, view) - slot.top,
     scale: tiles.width / slot.width,
   }
 }
@@ -51,14 +87,19 @@ export function useLogoFlight(on: boolean) {
     const inset = () => parseFloat(getComputedStyle(root).scrollPaddingTop) || 0
 
     const measure = () => {
-      const start = flightStart(
-        from.getBoundingClientRect(),
-        slot.getBoundingClientRect(),
-        section.getBoundingClientRect(),
-        { top: inset(), bottom: root.clientHeight }
-      )
-      // Plain numbers: `index.css` adds the units.
-      for (const [key, value] of Object.entries(start)) {
+      const tiles = from.getBoundingClientRect()
+      const hero = section.getBoundingClientRect()
+      const box = slot.getBoundingClientRect()
+      const view = { top: inset(), bottom: root.clientHeight }
+      const rise = riseShare(tiles, hero, view)
+      // Plain numbers: `index.css` adds the units. The start after the
+      // Cast Lattice's rise is `rise`, `rise-y`.
+      const values = {
+        ...flightStart(tiles, box, hero, view),
+        rise,
+        "rise-y": flightStart(tiles, box, hero, view, rise).y,
+      }
+      for (const [key, value] of Object.entries(values)) {
         root.style.setProperty(`--logo-flight-${key}`, `${value}`)
       }
     }

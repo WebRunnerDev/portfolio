@@ -19,15 +19,17 @@ export const random = (i: number, j: number) => {
 export const CELL = 4
 
 // The cells over a `width` × `height` canvas, one past each edge so the
-// lattice bleeds off it. Cell centers sit where i + j is odd, between the
+// lattice bleeds off it, and `reach` pixels more past its sides, which the
+// pitched field brings in. Cell centers sit where i + j is odd, between the
 // lattice points. Yields every few rows, so a large canvas is laid in slices
 // and never holds the main thread for long; returns the cells.
-export function* lattice(width: number, height: number) {
-  const columns = Math.ceil(width / HALF) + 1
+export function* lattice(width: number, height: number, reach = 0) {
+  const side = Math.ceil(reach / HALF) + 1
+  const columns = Math.ceil(width / HALF) + side
   const rows = Math.ceil(height / HALF) + 1
   const cells: number[] = []
   for (let j = -1; j <= rows; j++) {
-    for (let i = -1; i <= columns; i++) {
+    for (let i = -side; i <= columns; i++) {
       if ((i + j) % 2 === 0) continue
       cells.push(i * HALF, j * HALF, random(i, j), random(j, i))
     }

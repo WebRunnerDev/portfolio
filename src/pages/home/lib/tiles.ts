@@ -2,7 +2,7 @@ import { LOGO_TILES } from "@/shared/ui/logo"
 
 // Each tile's center in logo units: its path starts at the top vertex of a
 // rhombus 3 units tall.
-const centers = LOGO_TILES.map((d) => {
+export const centers = LOGO_TILES.map((d) => {
   const [x, y] = d.slice(1).split("L")[0].split(" ").map(Number)
   return { x, y: y + 1.5 }
 })

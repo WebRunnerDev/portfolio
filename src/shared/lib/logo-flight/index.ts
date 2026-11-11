@@ -1,1 +1,6 @@
-export { flightStart, useLogoFlight } from "./logo-flight"
+export {
+  exitProgress,
+  flightStart,
+  riseShare,
+  useLogoFlight,
+} from "./logo-flight"
