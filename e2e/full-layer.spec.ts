@@ -169,9 +169,10 @@ test("a click right after the first input responds within 200 ms", async ({
 // header logo's flight takes off from over the tiles after it.
 test("the logo flight waits for the rise at full", async ({ page }) => {
   await strongDevice(page)
-  // The hero no taller than the view below the header: at 640×480 it is,
-  // and its tiles reach the header before its exit, so there is no rise.
-  await page.setViewportSize({ width: 640, height: 560 })
+  // As many pixels as 640×480, with the hero no taller than the view below
+  // the header: at 640×480 it is, and its tiles reach the header before its
+  // exit, so there is no rise.
+  await page.setViewportSize({ width: 480, height: 640 })
   await page.goto("/en")
   await page.waitForTimeout(PAST_PROBE_MS)
   await page.mouse.move(200, 200)

@@ -71,8 +71,8 @@ export function flightStart(
 }
 
 // The hero's side of the flight: refs for the hero and its tiles. Measures
-// the start on mount, once the fonts are in and on resize, into CSS
-// variables on the root. Off (`static`, reduced motion): the tiles stand in
+// the start on mount, once the fonts are in, on resize and when the hero's
+// size changes (its Profile arrives), into CSS variables on the root. Off (`static`, reduced motion): the tiles stand in
 // the header.
 export function useLogoFlight(on: boolean) {
   const heroRef = useRef<HTMLElement>(null)
@@ -106,6 +106,8 @@ export function useLogoFlight(on: boolean) {
     measure()
     document.fonts.ready.then(measure)
     addEventListener("resize", measure)
+    const resized = new ResizeObserver(measure)
+    resized.observe(section)
 
     // The end states, for the browsers without `timeline-scope`
     // (`data-logo-flight`): `hero` while the tiles show below the header,
@@ -120,6 +122,7 @@ export function useLogoFlight(on: boolean) {
 
     return () => {
       removeEventListener("resize", measure)
+      resized.disconnect()
       observer.disconnect()
       delete root.dataset.logoFlight
     }
