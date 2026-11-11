@@ -6,6 +6,7 @@ import {
   useState,
   type ComponentType,
   type CSSProperties,
+  type RefObject,
 } from "react"
 import { Link } from "@tanstack/react-router"
 
@@ -35,7 +36,11 @@ const ACTIONS_START = 0.6
 const delay = (seconds: number) =>
   ({ "--hero-delay": `${seconds}s` }) as CSSProperties
 
-type HeroFullProps = { onFail: () => void; onShown: () => void }
+type HeroFullProps = {
+  onFail: () => void
+  onShown: () => void
+  tiles: RefObject<Element | null>
+}
 
 // What a full chunk that didn't load renders: nothing, and `full` fails.
 function FullFailed({ onFail }: HeroFullProps) {
@@ -59,9 +64,11 @@ const HeroFull = lazy<ComponentType<HeroFullProps>>(() =>
 // in over it (ADR-0012), then leaves.
 function HeroEffect({
   tier,
+  tiles,
   onFullFail,
 }: {
   tier: MotionTier
+  tiles: RefObject<Element | null>
   onFullFail: () => void
 }) {
   const [covered, setCovered] = useState(false)
@@ -71,7 +78,11 @@ function HeroEffect({
       {(tier === "lite" || !covered) && <HeroLite />}
       {tier === "full" && (
         <Suspense>
-          <HeroFull onFail={onFullFail} onShown={() => setCovered(true)} />
+          <HeroFull
+            tiles={tiles}
+            onFail={onFullFail}
+            onShown={() => setCovered(true)}
+          />
         </Suspense>
       )}
     </>
@@ -119,7 +130,7 @@ export function Hero({
       className={`${tier === "static" ? "" : "logo-flight-hero"} relative isolate flex min-h-[max(480px,calc(100svh-var(--zsd-x-zsd-layout-header-height)-var(--zsd-x-zsd-border-width-default)))] overflow-hidden`}
     >
       <div aria-hidden="true" dir="ltr" className="absolute inset-0 -z-10">
-        <HeroEffect tier={tier} onFullFail={onFullFail} />
+        <HeroEffect tier={tier} tiles={tilesRef} onFullFail={onFullFail} />
       </div>
       <div className="mx-auto flex w-full max-w-(--zsd-x-zsd-layout-content-max) flex-col justify-center px-zsd-lg py-zsd-section md:px-zsd-xxl">
         <HeroBrand tiles={tilesRef} />

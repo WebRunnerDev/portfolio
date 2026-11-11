@@ -10,8 +10,14 @@ const TOKENS = {
 
 export type Rgb = [number, number, number]
 
-// A token's `#rgb` or `#rrggbb` as 0–1 channels.
+// A token's `#rgb` or `#rrggbb`, or a computed `rgb(r, g, b)`, as 0–1
+// channels.
 export function rgb(value: string): Rgb {
+  const computed = value.match(/^rgba?\(([^)]*)\)/)
+  if (computed) {
+    const [r, g, b] = computed[1].split(/[\s,/]+/).map(Number)
+    return [r / 255, g / 255, b / 255]
+  }
   let hex = value.trim().slice(1)
   if (hex.length === 3) hex = [...hex].map((c) => c + c).join("")
   const n = parseInt(hex.slice(0, 6), 16) || 0

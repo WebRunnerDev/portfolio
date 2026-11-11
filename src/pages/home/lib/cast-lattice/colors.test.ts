@@ -23,6 +23,11 @@ describe("rgb", () => {
     expect(rgb("#fff")).toEqual([1, 1, 1])
   })
 
+  it("reads a computed color", () => {
+    expect(rgb("rgb(15, 23, 42)")).toEqual([15 / 255, 23 / 255, 42 / 255])
+    expect(rgb("rgba(255, 0, 0, 0.5)")).toEqual([1, 0, 0])
+  })
+
   it("is black for what it can't read", () => {
     expect(rgb("")).toEqual([0, 0, 0])
   })

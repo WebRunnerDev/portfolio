@@ -748,6 +748,11 @@ html:active-view-transition-type(forward, back) {
  * over its `exit` the header logo (`logo-flight-to`) flies from over the
  * hero's tiles (`logo-flight-from`) into its slot on the tile curve. Step
  * curves swap the two as the flight starts, so one set of tiles is on screen.
+ * At `full`, once the Cast Lattice lifts copies of the tiles out of its
+ * field (`data-rise` on its canvas, docs/design-brief.md › Cast Lattice),
+ * the first `--logo-flight-rise` of the exit is theirs: they rise into the
+ * hero's tiles, and the swap and the flight wait for them, from where the
+ * tiles are by then (`--logo-flight-rise-y`).
  * Without `timeline-scope`, an IntersectionObserver flips the two end states
  * (`data-logo-flight`) and a transition carries the tiles between them.
  * Pages without the hero, and reduced motion, keep the header logo as is. */
@@ -755,7 +760,7 @@ html:active-view-transition-type(forward, back) {
   from {
     transform: translate(
         calc(var(--logo-flight-x, 0) * 1px),
-        calc(var(--logo-flight-y, 0) * 1px)
+        calc(var(--logo-flight-from-y, var(--logo-flight-y, 0)) * 1px)
       )
       scale(var(--logo-flight-scale, 1));
   }
@@ -801,6 +806,14 @@ html:active-view-transition-type(forward, back) {
       animation: logo-flight-hide steps(1, jump-start) both;
       animation-timeline: --logo-flight;
       animation-range: exit 1px exit 100%;
+    }
+    :root:has(.logo-flight-hero [data-rise]) .logo-flight-to {
+      --logo-flight-from-y: var(--logo-flight-rise-y, 0);
+    }
+    :root:has(.logo-flight-hero [data-rise]) .logo-flight-to,
+    .logo-flight-hero:has([data-rise]) .logo-flight-from {
+      animation-range: exit max(1px, var(--logo-flight-rise, 0) * 100%) exit
+        100%;
     }
   }
 

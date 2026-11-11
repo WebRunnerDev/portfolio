@@ -12,35 +12,49 @@ const SWELL_LIFT = 10
 const SWELL_DENSITY = 0.04
 
 // Each instance is a cell's prism, lifted and leaned by the pointer's
-// springs (aPress) and by the swell, then seen from straight above the
-// canvas's center: at z = 0 one unit is one CSS pixel, so the lattice at
-// rest lies where the static image's does.
+// springs (aPress) and by the swell, then turned with the field about its
+// bottom edge (uPitch: cos, sin of the pitch; uPivot: that edge's y) and
+// seen from straight above the canvas's center: at z = 0 one unit is one
+// CSS pixel, so the lattice at rest lies where the static image's does.
+// The rise's copies (aFly: scale, flatness, the tile's color, opacity) are
+// drawn unpitched; cells keep aFly's default, (1, 0, 0, 1). uDepth maps the
+// distance from the camera to the depth buffer.
 export const VERTEX_SHADER = `#version 300 es
 layout(location=0) in vec4 aVertex;
 layout(location=1) in vec3 aNormal;
 layout(location=2) in vec4 aCell;
 layout(location=3) in vec4 aPress;
+layout(location=4) in vec4 aFly;
 uniform vec2 uSize;
 uniform float uDistance;
 uniform vec2 uSwell;
+uniform vec2 uPitch;
+uniform float uPivot;
+uniform vec2 uDepth;
 out vec3 vNormal;
 out vec3 vLocal;
 out float vCrest;
+out vec2 vFly;
+vec3 pitch(vec3 v) {
+  return vec3(v.x, v.y * uPitch.x - v.z * uPitch.y, v.y * uPitch.y + v.z * uPitch.x);
+}
 void main() {
   float d = (aCell.x - uSwell.x) / ${f(SWELL_SPREAD)};
   float near = exp(-d * d) * uSwell.y;
   float lift = aPress.x + ${f(SWELL_LIFT)} * near;
   vec2 lean = aPress.yz + vec2(${f((2 * LEAN * SWELL_LIFT) / SWELL_SPREAD)} * d * near, 0.);
   vCrest = max(aPress.w, aCell.z < ${f(SWELL_DENSITY)} ? smoothstep(0., .06, near - .5 - .4 * aCell.w) : 0.);
+  vFly = aFly.zw;
   vec3 n = normalize(vec3(lean, 1.));
   mat3 k = mat3(0., 0., -n.x, 0., 0., -n.y, n.x, n.y, 0.);
   mat3 turn = mat3(1.) + k + k * k / (1. + n.z);
-  vec3 p = turn * aVertex.xyz + vec3(aCell.xy, lift);
-  vNormal = turn * aNormal;
+  vec3 v = aVertex.xyz * vec3(aFly.xx, aFly.x * (1. - aFly.y));
+  vec3 p = pitch(turn * v + vec3(aCell.xy - vec2(0., uPivot), lift)) + vec3(0., uPivot, 0.);
+  vNormal = pitch(turn * aNormal);
   vLocal = vec3(aVertex.xy / ${f(HALF)}, aVertex.w);
   float depth = uDistance - p.z;
   vec2 c = (p.xy / uSize - .5) * 2. * uDistance;
-  gl_Position = vec4(c.x, -c.y, (uDistance * depth - uDistance * uDistance + 4096.) / 64., depth);
+  gl_Position = vec4(c.x, -c.y, uDepth.x * depth + uDepth.y, depth);
 }`
 
 // Flat Lambert under a raking key light (uLight); a face's color moves from
@@ -51,11 +65,14 @@ void main() {
 // where the rim light from the other side (uRim) catches an edge, it glints
 // `outline`. Rust grows from the center of a crest's prism to its rim, from
 // a third of it, so no specks: always solid and lit, never see-through.
+// A copy of the rise turns to the logo tile's flat color (uTile) as it lands
+// and fades in as it leaves the field (vFly).
 export const FRAGMENT_SHADER = `#version 300 es
 precision mediump float;
 in vec3 vNormal;
 in vec3 vLocal;
 in float vCrest;
+in vec2 vFly;
 uniform vec3 uLight;
 uniform vec3 uRim;
 uniform vec3 uSurface;
@@ -63,6 +80,7 @@ uniform vec3 uStep;
 uniform vec3 uEdge;
 uniform vec3 uGlint;
 uniform vec3 uCrest;
+uniform vec3 uTile;
 uniform float uLine;
 out vec4 color;
 void main() {
@@ -81,5 +99,5 @@ void main() {
     face = mix(face, crest, clamp((rust - l) / px, 0., 1.));
     face = mix(face, edge, clamp(uLine + .5 - (1. - l) / px, 0., 1.));
   }
-  color = vec4(face, 1.);
+  color = vec4(mix(face, uTile, vFly.x), vFly.y);
 }`
