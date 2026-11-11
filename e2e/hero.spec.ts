@@ -91,32 +91,54 @@ test("the lite tier runs the logo tiles and pauses off screen", async ({
   )
 })
 
-test("the full tier draws the Kinetic Grid and pauses off screen", async ({
+// Headless Chromium draws WebGL in software (SwiftShader). At this size it
+// holds the 40 fps the scene needs, so the FPS meter doesn't drop it to
+// `lite` in the middle of a test.
+const SOFTWARE_GL = { width: 640, height: 480 }
+
+// Past the input gate (ADR-0012) and the crossfade: the scene alone.
+async function fullScene(page: Page) {
+  await page.mouse.move(200, 200)
+  await expect(hero(page)).toHaveAttribute("data-tier", "full", {
+    timeout: 10_000,
+  })
+  await expect(
+    hero(page).locator("[data-effect=full][data-ready=true]")
+  ).toBeAttached()
+  await expect(effect(page)).toHaveCount(1)
+  await expect(effect(page)).toHaveAttribute("data-effect", "full")
+  return effect(page)
+}
+
+test("the full tier draws the Cast Lattice and pauses off screen", async ({
   page,
 }) => {
   const errors = consoleErrors(page)
   await cores(page, 8)
+  await page.setViewportSize(SOFTWARE_GL)
   await page.goto("/en")
-  // The input gate (ADR-0012).
-  await page.mouse.move(200, 200)
-  // `lite` while the FPS probe runs and before the input, then the grid.
-  await expect(hero(page)).toHaveAttribute("data-tier", "full", {
-    timeout: 10_000,
-  })
-  const canvas = effect(page)
-  await expect(canvas).toHaveAttribute("data-effect", "full")
+  const canvas = await fullScene(page)
+  await expect(canvas).toHaveAttribute("data-ready", "true")
   await expect(canvas).toHaveAttribute("data-playing", "true")
-  // Drawn at DPR 1 over the whole hero, and not blank.
+  await expect(canvas).toHaveCSS("opacity", "1")
+  // At DPR 1 over the whole hero, and not blank: many colors in a row of
+  // the frame, read in a frame after the scene drew it.
   const box = (await hero(page).boundingBox())!
   await expect(canvas).toHaveJSProperty("width", Math.round(box.width))
-  const drawn = await page.evaluate(`(() => {
-    const canvas = document.querySelector("[data-effect=full]")
-    const { data } = canvas
-      .getContext("2d")
-      .getImageData(0, 0, canvas.width, canvas.height)
-    return data.some((value, i) => i % 4 === 3 && value > 0)
-  })()`)
-  expect(drawn).toBe(true)
+  const colors = await page.evaluate(`new Promise((resolve) =>
+    requestAnimationFrame(() => {
+      const canvas = document.querySelector("[data-effect=full]")
+      const gl = canvas.getContext("webgl2")
+      const row = new Uint8Array(canvas.width * 4)
+      gl.readPixels(0, canvas.height >> 1, canvas.width, 1, gl.RGBA, gl.UNSIGNED_BYTE, row)
+      const seen = new Set()
+      for (let i = 0; i < row.length; i += 4) {
+        seen.add((row[i] << 16) | (row[i + 1] << 8) | row[i + 2])
+      }
+      resolve(seen.size)
+    })
+  )`)
+  expect(colors).toBeGreaterThan(3)
 
   await page.addStyleTag({ content: "main { padding-bottom: 200vh }" })
   await page.mouse.wheel(0, 3000)
@@ -124,18 +146,19 @@ test("the full tier draws the Kinetic Grid and pauses off screen", async ({
   expect(errors).toEqual([])
 })
 
-test("the full tier falls back to lite when the canvas is lost", async ({
+test("the full tier falls back to lite when the WebGL context is lost", async ({
   page,
 }) => {
   const errors = consoleErrors(page)
   await cores(page, 8)
+  await page.setViewportSize(SOFTWARE_GL)
   await page.goto("/en")
-  // The input gate (ADR-0012).
-  await page.mouse.move(200, 200)
-  await expect(effect(page)).toHaveAttribute("data-effect", "full", {
-    timeout: 10_000,
-  })
-  await effect(page).dispatchEvent("contextlost")
+  await fullScene(page)
+  await page.evaluate(`document
+    .querySelector("[data-effect=full]")
+    .getContext("webgl2")
+    .getExtension("WEBGL_lose_context")
+    .loseContext()`)
   await expect(hero(page)).toHaveAttribute("data-tier", "lite")
   await expect(effect(page)).toHaveAttribute("data-effect", "lite")
   expect(errors).toEqual([])
@@ -145,12 +168,9 @@ test("the full tier falls back to lite when the frame rate drops", async ({
   page,
 }) => {
   await cores(page, 8)
+  await page.setViewportSize(SOFTWARE_GL)
   await page.goto("/en")
-  // The input gate (ADR-0012).
-  await page.mouse.move(200, 200)
-  await expect(effect(page)).toHaveAttribute("data-effect", "full", {
-    timeout: 10_000,
-  })
+  await fullScene(page)
   // A device that can't keep up: 20 frames a second from now on.
   await page.evaluate(`window.requestAnimationFrame = (tick) =>
     setTimeout(() => tick(performance.now()), 50)`)

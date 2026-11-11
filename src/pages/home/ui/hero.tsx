@@ -1,4 +1,12 @@
-import { lazy, Suspense, use, type CSSProperties } from "react"
+import {
+  lazy,
+  Suspense,
+  use,
+  useEffect,
+  useState,
+  type ComponentType,
+  type CSSProperties,
+} from "react"
 import { Link } from "@tanstack/react-router"
 
 import type { Profile } from "@contracts/api/public"
@@ -27,18 +35,28 @@ const ACTIONS_START = 0.6
 const delay = (seconds: number) =>
   ({ "--hero-delay": `${seconds}s` }) as CSSProperties
 
-// Lazy: the full layer, now the Kinetic Grid, stays out of the initial JS
-// and the modulepreloads; it is imported only once the tier is `full`, which
-// waits for the input gate (ADR-0012). If its chunk doesn't load, `lite`
-// stays.
-const HeroFull = lazy(() =>
+type HeroFullProps = { onFail: () => void; onShown: () => void }
+
+// What a full chunk that didn't load renders: nothing, and `full` fails.
+function FullFailed({ onFail }: HeroFullProps) {
+  useEffect(onFail, [onFail])
+  return null
+}
+
+// Lazy: the full layer, the Cast Lattice, stays out of the initial JS and
+// the modulepreloads; it is imported only once the tier is `full`, which
+// waits for the input gate (ADR-0012). A chunk that doesn't load fails
+// `full`: `lite` for the rest of the visit.
+const HeroFull = lazy<ComponentType<HeroFullProps>>(() =>
   import("./hero-full").then(
     (m) => ({ default: m.HeroFull }),
-    () => ({ default: HeroLite })
+    () => ({ default: FullFailed })
   )
 )
 
-// The effect behind the text. `full` shows `lite` while its chunk loads.
+// The effect behind the text. At `full`, `lite` stays in the same place
+// under the scene while its chunk loads and until its first frame has faded
+// in over it (ADR-0012), then leaves.
 function HeroEffect({
   tier,
   onFullFail,
@@ -46,12 +64,17 @@ function HeroEffect({
   tier: MotionTier
   onFullFail: () => void
 }) {
+  const [covered, setCovered] = useState(false)
   if (tier === "static") return <HeroStatic />
-  if (tier === "lite") return <HeroLite />
   return (
-    <Suspense fallback={<HeroLite />}>
-      <HeroFull onFail={onFullFail} />
-    </Suspense>
+    <>
+      {(tier === "lite" || !covered) && <HeroLite />}
+      {tier === "full" && (
+        <Suspense>
+          <HeroFull onFail={onFullFail} onShown={() => setCovered(true)} />
+        </Suspense>
+      )}
+    </>
   )
 }
 
