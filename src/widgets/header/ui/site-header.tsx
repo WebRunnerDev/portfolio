@@ -54,8 +54,10 @@ export function SiteHeader({ menu }: { menu: ReactNode }) {
           className={`shrink-0 ${FOCUS_RING}`}
         >
           {/* The slot the hero's tiles fly into on the home page; the logo
-              in it moves (@/shared/lib/logo-flight). */}
+              in it moves, and the name comes out from under it as it lands
+              (@/shared/lib/logo-flight). */}
           <BrandLockup
+            nameClassName="logo-flight-name"
             logo={
               <span className="size-6 shrink-0">
                 <Logo className="logo-flight-to size-full" />

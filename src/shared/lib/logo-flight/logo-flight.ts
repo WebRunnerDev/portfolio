@@ -10,6 +10,8 @@ import { useEffect, useRef } from "react"
 // - `logo-flight-from` on its tiles (`tilesRef`);
 // - `logo-flight-to` on the header logo, alone in a slot of its size: the
 //   slot's box is measured, the logo in it moves;
+// - `logo-flight-name` on the header's name, which comes out from under the
+//   logo as it lands;
 // - `data-rise` in the hero, at `full`, once the Cast Lattice's copies rise
 //   into the tiles: the flight starts `--logo-flight-rise` into the exit.
 // A class, not an import: the header stays out of the home page's chunk.
@@ -68,6 +70,21 @@ export function flightStart(
     y: tiles.top - toExit(hero, view) - at * exitLength(hero, view) - slot.top,
     scale: tiles.width / slot.width,
   }
+}
+
+// Where the logo shows now on a page with the flight: the header logo,
+// landed or on its way, or the hero's tiles while they stand in for it.
+// Null when neither shows (no header logo on the page). What the menu's
+// tiles leave from and fold back into, so they never come from an empty
+// slot.
+export function shownLogo(): DOMRect | null {
+  for (const selector of [".logo-flight-to", ".logo-flight-from"]) {
+    const logo = document.querySelector(selector)
+    if (logo && getComputedStyle(logo).opacity !== "0") {
+      return logo.getBoundingClientRect()
+    }
+  }
+  return null
 }
 
 // The hero's side of the flight: refs for the hero and its tiles. Measures
