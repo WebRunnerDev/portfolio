@@ -25,7 +25,8 @@ export const CONTENT_START =
 
 // A section of the home page below the hero (docs/design-brief.md › Ритм
 // главной), opened as a chapter: a hairline across the content box with a
-// rust tile and the index in `label-mono` on it, then a `headline-md` title
+// rust tile and the index in `label-mono` on it (`chapter-open` in
+// index.css: they open with the scroll), then a `headline-md` title
 // rising word by word, the content, and one link to its part of the site at
 // the end, as a `button-secondary` with an arrow, so it reads as the way on.
 // From `lg` the title holds the first quarter and stays in view under the
@@ -67,16 +68,10 @@ export function HomeSection({
         <Reveal
           as="p"
           y={0}
-          className="flex items-center gap-zsd-md border-t border-zsd-outline-muted pt-zsd-md font-zsd-label-mono text-zsd-label-mono text-zsd-on-surface-muted"
+          className="chapter-open flex items-center gap-zsd-md pt-zsd-md font-zsd-label-mono text-zsd-label-mono text-zsd-on-surface-muted"
         >
-          <span
-            aria-hidden="true"
-            className="size-2 shrink-0 rotate-45 bg-zsd-primary"
-          />
-          <span
-            aria-hidden="true"
-            className="before:content-[counter(home-section,decimal-leading-zero)]"
-          />
+          <span aria-hidden="true" className="chapter-tile" />
+          <span aria-hidden="true" className="chapter-index" />
         </Reveal>
         <div className={cn("mt-zsd-lg", !wide && CHAPTER)}>
           <div
