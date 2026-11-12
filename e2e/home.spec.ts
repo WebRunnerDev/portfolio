@@ -340,8 +340,8 @@ test("reduced motion shows the sections as they are", async ({ page }) => {
 })
 
 // A chapter's rule opens with the scroll (issue #159): its hairline draws
-// from the start edge as the rule enters and the tile turns into place. The
-// index is the large figure alone (#166).
+// from the start edge as the rule enters. The index is the large figure
+// alone, with the rust tile as its full stop.
 const rule = (page: Page, id: string) =>
   section(page, id).locator(".chapter-open")
 
@@ -384,17 +384,13 @@ for (const lang of ["en", "ar"]) {
     const { origin } = await line(page, "cv")
     expect(Number.parseFloat(origin)).toBeCloseTo(lang === "ar" ? width : 0, 0)
 
-    // Up the viewport: drawn whole, the tile turned.
+    // Up the viewport: drawn whole.
     await placeRule(page, "cv", 0.3)
     await expect
       .poll(async () => scaleX((await line(page, "cv")).transform))
       .toBe(1)
-    await expect(rule(page, "cv").locator(".chapter-tile")).toHaveCSS(
-      "transform",
-      /^matrix\(0\.707/
-    )
-    // One index per chapter: the figure.
-    await expect(rule(page, "cv")).toHaveText("")
+    // Nothing on the rule: one index per chapter, the figure.
+    await expect(rule(page, "cv")).toBeEmpty()
     await expect(rule(page, "cv")).toHaveCSS("opacity", "1")
   })
 }
@@ -413,11 +409,17 @@ test("reduced motion stands a chapter's rule as it is", async ({ page }) => {
   ).toBe(0)
 })
 
-// A chapter's index again as a large figure over its `headline-lg` title
-// (issue #166): decoration, sticky with the title from `lg`, `display-sm`
-// below it and up to `display-md` where the content box stops growing.
+// A chapter's index as a large figure over its `headline-lg` title (issue
+// #166): decoration, sticky with the title from `lg`, `display-sm` below it
+// and up to `display-md` where the content box stops growing. A rust tile
+// ends it like a full stop.
 const numeral = (page: Page, id: string) =>
   section(page, id).locator(".chapter-numeral")
+const figure = (page: Page, id: string) =>
+  numeral(page, id).locator(".chapter-figure")
+const stop = (page: Page, id: string) =>
+  numeral(page, id).locator(".chapter-stop")
+const TURNED = /^matrix\(0\.707/
 
 for (const [width, size] of [
   [360, "72px"],
@@ -461,24 +463,41 @@ test("a chapter's figure rises with its rule", async ({ page }) => {
   await page.goto("/en")
   await expect(rule(page, "projects")).toBeAttached()
   // Under its mask until the rule is in view.
-  await expect(numeral(page, "projects")).toHaveCSS(
+  await expect(figure(page, "projects")).toHaveCSS(
     "transform",
-    /^matrix\(1, 0, 0, 1, 0, [1-9]/,
-    { pseudo: "before" }
+    /^matrix\(1, 0, 0, 1, 0, [1-9]/
   )
   await placeRule(page, "projects", 0.3)
-  await expect(numeral(page, "projects")).toHaveCSS("transform", "none", {
-    pseudo: "before",
-  })
+  await expect(figure(page, "projects")).toHaveCSS("transform", "none")
+  // The full stop turns into place after it.
+  await expect(stop(page, "projects")).toHaveCSS("transform", TURNED)
 })
+
+for (const lang of ["en", "ar"]) {
+  test(`/${lang}/ ends a chapter's figure with a rust full stop`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 800 })
+    await mockPublicApi(page)
+    await page.goto(`/${lang}`)
+    await expect(rule(page, "cv")).toBeAttached()
+    await placeRule(page, "cv", 0.3)
+    await expect(stop(page, "cv")).toHaveCSS("transform", TURNED)
+    const digits = (await figure(page, "cv").boundingBox())!
+    const tile = (await stop(page, "cv").boundingBox())!
+    // At the end of the figure in the reading direction, on its baseline.
+    if (lang === "ar") expect(tile.x).toBeLessThan(digits.x + digits.width / 4)
+    else expect(tile.x).toBeGreaterThan(digits.x + (digits.width * 3) / 4)
+    expect(tile.y).toBeGreaterThan(digits.y + digits.height / 2)
+  })
+}
 
 test("reduced motion stands a chapter's figure as it is", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" })
   await mockPublicApi(page)
   await page.goto("/en")
-  await expect(numeral(page, "projects")).toHaveCSS("transform", "none", {
-    pseudo: "before",
-  })
+  await expect(figure(page, "projects")).toHaveCSS("transform", "none")
+  await expect(stop(page, "projects")).toHaveCSS("transform", TURNED)
 })
 
 test("/ar/ mirrors the sections", async ({ page }) => {
