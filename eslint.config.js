@@ -61,6 +61,8 @@ export default defineConfig([
     "test-results",
     "src/app/routeTree.gen.ts",
     "worker-configuration.d.ts",
+    // Throwaway design prototypes with their own package.json, not app code.
+    "spike",
   ]),
   {
     files: ["**/*.{ts,tsx}"],

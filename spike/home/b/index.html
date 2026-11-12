@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Spike B — Velocity</title>
+    <link rel="stylesheet" href="/shared/base.css" />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body class="is-loading">
+    <canvas id="scene" aria-hidden="true"></canvas>
+
+    <div class="loader" id="loader" aria-hidden="true">
+      <div class="loader__top">
+        <span>WEBRUNNER / IGNITION</span>
+        <span id="loaderStatus">SYSTEMS CHECK</span>
+      </div>
+      <div class="loader__bottom">
+        <div class="loader__count">
+          <span id="count">000</span><small>%</small>
+        </div>
+        <div class="loader__bar"><i id="bar"></i></div>
+        <div class="loader__meta">
+          <span>SPD</span><span id="loaderSpd">000</span>
+        </div>
+      </div>
+    </div>
+    <div class="logo-fly" id="logoFly" aria-hidden="true"></div>
+    <div class="flash" id="flash" aria-hidden="true"></div>
+
+    <header class="header">
+      <a class="header__brand" href="#top" aria-label="WebRunner home">
+        <span class="logo" id="headerLogo"></span>
+        <span class="header__name">WebRunner</span>
+      </a>
+      <nav class="header__nav">
+        <a href="#about">About</a><a href="#work">Work</a
+        ><a href="#writing">Writing</a><a href="#contact">Contact</a>
+      </nav>
+      <a class="header__cv" href="#">CV&nbsp;↗</a>
+      <i class="header__progress" id="progress"></i>
+    </header>
+
+    <main id="top">
+      <section class="hero" id="hero">
+        <div class="hero__row hero__row--top">
+          <p class="hud mono reveal"><span>(01)</span> Portfolio — 2026</p>
+          <p class="hud mono reveal hide-sm">51.16° N · 71.47° E · Astana</p>
+          <div class="hero__intro reveal">
+            <p class="hero__name" id="heroName"></p>
+            <p class="hero__headline" id="heroHeadline"></p>
+          </div>
+        </div>
+
+        <div class="hero__row hero__row--mid">
+          <div class="hero__actions reveal">
+            <a class="btn btn--primary" href="#">View CV</a>
+            <a class="btn btn--ghost" href="#work">Projects</a>
+          </div>
+          <div class="speedo reveal" aria-hidden="true">
+            <div class="speedo__num mono">
+              <span id="spd">000</span><small>km/h</small>
+            </div>
+            <div class="speedo__bar" id="speedoBar"></div>
+            <p class="mono speedo__hint">Scroll to accelerate</p>
+          </div>
+        </div>
+
+        <div class="hero__brand-wrap" data-skew>
+          <h1 class="hero__brand" id="brand" aria-label="WebRunner"></h1>
+        </div>
+      </section>
+
+      <section class="marquee" aria-hidden="true">
+        <div class="marquee__row" data-marquee="1">
+          <div class="marquee__track"></div>
+        </div>
+        <div class="marquee__row marquee__row--outline" data-marquee="-1">
+          <div class="marquee__track"></div>
+        </div>
+      </section>
+
+      <section class="about" id="about">
+        <div class="section-head">
+          <span class="mono section-head__idx">(02)</span>
+          <span class="mono">About</span>
+          <i class="section-head__line"></i>
+        </div>
+        <div class="about__grid">
+          <p class="about__text" id="aboutText"></p>
+          <div class="stats" id="stats"></div>
+        </div>
+      </section>
+
+      <section class="work" id="work">
+        <div class="section-head">
+          <span class="mono section-head__idx">(03)</span>
+          <span class="mono">Selected work</span>
+          <i class="section-head__line"></i>
+        </div>
+        <div class="work__title" data-skew>
+          <h2>Selected<br /><em>work</em></h2>
+        </div>
+        <ol class="rows" id="rows"></ol>
+      </section>
+
+      <section class="writing" id="writing">
+        <div class="section-head">
+          <span class="mono section-head__idx">(04)</span>
+          <span class="mono">Writing</span>
+          <i class="section-head__line"></i>
+        </div>
+        <div class="posts" id="posts"></div>
+      </section>
+
+      <footer class="contact" id="contact">
+        <div class="contact__inner">
+          <p class="mono contact__kicker"><span>(05)</span> Contact</p>
+          <h2 class="contact__title" data-skew>Ready<br />to run?</h2>
+          <a class="contact__email" id="email" href="#"></a>
+          <div class="contact__bottom mono">
+            <span>© 2026 WebRunner</span>
+            <span class="contact__links"
+              ><a href="#">GitHub</a><a href="#">LinkedIn</a
+              ><a href="#">Telegram</a></span
+            >
+            <a href="#top">Back to start ↑</a>
+          </div>
+        </div>
+      </footer>
+    </main>
+
+    <div class="preview" id="preview" aria-hidden="true">
+      <div class="preview__inner">
+        <span class="preview__idx" id="previewIdx">01</span>
+        <span class="preview__tags mono" id="previewTags"></span>
+      </div>
+    </div>
+
+    <script type="module" src="./main.js"></script>
+    <script type="module" src="/shared/nav.js"></script>
+  </body>
+</html>

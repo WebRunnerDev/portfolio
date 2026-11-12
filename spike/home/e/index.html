@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Spike E · Index</title>
+    <link rel="stylesheet" href="/shared/base.css" />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body class="is-loading">
+    <canvas class="stage" aria-hidden="true"></canvas>
+
+    <div class="loader" aria-hidden="true">
+      <div class="loader__label">
+        <span data-loader-label>Indexing</span> ·
+        <span data-loader-temp>0 pages</span>
+      </div>
+      <div class="loader__count" data-loader-count>000</div>
+      <div class="loader__bar"><i data-loader-bar></i></div>
+    </div>
+
+    <header class="top">
+      <a class="top__logo" href="#top" aria-label="WebRunner"
+        ><span class="anchor" data-anchor="dock"></span
+        ><span class="top__name">WebRunner</span></a
+      >
+      <nav class="top__nav">
+        <a href="#work">Work</a><a href="#writing">Writing</a
+        ><a href="#cv">CV</a><a href="#contact">Contact</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <div class="hero__meta">
+          <span class="reveal"><span>(Index — 2026)</span></span>
+          <span class="reveal"><span data-location></span></span>
+          <span class="reveal"
+            ><span class="hero__temp"
+              >Crawling · <b data-crawl>/en</b></span
+            ></span
+          >
+        </div>
+        <h1 class="hero__brand cast">
+          <span class="reveal"><span>Web</span></span>
+          <span class="reveal"><span>Runner</span></span>
+        </h1>
+        <div class="hero__logo anchor" data-anchor="hero"></div>
+        <div class="hero__foot">
+          <p class="hero__intro reveal">
+            <span
+              ><strong data-name></strong> — <span data-headline></span
+            ></span>
+          </p>
+          <div class="hero__actions reveal">
+            <span>
+              <a class="btn btn--primary" href="#cv">View CV <i>↓ PDF</i></a>
+              <a class="btn" href="#work">Projects</a>
+            </span>
+          </div>
+          <div class="hero__scroll reveal">
+            <span>Scroll to crawl deeper ↓</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="chapter about" id="cv">
+        <div class="chapter__rail">
+          <span class="anchor" data-anchor="ch0"></span>
+        </div>
+        <div class="chapter__head">
+          <div class="chapter__mark"></div>
+          <span class="chapter__index">01</span>
+          <span class="chapter__label">About</span>
+        </div>
+        <h2 class="about__statement split">
+          I build interfaces that load <em>in a blink</em> and hold up under
+          real traffic.
+        </h2>
+        <div class="about__body">
+          <p data-about></p>
+          <p class="about__cv">
+            <a class="link" href="#cv">Download the CV — PDF, 2 pages →</a>
+          </p>
+        </div>
+        <dl class="stats" data-stats></dl>
+      </section>
+
+      <section class="chapter work" id="work">
+        <div class="chapter__rail">
+          <span class="anchor" data-anchor="ch1"></span>
+        </div>
+        <div class="chapter__head">
+          <div class="chapter__mark"></div>
+          <span class="chapter__index">02</span>
+          <span class="chapter__label">Selected work</span>
+        </div>
+        <ol class="projects" data-projects></ol>
+      </section>
+
+      <section class="chapter writing" id="writing">
+        <div class="chapter__rail">
+          <span class="anchor" data-anchor="ch2"></span>
+        </div>
+        <div class="chapter__head">
+          <div class="chapter__mark"></div>
+          <span class="chapter__index">03</span>
+          <span class="chapter__label">Writing</span>
+        </div>
+        <div class="posts" data-posts></div>
+      </section>
+
+      <footer class="contact" id="contact">
+        <div class="contact__logo anchor" data-anchor="footer"></div>
+        <p class="chapter__label contact__label">04 — Contact</p>
+        <h2 class="contact__title cast">
+          <span class="reveal"><span>End of index.</span></span
+          ><span class="reveal" data-hot><span>Let's link.</span></span>
+        </h2>
+        <a class="contact__email cast" data-email href="#"></a>
+        <div class="contact__bar">
+          <span>© 2026 WebRunner</span>
+          <span
+            ><a href="#">GitHub</a> · <a href="#">LinkedIn</a> ·
+            <a href="#">Telegram</a></span
+          >
+          <a href="#top">Back to the top ↑</a>
+        </div>
+      </footer>
+    </main>
+
+    <script type="module" src="./main.js"></script>
+    <script type="module" src="/shared/nav.js"></script>
+  </body>
+</html>
