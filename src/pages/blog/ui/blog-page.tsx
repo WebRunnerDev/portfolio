@@ -1,8 +1,7 @@
 import { getRouteApi, Link } from "@tanstack/react-router"
-import { Rss, X } from "lucide-react"
+import { X } from "lucide-react"
 
 import type { Post } from "@contracts/api/public"
-import { feedPath } from "@contracts/meta"
 import { useLang, useT } from "@/shared/i18n"
 
 import { PostCard } from "./post-card"
@@ -24,8 +23,8 @@ function tagName(posts: Post[], slug: string) {
 // The published Posts, newest first: one column, two from `sm`, three from
 // `lg` (DESIGN.md › Responsive behavior). `?tag=<slug>` keeps the posts with
 // that Tag, names it and links back to all of them. An empty list says what
-// appears there, or that no post has the Tag. The Lang's RSS feed is linked
-// next to the title.
+// appears there, or that no post has the Tag. The Lang's RSS feed is only in
+// `<head>` (`LangHead`), not on the page.
 export function BlogPage() {
   const t = useT()
   const lang = useLang()
@@ -48,16 +47,9 @@ export function BlogPage() {
 
   return (
     <div className="mx-auto w-full max-w-(--zsd-x-zsd-layout-content-max) px-zsd-lg py-zsd-section md:px-zsd-xxl lg:py-zsd-section-lg">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-zsd-lg">
-        <h1 className="font-heading text-zsd-headline-md break-words md:text-zsd-headline-lg">
-          {t("nav.blog")}
-        </h1>
-        {/* The Worker's, not a route: a full load. */}
-        <a href={feedPath(lang)} type="application/rss+xml" className={LINK}>
-          <Rss aria-hidden="true" strokeWidth={1.5} className="size-4" />
-          {t("blog.rss")}
-        </a>
-      </div>
+      <h1 className="font-heading text-zsd-headline-md break-words md:text-zsd-headline-lg">
+        {t("nav.blog")}
+      </h1>
       {name && posts.length > 0 && (
         <div
           data-testid="blog-filter"

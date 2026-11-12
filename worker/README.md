@@ -229,7 +229,7 @@ ADR-0003: one PDF per Lang, printed from the Print CV (`/{lang}/cv/print`, `docs
 - **Channel:** `title` and `description` as the Blog on that Lang (`nav.blog`, `meta.blog`), `link` to `/{lang}/blog`, `language`, `atom:link rel="self"`. URLs use the request's origin.
 - **Escaping:** every text goes through `xml()`: `& < > " '` escaped, the C0 control characters XML 1.0 forbids dropped.
 - **Headers:** `Content-Type: application/rss+xml; charset=utf-8`, `Cache-Control: public, max-age=60` (as the Public API), `nosniff`; `X-Robots-Tag: noindex` on previews. `HEAD` without a body, other methods 405. D1 failing → 503.
-- **Link:** the Blog page links it next to its title (`blog.rss`); its pages announce it in `<head>` (Meta Injection above).
+- **Link:** no visible link on the Blog page; its pages announce it in `<head>` only (Meta Injection above).
 
 **Check after the deploy:** run `https://webrunner.dev/{lang}/rss.xml` for each Lang through the [W3C Feed Validator](https://validator.w3.org/feed/).
 

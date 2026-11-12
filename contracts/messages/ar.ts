@@ -94,7 +94,6 @@ export const ar: Messages = {
   "blog.readingTime.other": "{count} دقيقة قراءة",
   "blog.filter": "التدوينات الموسومة بـ«{tag}»",
   "blog.filter.reset": "كل التدوينات",
-  "blog.rss": "موجز RSS",
   "blog.empty.title": "لا توجد تدوينات بعد",
   "blog.empty.text":
     "ستظهر هنا ملاحظات عن الواجهة الأمامية والسحابة والاختبار.",

@@ -6,7 +6,7 @@ import { markdownTree } from "../contracts/markdown/parse"
 
 // Issues #98, #99 and #100: the Blog page as Post cards, newest first,
 // filtered by Tag with `?tag=<slug>`, the page of a Post with its JSON-LD,
-// and (#101) the link to the RSS feed of each Lang.
+// and (#101) the RSS feed of each Lang, announced in `<head>` only.
 // Against an in-memory /api/public/* (the D1 behind `vite preview` is empty).
 // On RU, Edge caching only has its EN Translation; on AR, its page too.
 const LANGS = ["en", "ru", "kk", "es", "de", "ar"]
@@ -253,14 +253,16 @@ test("/ar keeps Western digits, mirrors the grid and fits 360px", async ({
 const shareUrl = (url: string) =>
   `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`
 
-test("the Blog links the RSS feed of its Lang", async ({ page }) => {
+test("the Blog announces the RSS feed of its Lang in <head> only", async ({
+  page,
+}) => {
   await mockPublicApi(page)
   await page.goto("/ru/blog")
   await expect(cards(page)).toHaveCount(3)
   const origin = new URL(page.url()).origin
 
-  const link = page.getByRole("main").getByRole("link", { name: "RSS-лента" })
-  await expect(link).toHaveAttribute("href", "/ru/rss.xml")
+  // No visible link on the page: feed readers find it in <head>.
+  await expect(page.locator('main a[href$="/rss.xml"]')).toHaveCount(0)
   const head = page.locator('head link[type="application/rss+xml"]')
   await expect(head).toHaveCount(1)
   await expect(head).toHaveAttribute("href", `${origin}/ru/rss.xml`)
