@@ -866,6 +866,51 @@ html:active-view-transition-type(forward, back) {
   }
 }
 
+/* docs/design-brief.md › Арт-дирекция этапа 7 › База, п. 4: how far the page
+ * is scrolled, as a rust hairline over the header's bottom border
+ * (`scroll-progress` in `SiteHeader`, first in the header so the flying logo
+ * paints over it). It grows from the start edge on the root's scroll
+ * timeline, 1:1 with the scroll: it shows a position, so no curve. Without
+ * `animation-timeline` it isn't drawn. A position, not motion of its own, so
+ * it stays with reduced motion. While a header popup is open (the menu
+ * panel hangs from this border, the Lang menu too) it steps aside. `primary`
+ * on `surface-raised`: 3.1:1 dark, 4.3:1 light. */
+@keyframes scroll-progress {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@utility scroll-progress {
+  display: none;
+  position: absolute;
+  inset-inline: 0;
+  bottom: calc(-1 * var(--zsd-x-zsd-border-width-default));
+  height: var(--zsd-x-zsd-border-width-default);
+  background: var(--zsd-colors-primary);
+  transform-origin: left;
+  pointer-events: none;
+  transition: opacity var(--zsd-x-zsd-motion-duration-fast)
+    var(--zsd-x-zsd-motion-easing-hover);
+  &:dir(rtl) {
+    transform-origin: right;
+  }
+  :where(header):has([aria-expanded="true"]) & {
+    opacity: 0;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+
+@supports (animation-timeline: scroll()) {
+  .scroll-progress {
+    display: block;
+    animation: scroll-progress linear both;
+    animation-timeline: scroll(root block);
+  }
+}
+
 /* docs/design-brief.md › Ритм главной, › Арт-дирекция этапа 7 › База, п. 2:
  * the rule that opens a chapter of the home page (`HomeSection` in
  * src/pages/home), a Reveal: an `outline-muted` hairline across the content

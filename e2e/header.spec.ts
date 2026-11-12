@@ -172,6 +172,63 @@ test("the header logo takes off from over the hero's tiles", async ({
   await expectTakeOff(page)
 })
 
+// Issue #167: a rust hairline over the header's bottom border shows how far
+// the page is scrolled, growing from the start edge with the scroll.
+const scrollProgress = (page: Page) =>
+  page.getByRole("banner").locator(".scroll-progress")
+// e2e has no DOM types: the page side goes in as strings.
+const progressScale = (page: Page) =>
+  page.evaluate<number>(
+    `new DOMMatrix(getComputedStyle(document.querySelector("header .scroll-progress")).transform).a`
+  )
+const scrollToShare = (page: Page, share: number) =>
+  page.evaluate(
+    `scrollTo(0, (document.documentElement.scrollHeight - innerHeight) * ${share})`
+  )
+
+test("a rust hairline on the header's border grows with the scroll", async ({
+  page,
+}) => {
+  await page.goto("/en/projects")
+  const line = scrollProgress(page)
+  await expect(line).toHaveAttribute("aria-hidden", "true")
+  await page.evaluate(`document.body.style.paddingBottom = "300vh"`)
+  await expect(line).toHaveCSS("background-color", "rgb(184, 69, 48)")
+  await expect(line).toHaveCSS("transform-origin", "0px 0.5px")
+  await expect.poll(() => progressScale(page)).toBe(0)
+
+  await scrollToShare(page, 0.5)
+  await expect.poll(() => progressScale(page)).toBeCloseTo(0.5, 2)
+  // On the bottom border, across the header.
+  const header = (await page.getByRole("banner").boundingBox())!
+  const box = (await line.boundingBox())!
+  expect(box.height).toBe(1)
+  expect(box.y + box.height).toBeCloseTo(header.y + header.height, 0)
+  expect(box.x).toBe(header.x)
+  expect(box.width).toBeCloseTo(header.width / 2, 0)
+
+  await scrollToShare(page, 1)
+  await expect.poll(() => progressScale(page)).toBe(1)
+
+  // It steps aside for the menu panel that hangs from the same border.
+  await page.getByRole("banner").getByRole("button", { name: "Menu" }).click()
+  await expect(page.getByRole("dialog", { name: "Menu" })).toBeVisible()
+  await expect(line).toHaveCSS("opacity", "0")
+  await page.keyboard.press("Escape")
+  await expect(line).toHaveCSS("opacity", "1")
+})
+
+test("in Arabic the hairline grows from the right edge", async ({ page }) => {
+  await page.goto("/ar/projects")
+  await expect(scrollProgress(page)).toBeAttached()
+  await page.evaluate(`document.body.style.paddingBottom = "300vh"`)
+  await scrollToShare(page, 0.5)
+  await expect.poll(() => progressScale(page)).toBeCloseTo(0.5, 2)
+  const header = (await page.getByRole("banner").boundingBox())!
+  const box = (await scrollProgress(page).boundingBox())!
+  expect(box.x + box.width).toBeCloseTo(header.x + header.width, 0)
+})
+
 test("the Lang menu hangs from the header and marks the current Lang", async ({
   page,
 }) => {
@@ -187,9 +244,13 @@ test("the Lang menu hangs from the header and marks the current Lang", async ({
     "page"
   )
   const header = (await page.getByRole("banner").boundingBox())!
-  const box = (await menu.boundingBox())!
-  // Sub-pixel layout: within a pixel of the header's bottom edge.
-  expect(Math.abs(box.y - (header.y + header.height))).toBeLessThanOrEqual(1)
+  // Sub-pixel layout: within a pixel of the header's bottom edge, once it has
+  // come down (`lang-menu-in`).
+  await expect
+    .poll(async () =>
+      Math.abs((await menu.boundingBox())!.y - (header.y + header.height))
+    )
+    .toBeLessThanOrEqual(1)
   await page.keyboard.press("Escape")
   await expect(menu).toBeHidden()
   await expect(trigger).toBeFocused()
