@@ -457,6 +457,7 @@ Use `x-zsd.motion.duration-slow` for the menu tile layout and page transitions.
 
 Text moves up from under a mask in `duration-reveal`, `stagger-word` apart.
 Scroll may drive decor and tiles, never text. Use `animation-timeline` in `@supports`; without it, show the end state when the element enters the viewport.
+The scroll indicator, a `primary` hairline on the header's bottom border, follows the root scroll 1:1 (`linear`), because it shows a position. Without `animation-timeline` it is not drawn.
 Horizontal motion goes in the reading direction, so the ar Lang inverts it.
 With reduced motion, change states immediately and use a fade for page transitions. Show the loader as static tiles with a text label.
 

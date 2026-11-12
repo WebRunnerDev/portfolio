@@ -22,7 +22,8 @@ const control = (i: number) =>
 // Brand, current section, Lang and mode controls, menu. Logical order, so the
 // sides swap in RTL. Below `lg` the controls move into the menu to fit 320px.
 // Sticky and always shown: it holds the only way to the menu. `menu` is a
-// slot: the layout passes the menu widget in.
+// slot: the layout passes the menu widget in. A rust hairline on its bottom
+// border shows how far the page is scrolled.
 export function SiteHeader({ menu }: { menu: ReactNode }) {
   const lang = useLang()
   const t = useT()
@@ -40,6 +41,8 @@ export function SiteHeader({ menu }: { menu: ReactNode }) {
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-zsd-surface-raised [view-transition-name:site-header]">
+      {/* How far the page is scrolled, on the bottom border (index.css). */}
+      <span aria-hidden className="scroll-progress" />
       <a
         href="#main"
         className={`sr-only bg-zsd-surface px-zsd-md py-zsd-sm text-zsd-label-md focus:not-sr-only focus:absolute focus:inset-s-zsd-lg focus:top-zsd-sm focus:z-50 ${FOCUS_RING}`}
