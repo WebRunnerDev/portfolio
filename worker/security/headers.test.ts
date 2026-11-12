@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest"
 import worker from "../index"
 import { SECURITY_HEADERS } from "./headers"
 
-const INDEX_HTML = `<!doctype html><html lang="en"><head><meta charset="UTF-8" /><script>document.documentElement.classList.add("dark")</script><title data-meta>WebRunner</title><script type="module" crossorigin src="/assets/index.js"></script><link rel="modulepreload" crossorigin href="/assets/lang.js"><link rel="modulepreload" crossorigin href="/assets/post.js" data-route="/$lang/blog/$slug"><link rel="stylesheet" crossorigin href="/assets/index.css"></head><body><div id="root"></div><script defer src="https://static.cloudflareinsights.com/beacon.min.js"></script></body></html>`
+const INDEX_HTML = `<!doctype html><html lang="en"><head><meta charset="UTF-8" /><script>document.documentElement.classList.add("dark")</script><title data-meta>WebRunner</title><script type="module" crossorigin src="/assets/index.js"></script><link rel="modulepreload" crossorigin href="/assets/lang.js"><link rel="modulepreload" crossorigin href="/assets/post.js" data-route="/$lang/blog/$slug"><link rel="preload" as="font" type="font/woff2" crossorigin href="/assets/arabic.woff2" data-lang="ar"><link rel="stylesheet" crossorigin href="/assets/index.css"></head><body><div id="root"></div><script defer src="https://static.cloudflareinsights.com/beacon.min.js"></script></body></html>`
 
 const assetRequests: Request[] = []
 
@@ -101,6 +101,15 @@ describe("HTML answers", () => {
       const html = await (await visit(path, NAVIGATION)).text()
       expect(html).not.toContain("/assets/post.js")
       expect(html).not.toContain("data-route")
+    }
+  )
+
+  it.each(["/", "/admin", "/en"])(
+    "%s keeps no Lang preload that isn't its Lang's",
+    async (path) => {
+      const html = await (await visit(path, NAVIGATION)).text()
+      expect(html).not.toContain("/assets/arabic.woff2")
+      expect(html).not.toContain("data-lang")
     }
   )
 
