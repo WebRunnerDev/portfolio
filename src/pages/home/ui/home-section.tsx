@@ -24,10 +24,11 @@ export const CONTENT_START =
   "lg:ms-[calc((100%-3*var(--zsd-spacing-xxl))/4+var(--zsd-spacing-xxl))]"
 
 // A section of the home page below the hero (docs/design-brief.md › Ритм
-// главной), opened as a chapter: a hairline across the content box with a
-// rust tile on it (`chapter-open` in index.css: they open with the scroll),
-// then the index as a large `outline-muted` figure (`chapter-numeral`,
-// decoration: it rises with the rule) over a `headline-lg` title rising word by word, the content, and one
+// главной), opened as a chapter: a hairline across the content box
+// (`chapter-open` in index.css: it draws with the scroll), then the index as
+// a large `outline-muted` figure ended by a rust tile like a full stop
+// (`chapter-numeral`, decoration: it rises with the rule) over a
+// `headline-lg` title rising word by word, the content, and one
 // link to its part of the site at the end, as a `button-secondary` with an
 // arrow, so it reads as the way on. From `lg` the figure and the title hold
 // the first quarter and stay in view under the header while their section
@@ -66,8 +67,8 @@ export function HomeSection({
       className={cn("chapter [counter-increment:home-section]", className)}
     >
       <div className={CONTENT}>
-        <Reveal y={0} className="chapter-open flex pt-zsd-md">
-          <span aria-hidden="true" className="chapter-tile" />
+        <Reveal y={0} className="chapter-open pt-zsd-md">
+          {null}
         </Reveal>
         <div className={cn("mt-zsd-lg", !wide && CHAPTER)}>
           <div
@@ -77,7 +78,11 @@ export function HomeSection({
                 "lg:sticky lg:top-[calc(var(--zsd-x-zsd-layout-header-height)+var(--zsd-spacing-xl))] lg:self-start"
             )}
           >
-            <span aria-hidden="true" className="mb-zsd-md chapter-numeral" />
+            <span aria-hidden="true" className="mb-zsd-md chapter-numeral">
+              <span className="chapter-figure">
+                <span className="chapter-stop" />
+              </span>
+            </span>
             <RevealText
               as="h2"
               text={title}

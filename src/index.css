@@ -971,11 +971,8 @@ html:active-view-transition-type(forward, back) {
 /* docs/design-brief.md › Ритм главной, › Арт-дирекция этапа 7 › База, п. 2:
  * the rule that opens a chapter of the home page (`HomeSection` in
  * src/pages/home), a Reveal: an `outline-muted` hairline across the content
- * box (`::before`) and the rust tile (`chapter-tile`). The index is the large
- * figure under it alone (`chapter-numeral`). The rule opens with the scroll
- * and lends its view timeline to the tile: over its entry the hairline draws
- * from the start edge and the tile turns into place from nothing, as the
- * footer's full stop. Without `animation-timeline` the rule keeps its
+ * box (`::before`). Over the rule's entry the hairline draws from the start
+ * edge on its view timeline. Without `animation-timeline` the rule keeps its
  * one-off Reveal; reduced motion renders it as is. */
 @utility chapter-open {
   position: relative;
@@ -993,22 +990,18 @@ html:active-view-transition-type(forward, back) {
   }
 }
 
-@utility chapter-tile {
-  width: --spacing(2);
-  height: --spacing(2);
-  flex-shrink: 0;
-  background: var(--zsd-colors-primary);
-  transform: rotate(45deg);
-}
-
 /* › Арт-дирекция этапа 7 › База, п. 3: the chapter's index, once, as a large
  * Tektur figure over its title, `display-sm` and from `lg` up to
  * `display-md` at the content box's full width; `outline-muted`, decoration
  * (DESIGN.md › Typography). A CSS counter, so the digits are Western in
- * every Lang; tracking 0 in Arabic. A mask: the figure rises from
- * under it together with the rule's Reveal (`chapter` on the section), on
- * the timeline or not; without `:has()`, reduced motion or once the Reveal
- * has stalled, it just stands. */
+ * every Lang; tracking 0 in Arabic. A rust tile ends it like a full stop
+ * (`chapter-stop`, the footer title's): the chapter's accent, at the end of
+ * the figure in the reading direction. A mask: the figure (`chapter-figure`)
+ * rises from under it together with the rule's Reveal (`chapter` on the
+ * section), on the timeline or not, and the tile rides with it, then turns
+ * into place from nothing once the figure has half risen, as in the footer.
+ * Without `:has()`, reduced motion or once the Reveal has stalled, they just
+ * stand. */
 @utility chapter-numeral {
   display: block;
   overflow: hidden;
@@ -1030,20 +1023,44 @@ html:active-view-transition-type(forward, back) {
       var(--zsd-typography-display-md-font-size)
     );
   }
+}
+
+@utility chapter-figure {
+  display: inline-block;
   &::before {
     content: counter(home-section, decimal-leading-zero);
-    display: block;
   }
 }
 
+@utility chapter-stop {
+  display: inline-block;
+  width: 0.2em;
+  height: 0.2em;
+  margin-inline-start: 0.12em;
+  margin-bottom: 0.05em;
+  background: var(--zsd-colors-primary);
+  transform: rotate(45deg);
+}
+
 @media (prefers-reduced-motion: no-preference) {
-  .chapter:has(.chapter-open.reveal-out) .chapter-numeral::before {
+  .chapter:has(.chapter-open.reveal-out) .chapter-figure {
     transform: translateY(120%);
   }
-  .chapter:has(.chapter-open.reveal-in) .chapter-numeral::before {
-    animation: reveal-rise var(--zsd-x-zsd-motion-duration-reveal)
-      var(--zsd-x-zsd-motion-easing-enter) var(--zsd-x-zsd-motion-stagger-item)
-      backwards;
+  .chapter:has(.chapter-open.reveal-in) {
+    .chapter-figure {
+      animation: reveal-rise var(--zsd-x-zsd-motion-duration-reveal)
+        var(--zsd-x-zsd-motion-easing-enter)
+        var(--zsd-x-zsd-motion-stagger-item) backwards;
+    }
+    .chapter-stop {
+      animation: stop-in var(--zsd-x-zsd-motion-duration-slow)
+        var(--zsd-x-zsd-motion-easing-layout)
+        calc(
+          var(--zsd-x-zsd-motion-stagger-item) +
+            var(--zsd-x-zsd-motion-duration-reveal) / 2
+        )
+        backwards;
+    }
   }
 }
 
@@ -1069,11 +1086,6 @@ html:active-view-transition-type(forward, back) {
       animation: chapter-line var(--zsd-x-zsd-motion-easing-enter) both;
       animation-timeline: --chapter;
       animation-range: entry 0% cover 40%;
-    }
-    .chapter-open .chapter-tile {
-      animation: stop-in var(--zsd-x-zsd-motion-easing-layout) both;
-      animation-timeline: --chapter;
-      animation-range: entry 0% cover 25%;
     }
   }
 }
