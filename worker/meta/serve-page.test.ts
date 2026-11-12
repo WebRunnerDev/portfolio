@@ -7,7 +7,7 @@ import { PAGE_PATHS, pageMeta } from "@contracts/meta"
 import { resolveMeta, type DataPage } from "./pages"
 import { headTags, servePage } from "./serve-page"
 
-const INDEX_HTML = `<!doctype html><html lang="en"><head><meta charset="UTF-8" /><title data-meta>WebRunner</title><link rel="modulepreload" crossorigin href="/assets/layout.js" data-route="/$lang/*"><link rel="modulepreload" crossorigin href="/assets/post.js" data-route="/$lang/blog/$slug"><link rel="modulepreload" crossorigin href="/assets/card.js" data-route="/$lang /$lang/projects"></head><body><div id="root"></div></body></html>`
+const INDEX_HTML = `<!doctype html><html lang="en"><head><meta charset="UTF-8" /><title data-meta>WebRunner</title><link rel="modulepreload" crossorigin href="/assets/layout.js" data-route="/$lang/*"><link rel="modulepreload" crossorigin href="/assets/post.js" data-route="/$lang/blog/$slug"><link rel="modulepreload" crossorigin href="/assets/card.js" data-route="/$lang /$lang/projects"><link rel="preload" as="font" type="font/woff2" crossorigin href="/assets/arabic.woff2" data-lang="ar"></head><body><div id="root"></div></body></html>`
 
 const assetRequests: Request[] = []
 
@@ -461,6 +461,24 @@ describe("servePage", () => {
     expect(await preloads("/en/gallery")).toEqual(["/assets/layout.js"])
     expect((await page("https://webrunner.dev/en")).html).not.toContain(
       "data-route"
+    )
+  })
+
+  it("keeps the Lang preloads of the page's Lang and drops the others", async () => {
+    const fonts = async (path: string) =>
+      (await page(`https://webrunner.dev${path}`)).all(
+        /<link rel="preload" as="font" type="font\/woff2" crossorigin href="([^"]+)">/g
+      )
+    expect(await fonts("/ar")).toEqual(["/assets/arabic.woff2"])
+    expect(await fonts("/ar/cv")).toEqual(["/assets/arabic.woff2"])
+    expect(await fonts("/ar/no-such-page")).toEqual(["/assets/arabic.woff2"])
+    for (const lang of ["en", "ru", "kk", "es", "de"]) {
+      expect((await page(`https://webrunner.dev/${lang}`)).html).not.toContain(
+        "arabic.woff2"
+      )
+    }
+    expect((await page("https://webrunner.dev/ar")).html).not.toContain(
+      "data-lang"
     )
   })
 

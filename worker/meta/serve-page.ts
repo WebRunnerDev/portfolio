@@ -14,6 +14,7 @@ import {
   parsePagePath,
   type PageMeta,
 } from "@contracts/meta"
+import { LANG_ATTRIBUTE, langMatches } from "@contracts/lang-preloads"
 import { pageRequests } from "@contracts/page-requests"
 import { ROUTE_ATTRIBUTE, routeMatches } from "@contracts/route-preloads"
 import { resolveMeta } from "./pages"
@@ -154,6 +155,16 @@ export async function servePage(
         el.append(headTags(url, lang, path, meta, noindex), { html: true })
         if (found) {
           el.append(dataPreloads(lang, path, url.searchParams), { html: true })
+        }
+      },
+    })
+    // Lang preloads (contracts/lang-preloads.ts): the page's Lang's stay.
+    .on(`link[${LANG_ATTRIBUTE}]`, {
+      element(el) {
+        if (langMatches(el.getAttribute(LANG_ATTRIBUTE) ?? "", lang)) {
+          el.removeAttribute(LANG_ATTRIBUTE)
+        } else {
+          el.remove()
         }
       },
     })

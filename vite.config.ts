@@ -7,6 +7,8 @@ import { tanstackRouter } from "@tanstack/router-plugin/vite"
 import react from "@vitejs/plugin-react"
 import { defineConfig, type Plugin } from "vite"
 
+import { LANG_ATTRIBUTE } from "./contracts/lang-preloads.ts"
+import type { Lang } from "./contracts/lang.ts"
 import { ROUTE_ATTRIBUTE, routePattern } from "./contracts/route-preloads.ts"
 
 // Cloudflare Web Analytics beacon. The token is a Workers Builds build variable,
@@ -34,13 +36,18 @@ function cloudflareWebAnalytics(token: string | undefined): Plugin {
   }
 }
 
-// Font files every page's first paint needs, preloaded from index.html (#142):
+// Font files the first paint needs, preloaded from index.html (#142):
 // they'd otherwise start only once the CSS has matched them to text, after
 // the app has rendered, and arrive around the first paint. Swapped in after
 // it, they repaint the LCP element (headings and the hero's brand: Tektur)
 // and reflow the text (Onest, Fira Code labels): the CV moved by 0.22 CLS.
-// The Latin subsets cover every Lang but ar's own script.
-function fontPreloads(names: RegExp[]): Plugin {
+// The Latin subsets cover every Lang but ar's own script. A font only some
+// Langs need carries them (contracts/lang-preloads.ts): Readex Pro's Arabic
+// subset started only after the app had rendered on ar, and held its first
+// paint back by a round trip, 0.14 s in Lighthouse (#169).
+type FontPreload = { file: RegExp; langs?: Lang[] }
+
+function fontPreloads(fonts: FontPreload[]): Plugin {
   return {
     name: "font-preloads",
     apply: "build",
@@ -48,12 +55,11 @@ function fontPreloads(names: RegExp[]): Plugin {
       order: "post",
       handler(_html, { bundle }) {
         if (!bundle) return
-        return Object.values(bundle)
-          .filter(
-            ({ type, fileName }) =>
-              type === "asset" && names.some((name) => name.test(fileName))
-          )
-          .map(({ fileName }) => ({
+        return Object.values(bundle).flatMap(({ type, fileName }) => {
+          const font =
+            type === "asset" && fonts.find(({ file }) => file.test(fileName))
+          if (!font) return []
+          return {
             tag: "link",
             attrs: {
               rel: "preload",
@@ -61,9 +67,11 @@ function fontPreloads(names: RegExp[]): Plugin {
               type: "font/woff2",
               crossorigin: true,
               href: `/${fileName}`,
+              ...(font.langs && { [LANG_ATTRIBUTE]: font.langs.join(" ") }),
             },
             injectTo: "head" as const,
-          }))
+          }
+        })
       },
     },
   }
@@ -155,7 +163,13 @@ export default defineConfig({
     cloudflareWebAnalytics(process.env.CF_WEB_ANALYTICS_TOKEN),
     routePreloads(),
     fontPreloads([
-      /^assets\/(tektur|onest|fira-code)-latin-wght-normal-[\w-]+\.woff2$/,
+      {
+        file: /^assets\/(tektur|onest|fira-code)-latin-wght-normal-[\w-]+\.woff2$/,
+      },
+      {
+        file: /^assets\/readex-pro-arabic-wght-normal-[\w-]+\.woff2$/,
+        langs: ["ar"],
+      },
     ]),
   ],
   resolve: {
