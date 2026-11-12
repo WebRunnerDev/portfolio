@@ -25,10 +25,9 @@ export const CONTENT_START =
 
 // A section of the home page below the hero (docs/design-brief.md › Ритм
 // главной), opened as a chapter: a hairline across the content box with a
-// rust tile and the index in `label-mono` on it (`chapter-open` in
-// index.css: they open with the scroll), then the index again as a large
-// `outline-muted` figure (`chapter-numeral`, decoration: it rises with the
-// rule) over a `headline-lg` title rising word by word, the content, and one
+// rust tile on it (`chapter-open` in index.css: they open with the scroll),
+// then the index as a large `outline-muted` figure (`chapter-numeral`,
+// decoration: it rises with the rule) over a `headline-lg` title rising word by word, the content, and one
 // link to its part of the site at the end, as a `button-secondary` with an
 // arrow, so it reads as the way on. From `lg` the figure and the title hold
 // the first quarter and stay in view under the header while their section
@@ -67,13 +66,8 @@ export function HomeSection({
       className={cn("chapter [counter-increment:home-section]", className)}
     >
       <div className={CONTENT}>
-        <Reveal
-          as="p"
-          y={0}
-          className="chapter-open flex items-center gap-zsd-md pt-zsd-md font-zsd-label-mono text-zsd-label-mono text-zsd-on-surface-muted"
-        >
+        <Reveal y={0} className="chapter-open flex pt-zsd-md">
           <span aria-hidden="true" className="chapter-tile" />
-          <span aria-hidden="true" className="chapter-index" />
         </Reveal>
         <div className={cn("mt-zsd-lg", !wide && CHAPTER)}>
           <div

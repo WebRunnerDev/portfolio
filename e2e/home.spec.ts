@@ -340,8 +340,8 @@ test("reduced motion shows the sections as they are", async ({ page }) => {
 })
 
 // A chapter's rule opens with the scroll (issue #159): its hairline draws
-// from the start edge as the rule enters, the tile turns into place, and the
-// index rises from under its mask.
+// from the start edge as the rule enters and the tile turns into place. The
+// index is the large figure alone (#166).
 const rule = (page: Page, id: string) =>
   section(page, id).locator(".chapter-open")
 
@@ -384,7 +384,7 @@ for (const lang of ["en", "ar"]) {
     const { origin } = await line(page, "cv")
     expect(Number.parseFloat(origin)).toBeCloseTo(lang === "ar" ? width : 0, 0)
 
-    // Up the viewport: drawn whole, the tile turned, the index risen.
+    // Up the viewport: drawn whole, the tile turned.
     await placeRule(page, "cv", 0.3)
     await expect
       .poll(async () => scaleX((await line(page, "cv")).transform))
@@ -393,11 +393,8 @@ for (const lang of ["en", "ar"]) {
       "transform",
       /^matrix\(0\.707/
     )
-    await expect(rule(page, "cv").locator(".chapter-index")).toHaveCSS(
-      "transform",
-      "none",
-      { pseudo: "before" }
-    )
+    // One index per chapter: the figure.
+    await expect(rule(page, "cv")).toHaveText("")
     await expect(rule(page, "cv")).toHaveCSS("opacity", "1")
   })
 }

@@ -4,6 +4,7 @@ import { DEFAULT_LANG, isLang, withLang, type Lang } from "@contracts/lang"
 import { DirectionProvider } from "@/app/providers"
 import { NotFoundPage } from "@/pages/not-found"
 import { LangHead } from "@/shared/i18n"
+import { CursorTile } from "@/widgets/cursor-tile"
 import { SiteFooter } from "@/widgets/footer"
 import { SiteHeader } from "@/widgets/header"
 import { SiteMenu } from "@/widgets/menu"
@@ -34,6 +35,7 @@ export const Route = createFileRoute("/$lang")({
       </div>
       {/* Outside the <Outlet>: the music goes on across page changes. */}
       <MusicPlayer />
+      <CursorTile />
     </DirectionProvider>
   ),
   notFoundComponent: NotFoundPage,

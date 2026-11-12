@@ -911,17 +911,72 @@ html:active-view-transition-type(forward, back) {
   }
 }
 
+/* docs/design-brief.md › Курсор-ромб, DESIGN.md › Tile: the tile beside the
+ * native cursor (`followPointer` in @/widgets/cursor-tile puts it under
+ * <body> and writes its place as a transform, once a frame). The transition
+ * on that transform is the lag: each frame it sets off again toward the
+ * pointer on the hover curve. Over a link or a button (`data-over`) it turns
+ * a quarter and `primary` fades in over `outline`: transform and opacity
+ * only. Above the header and the menu, under nothing; it takes no pointer
+ * events, so clicks and hover pass through to what's under it. Its own
+ * view-transition-name keeps it off the page snapshot as the page changes. */
+.cursor-tile {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 60;
+  width: 0.5rem;
+  height: 0.5rem;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--zsd-x-zsd-motion-duration-fast)
+    var(--zsd-x-zsd-motion-easing-hover);
+  view-transition-name: cursor-tile;
+  &[data-shown] {
+    opacity: 1;
+    transition-property: opacity, transform;
+    transition-duration:
+      var(--zsd-x-zsd-motion-duration-fast),
+      var(--zsd-x-zsd-motion-duration-base);
+  }
+  &::before,
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    rotate: 45deg;
+    transition-property: rotate, opacity;
+    transition-duration: var(--zsd-x-zsd-motion-duration-fast);
+    transition-timing-function: var(--zsd-x-zsd-motion-easing-hover);
+  }
+  &::before {
+    background: var(--zsd-colors-outline);
+  }
+  &::after {
+    background: var(--zsd-colors-primary);
+    opacity: 0;
+  }
+  &[data-over]::before,
+  &[data-over]::after {
+    rotate: 135deg;
+  }
+  &[data-over]::after {
+    opacity: 1;
+  }
+  @media print {
+    display: none;
+  }
+}
+
 /* docs/design-brief.md › Ритм главной, › Арт-дирекция этапа 7 › База, п. 2:
  * the rule that opens a chapter of the home page (`HomeSection` in
  * src/pages/home), a Reveal: an `outline-muted` hairline across the content
- * box (`::before`), the rust tile (`chapter-tile`) and the index, a CSS
- * counter in a mask (`chapter-index`). The rule opens with the scroll and
- * lends its view timeline to its parts: over its entry the hairline draws
+ * box (`::before`) and the rust tile (`chapter-tile`). The index is the large
+ * figure under it alone (`chapter-numeral`). The rule opens with the scroll
+ * and lends its view timeline to the tile: over its entry the hairline draws
  * from the start edge and the tile turns into place from nothing, as the
- * footer's full stop. The index is text, so the scroll doesn't drive it: it
- * waits under its mask and rises once the Reveal sees the rule in view.
- * Without `animation-timeline` the rule keeps its one-off Reveal; reduced
- * motion renders it as is. */
+ * footer's full stop. Without `animation-timeline` the rule keeps its
+ * one-off Reveal; reduced motion renders it as is. */
 @utility chapter-open {
   position: relative;
   &::before {
@@ -946,19 +1001,11 @@ html:active-view-transition-type(forward, back) {
   transform: rotate(45deg);
 }
 
-@utility chapter-index {
-  overflow: hidden;
-  &::before {
-    content: counter(home-section, decimal-leading-zero);
-    display: block;
-  }
-}
-
-/* › Арт-дирекция этапа 7 › База, п. 3: the chapter's index again as a large
+/* › Арт-дирекция этапа 7 › База, п. 3: the chapter's index, once, as a large
  * Tektur figure over its title, `display-sm` and from `lg` up to
  * `display-md` at the content box's full width; `outline-muted`, decoration
- * (the label on the rule says it). The same counter, so the digits are
- * Western in every Lang; tracking 0 in Arabic. A mask: the figure rises from
+ * (DESIGN.md › Typography). A CSS counter, so the digits are Western in
+ * every Lang; tracking 0 in Arabic. A mask: the figure rises from
  * under it together with the rule's Reveal (`chapter` on the section), on
  * the timeline or not; without `:has()`, reduced motion or once the Reveal
  * has stalled, it just stands. */
@@ -1027,13 +1074,6 @@ html:active-view-transition-type(forward, back) {
       animation: stop-in var(--zsd-x-zsd-motion-easing-layout) both;
       animation-timeline: --chapter;
       animation-range: entry 0% cover 25%;
-    }
-    .chapter-open.reveal-out .chapter-index::before {
-      transform: translateY(120%);
-    }
-    .chapter-open.reveal-in .chapter-index::before {
-      animation: reveal-rise var(--zsd-x-zsd-motion-duration-reveal)
-        var(--zsd-x-zsd-motion-easing-enter) var(--reveal-delay, 0s) backwards;
     }
   }
 }
