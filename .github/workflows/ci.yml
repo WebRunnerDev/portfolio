@@ -3,15 +3,17 @@ name: CI
 # Deploys are not here: Workers Builds (Cloudflare Git integration) deploys
 # `main` to production and every other branch to a Preview. See worker/README.md.
 # Git hooks can be skipped with --no-verify, so these jobs are the real gate.
+#
+# Pull requests only: the `main` ruleset requires a PR and a branch up to date
+# with `main`, so the merge lands the tree these jobs checked, and a run after
+# the merge would repeat them. CodeQL still runs on `main` (codeql.yml).
 
 on:
   pull_request:
-  push:
-    branches: [main]
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -53,13 +55,12 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      # Scans the commits of the PR, or of the push to main.
+      # Scans the commits of the PR.
       - uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   commitlint:
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
