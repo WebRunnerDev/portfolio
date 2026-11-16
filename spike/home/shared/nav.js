@@ -4,6 +4,9 @@ const pages = [
   ["/b/", "B"],
   ["/c/", "C"],
   ["/d/", "D"],
+  ["/d5/", "D5"],
+  ["/d6/", "D6"],
+  ["/d7/", "D7"],
   ["/e/", "E"],
 ]
 const nav = document.createElement("nav")
