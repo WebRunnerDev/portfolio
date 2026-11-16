@@ -7,6 +7,7 @@ import {
   FOV,
   gatherSlot,
   stepOut,
+  toWorld,
   VIEW_H,
   type Box,
   type Viewport,
@@ -22,7 +23,7 @@ import {
   perspective,
   rng,
 } from "./math"
-import { DESKTOP, type Quality } from "./quality"
+import { DESKTOP, sizeK, type Quality } from "./quality"
 import {
   A_HOME,
   A_NODE,
@@ -43,6 +44,7 @@ import {
   THREAD_FRAGMENT,
   THREAD_VERTEX,
 } from "./shaders"
+import { splash, splashes } from "./splash"
 import {
   FLOATS,
   lay,
@@ -89,6 +91,21 @@ const POINTER_IDLE = 1800
 // A pluck: the pointer within this of a thread (CSS pixels), moving.
 const PLUCK_RADIUS = 22
 const PLUCK_MOVE = 1.5
+// The pointer parts the dust (docs/design-brief.md › Главная на Swarm ›
+// Сцена › Указатель): how much, from half at rest to all of it at speed,
+// rising faster than it falls; its speed builds with the distance moved
+// (CSS pixels to the full) and fades.
+const PUSH_UP = 4
+const PUSH_DOWN = 1.4
+const SPEED_PX = 400
+const SPEED_FADE = 1.8
+// The blocks lean toward the pointer on a spring, near it only.
+const LEAN_FOLLOW = 7
+const LEAN = 0.18
+const LEAN_MAX = 0.55
+const LEAN_REACH = 30
+const LEAN_STIFF = 70
+const LEAN_DAMP = 9
 // Where the intro's crawl starts: the far node nearest the hero's middle,
 // so it spreads both ways.
 const SEED = { u: 0.5, v: 0.5 }
@@ -97,11 +114,16 @@ const DUST_UNIFORMS = [
   "uViewProj",
   "uBlock",
   "uForm",
+  "uSplash",
+  "uSplashA",
   "uNodes",
   "uTime",
   "uScale",
   "uSizeK",
-  "uMinSize",
+  "uDpr",
+  "uPush",
+  "uRes",
+  "uPointer",
   "uKey",
   "uSteel",
   "uRim",
@@ -332,6 +354,10 @@ export function swarm(
 
   const blocks = new Float32Array(BLOCKS * 16)
   const form = new Float32Array(BLOCKS)
+  const splashed = splashes()
+  const from = new Float32Array(3)
+  // Per block: its lean toward the pointer (x, y) and how fast it turns.
+  const lean = new Float32Array(BLOCKS * 4)
   const blockPhases = Array.from(
     { length: BLOCKS },
     () => random() * 2 * Math.PI
@@ -354,9 +380,12 @@ export function swarm(
   let texts: Element[] = []
 
   // The pointer (mouse or pen) in client coordinates: for the parallax,
-  // the runner and the pluck.
-  const pointer = { x: 0, y: 0, inside: false, last: -Infinity }
+  // the runner, the pluck, the parting and the lean; its speed (0–1).
+  const pointer = { x: 0, y: 0, inside: false, last: -Infinity, speed: 0 }
   const before = { x: 0, y: 0 }
+  // The pointer on the plane, a little after it, and how hard it pushes.
+  const near = { x: 0, y: 0 }
+  let push = 0
   const viewer: Viewer = { width: 1, height: 1, pointer: null }
   let camera = { x: 0, y: 0 }
 
@@ -582,8 +611,19 @@ export function swarm(
       state.heat[node] *= cool
     }
 
+    // The pointer: how hard it parts the dust, and where it is on the
+    // plane for the blocks to lean to.
+    const moving = pointer.inside && now - pointer.last < POINTER_IDLE
+    pointer.speed *= Math.exp(-dts * SPEED_FADE)
+    const pushTo = moving ? 0.5 + 0.5 * pointer.speed : 0
+    push = damp(push, pushTo, pushTo > push ? PUSH_UP : PUSH_DOWN, dts)
+    const onPlane = toWorld(viewport, pointer.x, pointer.y)
+    near.x = damp(near.x, onPlane.x, LEAN_FOLLOW, dts)
+    near.y = damp(near.y, onPlane.y, LEAN_FOLLOW, dts)
+
     // The blocks: from the spread into the logo, turned less as they land,
-    // then breathing in place. A lit block half forms before the gather.
+    // then breathing in place, leaning to the pointer once they have. A lit
+    // block half forms before the gather.
     const k = phase.gather
     const nodeData = nodeTexture.data
     for (let i = 0; i < BLOCKS; i++) {
@@ -593,7 +633,29 @@ export function swarm(
       let z = lerp(-1.5 + (i % 3) * 0.8, 0, k)
       z += Math.sin(t * 0.9 + blockPhases[i]) * 0.12 * k * slot.scale
       rx += Math.sin(t * 0.6 + blockPhases[i]) * 0.03 * k
-      compose(blocks, i * 16, [slot.x, slot.y, z], [rx, ry, 0], slot.scale)
+      const dx = near.x - slot.x
+      const dy = near.y - slot.y
+      const close =
+        Math.exp(-(dx * dx + dy * dy) / (slot.scale ** 2 * LEAN_REACH)) *
+        push *
+        k
+      const o = i * 4
+      const toX = clamp(-dy * LEAN, -LEAN_MAX, LEAN_MAX) * close
+      const toY = clamp(dx * LEAN, -LEAN_MAX, LEAN_MAX) * close
+      lean[o + 2] +=
+        ((toX - lean[o]) * LEAN_STIFF - lean[o + 2] * LEAN_DAMP) * dts
+      lean[o + 3] +=
+        ((toY - lean[o + 1]) * LEAN_STIFF - lean[o + 3] * LEAN_DAMP) * dts
+      lean[o] += lean[o + 2] * dts
+      lean[o + 1] += lean[o + 3] * dts
+      z += close * slot.scale * 0.8
+      compose(
+        blocks,
+        i * 16,
+        [slot.x, slot.y, z],
+        [rx + lean[o], ry + lean[o + 1], 0],
+        slot.scale
+      )
       form[i] = Math.max(k, litEased[i] * 0.45)
       world[i * 3] = slot.x
       world[i * 3 + 1] = slot.y
@@ -603,7 +665,6 @@ export function swarm(
       project(slot.x, slot.y, z)
       state.sx[i] = step[0]
       state.sy[i] = step[1]
-      nodeData[(nodes + i) * 4] = state.heat[i]
     }
 
     // The far nodes: where they lie in the hero, drawn in toward the logo
@@ -653,6 +714,15 @@ export function swarm(
     viewer.height = height
     viewer.pointer = active ? pointer : null
     run.step(dts, viewer, phase.done)
+
+    // What landed on a block blows its dust off, from the node it came by.
+    for (let i = 0; i < BLOCKS; i++) {
+      if (!state.hit[i]) continue
+      const by = state.hitFrom[i] * 3
+      for (let c = 0; c < 3; c++) from[c] = world[by + c] - world[i * 3 + c]
+      splash(splashed, i, t, state.hit[i], blocks, i * 16, from)
+      state.hit[i] = 0
+    }
 
     // The threads: ends at the nodes' surfaces, plucked where the pointer
     // crosses them, the wave, the heat they keep, into the buffers.
@@ -785,10 +855,15 @@ export function swarm(
     gl.uniformMatrix4fv(dustAt.uViewProj, false, viewProj)
     gl.uniformMatrix4fv(dustAt.uBlock, false, blocks)
     gl.uniform1fv(dustAt.uForm, form)
+    gl.uniform4fv(dustAt.uSplash, splashed.at)
+    gl.uniform1fv(dustAt.uSplashA, splashed.amp)
     gl.uniform1f(dustAt.uTime, t)
     gl.uniform1f(dustAt.uScale, (h * 0.5) / Math.tan(FOV / 2))
-    gl.uniform1f(dustAt.uSizeK, (9000 / quality.perBlock) ** 0.3)
-    gl.uniform1f(dustAt.uMinSize, dpr)
+    gl.uniform1f(dustAt.uSizeK, sizeK(quality.perBlock))
+    gl.uniform1f(dustAt.uDpr, dpr)
+    gl.uniform1f(dustAt.uPush, push)
+    gl.uniform2f(dustAt.uRes, w, h)
+    gl.uniform2f(dustAt.uPointer, pointer.x * dpr, (height - pointer.y) * dpr)
     gl.uniform3fv(dustAt.uKey, KEY)
     gl.uniform3fv(dustAt.uSteel, colors.steel)
     gl.uniform3fv(dustAt.uRim, colors.rim)
@@ -888,9 +963,15 @@ export function swarm(
   }
 
   const move = (event: PointerEvent) => {
-    // Touch scrolls the page: no parallax or pluck under a finger.
+    // Touch scrolls the page: no parallax, parting or pluck under a finger.
     if (event.pointerType === "touch") return
-    if (!pointer.inside) {
+    if (pointer.inside) {
+      const moved = Math.hypot(
+        event.clientX - pointer.x,
+        event.clientY - pointer.y
+      )
+      pointer.speed = Math.min(1, pointer.speed + moved / SPEED_PX)
+    } else {
       before.x = event.clientX
       before.y = event.clientY
     }

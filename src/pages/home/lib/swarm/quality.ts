@@ -31,3 +31,8 @@ export const DESKTOP: Quality = {
   post: true,
   fps: 60,
 }
+
+// A block's dust is as dense at every level: fewer particles draw larger,
+// by the spike's rule (`uSizeK`). Never smaller than at `desktop`.
+export const sizeK = (perBlock: number) =>
+  (DESKTOP.perBlock / Math.min(perBlock, DESKTOP.perBlock)) ** 0.3
