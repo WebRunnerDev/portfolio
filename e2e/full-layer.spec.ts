@@ -1,11 +1,11 @@
 import { expect, test, type Page } from "@playwright/test"
 
-import { headerLogo, heroTiles } from "./logo-flight"
-
 // ADR-0012: the full layer loads only at the `full` Motion Tier and after the
 // visitor's first input, never with the page or in its modulepreloads.
-const FULL_CHUNK = /hero-full/
+const FULL_CHUNK = /home-full/
 const hero = (page: Page) => page.locator("section[data-tier]")
+// The Swarm's canvas: the home page's, behind the whole page (ADR-0013).
+const scene = (page: Page) => page.locator("[data-effect=full]")
 // The FPS probe's run (MotionTierProvider): past it, the first input loads
 // the full layer at once.
 const PAST_PROBE_MS = 2_500
@@ -49,10 +49,9 @@ test("the full layer waits for the first input", async ({ page }) => {
   await page.mouse.move(200, 200)
   await chunk
   await expect(hero(page)).toHaveAttribute("data-tier", "full")
-  await expect(
-    hero(page).locator("[data-effect=full][data-ready=true]")
-  ).toBeAttached()
-  await expect(hero(page).locator("[data-effect]")).toHaveCount(1)
+  await expect(scene(page)).toHaveAttribute("data-ready", "true")
+  // `lite` gave way to the scene.
+  await expect(hero(page).locator("[data-effect]")).toHaveCount(0)
 })
 
 test("the scene fades in over lite after its first frame, nothing shifts", async ({
@@ -83,7 +82,7 @@ test("the scene fades in over lite after its first frame, nothing shifts", async
   const input = await page.evaluate("performance.now()")
   await page.mouse.move(200, 200)
 
-  const canvas = hero(page).locator("[data-effect=full]")
+  const canvas = scene(page)
   await expect(canvas).toHaveAttribute("data-ready", "true", {
     timeout: 10_000,
   })
@@ -93,17 +92,18 @@ test("the scene fades in over lite after its first frame, nothing shifts", async
     "transition-timing-function",
     "cubic-bezier(0.16, 1, 0.3, 1)"
   )
-  await expect(hero(page).locator("[data-effect]")).toHaveCount(1)
+  await expect(hero(page).locator("[data-effect]")).toHaveCount(0)
   await expect(canvas).toHaveCSS("opacity", "1")
-  // `lite` stayed under the scene until it drew, then left.
+  // `lite` stayed under the scene until it drew, faded out as it faded in
+  // (DESIGN.md › Motion: `duration-slow`, `easing-exit`), then left.
   const effects = await page.evaluate("window.effects")
   expect((effects as string[]).slice(-3)).toEqual([
     "lite, full",
     "lite, full drawn",
     "full drawn",
   ])
-  // An absolute layer: no layout shift from the input on, not even in the
-  // 500 ms after it that CLS leaves out.
+  // A fixed layer and an absolute readout: no layout shift from the input
+  // on, not even in the 500 ms after it that CLS leaves out.
   const shifts = await page.evaluate(
     `window.shifts.filter((entry) => entry.startTime > ${input}).length`
   )
@@ -162,56 +162,6 @@ test("a click right after the first input responds within 200 ms", async ({
   await expect(page).toHaveURL(/\/en\/cv$/)
   const durations = (await page.evaluate("window.durations")) as number[]
   expect(Math.max(0, ...durations)).toBeLessThan(200)
-})
-
-// Issue #165, docs/design-brief.md › Cast Lattice: the first part of the
-// hero's exit is the rise of the scene's copies into the logo tiles; the
-// header logo's flight takes off from over the tiles after it.
-test("the logo flight waits for the rise at full", async ({ page }) => {
-  await strongDevice(page)
-  // As many pixels as 640×480, with the hero no taller than the view below
-  // the header: at 640×480 it is, and its tiles reach the header before its
-  // exit, so there is no rise.
-  await page.setViewportSize({ width: 480, height: 640 })
-  await page.goto("/en")
-  await page.waitForTimeout(PAST_PROBE_MS)
-  await page.mouse.move(200, 200)
-  await expect(hero(page).locator("[data-effect=full]")).toHaveAttribute(
-    "data-rise",
-    "true",
-    { timeout: 10_000 }
-  )
-  await page.evaluate("document.fonts.ready")
-  // Without D1 (CI) the page is too short for the hero's whole exit.
-  await page.evaluate(`document.body.style.paddingBottom = "200vh"`)
-  // Where the hero's exit starts and how long it is (this one is taller
-  // than the view), and the rise's share of it.
-  const { start, length, share } = (await page.evaluate(`(() => {
-    const root = document.documentElement
-    const top = parseFloat(getComputedStyle(root).scrollPaddingTop)
-    const box = document.querySelector("section[data-tier]").getBoundingClientRect()
-    return {
-      start: Math.max(box.top - top, box.bottom - root.clientHeight),
-      length: Math.min(box.height, root.clientHeight - top),
-      share: Number(root.style.getPropertyValue("--logo-flight-rise")),
-    }
-  })()`)) as { start: number; length: number; share: number }
-  expect(share).toBeGreaterThan(0)
-
-  // Halfway through the rise the tiles are still the hero's.
-  await page.evaluate(`scrollTo(0, ${start + (share * length) / 2})`)
-  await expect(heroTiles(page)).toHaveCSS("opacity", "1")
-  await expect(headerLogo(page)).toHaveCSS("opacity", "0")
-
-  // Past it, the header logo shows over them and flies on.
-  await page.evaluate(`scrollTo(0, ${Math.ceil(start + share * length) + 2})`)
-  await expect(heroTiles(page)).toHaveCSS("opacity", "0")
-  await expect(headerLogo(page)).toHaveCSS("opacity", "1")
-  const tiles = (await heroTiles(page).boundingBox())!
-  const logo = (await headerLogo(page).boundingBox())!
-  for (const key of ["x", "y", "width"] as const) {
-    expect(Math.abs(logo[key] - tiles[key])).toBeLessThanOrEqual(4)
-  }
 })
 
 test("the full chunk is in no modulepreload", async ({ page, request }) => {
