@@ -70,38 +70,55 @@ export function shapePoint(random: () => number) {
   ]
 }
 
-// The dust of `nodes` blocks, `perBlock` particles each, laid in slices of
+// The dust of `blocks` blocks, `perBlock` particles each, and of `far` far
+// nodes (numbered after the blocks), `perFar` each, laid in slices of
 // `slice` particles so no long task lands on an input: yields after every
-// slice, returns the buffer. Particles go round the blocks (particle i of
-// every block, then i + 1), so the first k × nodes of the buffer hold the
-// first k of each block: drawing fewer is a shorter draw range.
-export function* dust(nodes: number, perBlock: number, slice = 8192) {
+// slice, returns the buffer. Particles go round the nodes (particle i of
+// every node, then i + 1), so the first k rounds hold the first k of each
+// node: drawing fewer is a shorter draw range. A far node is a shell.
+export function* dust(
+  blocks: number,
+  perBlock: number,
+  far = 0,
+  perFar = 0,
+  slice = 8192
+) {
   const random = rng(19)
-  const out = new Float32Array(nodes * perBlock * PARTICLE)
+  const out = new Float32Array((blocks * perBlock + far * perFar) * PARTICLE)
   let k = 0
-  for (let i = 0; i < perBlock; i++) {
-    for (let node = 0; node < nodes; node++) {
-      const [x, y, z, nx, ny, nz] = shapePoint(random)
-      const inner = random() < INNER
-      const depth = inner ? 0.35 + 0.55 * Math.cbrt(random()) : 1
-      const lit = inner ? 0.35 + 0.3 * depth : 1
-      out.set(
-        [
-          x * depth,
-          y * depth,
-          z * depth,
-          nx * lit,
-          ny * lit,
-          nz * lit,
-          node,
-          random(),
-          random(),
-          random(),
-          random(),
-        ],
-        k * PARTICLE
-      )
-      if (++k % slice === 0) yield
+  const put = (node: number, block: boolean) => {
+    const [x, y, z, nx, ny, nz] = shapePoint(random)
+    const inner = block && random() < INNER
+    const depth = inner ? 0.35 + 0.55 * Math.cbrt(random()) : 1
+    const lit = inner ? 0.35 + 0.3 * depth : 1
+    out.set(
+      [
+        x * depth,
+        y * depth,
+        z * depth,
+        nx * lit,
+        ny * lit,
+        nz * lit,
+        node,
+        random(),
+        random(),
+        random(),
+        random(),
+      ],
+      k * PARTICLE
+    )
+    return ++k % slice === 0
+  }
+  for (let i = 0; i < Math.max(perBlock, perFar); i++) {
+    if (i < perBlock) {
+      for (let node = 0; node < blocks; node++) {
+        if (put(node, true)) yield
+      }
+    }
+    if (i < perFar) {
+      for (let node = blocks; node < blocks + far; node++) {
+        if (put(node, false)) yield
+      }
     }
   }
   return out

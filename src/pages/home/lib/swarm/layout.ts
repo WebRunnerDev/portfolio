@@ -63,3 +63,33 @@ export function gatherSlot(view: Viewport, logo: Box, i: number, k: number) {
     scale: lerp(to.scale * SPREAD_SCALE, to.scale, k),
   }
 }
+
+// docs/design-brief.md › Главная на Swarm › На главной › Текст: a node in
+// a text box (grown by `margin`) steps out to its nearest edge. Writes the
+// step into `out` (x, y; CSS pixels), 0 outside every box.
+export type Zone = Pick<DOMRect, "left" | "top" | "right" | "bottom">
+export const TEXT_MARGIN = 30
+export function stepOut(
+  x: number,
+  y: number,
+  zones: readonly Zone[],
+  count: number,
+  out: Float32Array,
+  margin = TEXT_MARGIN
+) {
+  out[0] = 0
+  out[1] = 0
+  for (let i = 0; i < count; i++) {
+    const r = zones[i]
+    const left = r.left - margin - x
+    const right = r.right + margin - x
+    const up = r.top - margin - y
+    const down = r.bottom + margin - y
+    if (left >= 0 || right <= 0 || up >= 0 || down <= 0) continue
+    const sideways = -left < right ? left : right
+    const vertical = -up < down ? up : down
+    if (Math.abs(sideways) < Math.abs(vertical)) out[0] = sideways
+    else out[1] = vertical
+    return
+  }
+}

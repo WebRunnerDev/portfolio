@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 
 import { centers } from "../tiles"
 import { HALF_DIAGONAL } from "./dust"
-import { gatherSlot, logoSlot, toWorld, VIEW_H } from "./layout"
+import { gatherSlot, logoSlot, stepOut, toWorld, VIEW_H } from "./layout"
 
 const view = { width: 1600, height: 900 }
 const logo = { left: 1000, top: 200, width: 500, height: 500 }
@@ -50,5 +50,27 @@ describe("gatherSlot", () => {
     const to = logoSlot(view, logo, 2)
     expect(from.scale).toBeLessThan(to.scale)
     expect(Math.hypot(from.x - to.x, from.y - to.y)).toBeGreaterThan(1)
+  })
+})
+
+describe("stepOut", () => {
+  const zones = [{ left: 100, top: 100, right: 400, bottom: 200 }]
+  const out = new Float32Array(2)
+
+  it("steps a node in a text box out to its nearest edge", () => {
+    stepOut(120, 150, zones, 1, out, 0)
+    expect([...out]).toEqual([-20, 0])
+    stepOut(250, 190, zones, 1, out, 0)
+    expect([...out]).toEqual([0, 10])
+  })
+
+  it("keeps the margin and leaves nodes outside alone", () => {
+    stepOut(250, 90, zones, 1, out, 30)
+    expect([...out]).toEqual([0, -20])
+    stepOut(50, 50, zones, 1, out, 30)
+    expect([...out]).toEqual([0, 0])
+    // Only the first `count` zones count.
+    stepOut(250, 150, zones, 0, out, 30)
+    expect([...out]).toEqual([0, 0])
   })
 })
