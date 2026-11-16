@@ -166,9 +166,9 @@ test("the full tier draws the Swarm behind the whole page", async ({
     playing: "true",
   })
   expect(await colorsThroughLogo(page)).toBeGreaterThan(20)
-  // The readout walks the site's pages on the current Lang.
+  // The readout counts the nodes the crawl lights in the hero's web.
   const readout = hero(page).locator("[data-swarm-readout]")
-  await expect(readout).toHaveText(/^(Crawling · \/en(\/\w+)?|Indexed)$/, {
+  await expect(readout).toHaveText(/^(Crawling|Indexed) · \d+ nodes$/, {
     timeout: 1_000,
   })
   await expect(readout).toHaveAttribute("dir", "ltr")

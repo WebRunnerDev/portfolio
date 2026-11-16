@@ -48,7 +48,7 @@ function HeroEffect({ tier, covered }: { tier: MotionTier; covered: boolean }) {
 }
 
 // At `full`, the Swarm's crawl readout (docs/design-brief.md › Главная на
-// Swarm › Hero): the scene writes it. Over the top of the hero, out of the
+// Swarm › Hero): the scene writes it, and keeps its web out of it. Over the top of the hero, out of the
 // flow, so nothing moves when it comes; a readout of the scene, not text.
 function HeroReadout() {
   return (
@@ -60,6 +60,7 @@ function HeroReadout() {
         <p
           dir="ltr"
           data-swarm-readout
+          data-swarm-text
           className="w-fit font-zsd-label-mono text-zsd-label-mono text-zsd-on-surface-muted"
         />
       </div>
@@ -105,6 +106,7 @@ export function Hero({
     <section
       ref={heroRef}
       data-tier={tier}
+      data-swarm-web="hero"
       className={`${tier === "static" ? "" : "logo-flight-hero"} relative isolate flex min-h-[max(480px,calc(100svh-var(--zsd-x-zsd-layout-header-height)-var(--zsd-x-zsd-border-width-default)))] overflow-hidden`}
     >
       <div aria-hidden="true" dir="ltr" className="absolute inset-0 -z-10">
@@ -114,6 +116,7 @@ export function Hero({
       <div className="mx-auto flex w-full max-w-(--zsd-x-zsd-layout-content-max) flex-col justify-center px-zsd-lg py-zsd-section md:px-zsd-xxl">
         <HeroBrand tiles={tilesRef} />
         <p
+          data-swarm-text
           style={delay(SUBTITLE_START)}
           className={`mt-zsd-xl min-h-[3lh] max-w-(--zsd-x-zsd-layout-prose-max) font-zsd-body-lg text-zsd-body-lg text-balance text-zsd-on-surface-muted ${CONTENT_START}`}
         >
@@ -121,7 +124,10 @@ export function Hero({
             <HeroSubtitle profile={profile} />
           </Suspense>
         </p>
-        <div className={`mt-zsd-lg flex flex-wrap gap-zsd-md ${CONTENT_START}`}>
+        <div
+          data-swarm-text
+          className={`mt-zsd-lg flex w-fit max-w-full flex-wrap gap-zsd-md ${CONTENT_START}`}
+        >
           <Link
             to="/$lang/cv"
             params={{ lang }}

@@ -39,8 +39,11 @@ export type Palette = {
   // theme as in the spike, darker than the page in the light one.
   steel: Rgb
   rim: Rgb
-  // What a hot particle flashes (linear): rust.
+  // What a hot particle flashes and a packet's head is (linear): rust.
   flash: Rgb
+  // A cold thread (linear): the spike's dark steel, added to the scene in
+  // the dark; `outline` in the light, blended over it.
+  line: Rgb
 }
 
 // The spike's steel and rim in the dark. In the light, `outline` lit and
@@ -51,6 +54,7 @@ const DARK_RIM: Rgb = [0.5, 0.58, 0.78]
 // The spike's rust, brighter than `primary`: in the dark it is light, and
 // tone mapping takes it to `primary`'s hue. In the light, `primary` itself.
 const DARK_FLASH: Rgb = [1, 0.36, 0.12]
+const DARK_LINE: Rgb = [0.1, 0.112, 0.135]
 
 export function palette(read: (token: string) => string): Palette {
   const surface = rgb(read(TOKENS.surface))
@@ -61,5 +65,6 @@ export function palette(read: (token: string) => string): Palette {
     steel: dark ? DARK_STEEL : toLinear(rgb(read(TOKENS.outline))),
     rim: dark ? DARK_RIM : toLinear(rgb(read(TOKENS.outlineMuted))),
     flash: dark ? DARK_FLASH : toLinear(rgb(read(TOKENS.primary))),
+    line: dark ? DARK_LINE : toLinear(rgb(read(TOKENS.outline))),
   }
 }

@@ -5,19 +5,18 @@ import { fpsMeter, MIN_FULL_FPS, PROBE_MS } from "@/shared/lib/motion-tier"
 import { swarm, type Swarm } from "../lib/swarm"
 import { usePlaying } from "../lib/use-playing"
 
-// The site's parts the crawl readout walks through, on the current Lang.
-const PARTS = ["", "/cv", "/projects", "/gallery", "/blog"]
-
 // The full layer of the home page: the Swarm on a canvas fixed over the
 // viewport behind the whole page (ADR-0013, docs/design-brief.md › Главная
 // на Swarm). Loaded after the input gate, paused on a hidden tab.
 // Transparent until the scene's first frame, then it fades in with the dust
-// scattered over the screen (`onShown`: `lite` fades out meanwhile) and the
-// dust gathers into the hero's logo. Falls back to `lite` through `onFail` when the
-// frame rate drops below the probe's while it runs, without WebGL2, when
-// the shaders don't link or when the context is lost.
-// `lang` comes from the page: an i18n import here would split the shared
-// chunks differently and grow every page's initial JS.
+// scattered over the screen (`onShown`: `lite` fades out meanwhile); a
+// crawl lights the hero's web, then the dust gathers into the hero's logo.
+// Falls back to `lite` through `onFail` when the frame rate drops below the
+// probe's while it runs, without WebGL2, when the shaders don't link or
+// when the context is lost. A new `lang` lays the scene again: the web
+// steps out of the hero's text, which is new. It comes from the page: an
+// i18n import here would split the shared chunks differently and grow
+// every page's initial JS.
 export function HomeFull({
   lang,
   onFail,
@@ -44,7 +43,6 @@ export function HomeFull({
         shown()
       },
       onFail: () => fail(),
-      paths: PARTS.map((part) => `/${lang}${part}`),
     })
     if (!scene.current) {
       fail()

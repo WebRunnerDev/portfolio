@@ -42,7 +42,31 @@ describe("dust", () => {
     expect(run(dust(7, 50)).value).toEqual(run(dust(7, 50)).value)
   })
 
+  it("lays far nodes after the blocks, a shell each, round the nodes", () => {
+    const { value } = run(dust(7, 100, 3, 10))
+    expect(value.length).toBe((7 * 100 + 3 * 10) * PARTICLE)
+    // A round: 7 blocks, then the 3 far nodes, while they have particles.
+    const node = (k: number) => value[k * PARTICLE + 6]
+    expect([...Array(20).keys()].map(node)).toEqual([
+      0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+    ])
+    expect(node(10 * 10)).toBe(0)
+    // On the surface: normals of unit length.
+    for (let k = 7; k < 10; k++) {
+      const at = k * PARTICLE
+      expect(
+        Math.hypot(value[at + 3], value[at + 4], value[at + 5])
+      ).toBeCloseTo(1)
+    }
+  })
+
+  it("keeps the blocks' dust as it was without far nodes", () => {
+    const blocks = run(dust(7, 50)).value
+    const both = run(dust(7, 50, 3, 0)).value
+    expect(both).toEqual(blocks)
+  })
+
   it("yields between slices", () => {
-    expect(run(dust(7, 1000, 1000)).yields).toBe(7)
+    expect(run(dust(7, 1000, 0, 0, 1000)).yields).toBe(7)
   })
 })

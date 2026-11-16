@@ -24,9 +24,14 @@ const delay = (seconds: number) =>
 // height of the capitals; their place follows the Direction, the brand and
 // the logo stay LTR. Screen readers get "WebRunner" in one piece. `tiles`
 // takes the logo for the flight into the header (@/shared/lib/logo-flight).
+// The Swarm's web steps out of it (`data-swarm-text`), so it is as wide as
+// the brand, not the hero.
 export function HeroBrand({ tiles }: { tiles?: Ref<SVGSVGElement> }) {
   return (
-    <h1 className="flex items-start gap-[0.12em] text-hero-brand">
+    <h1
+      data-swarm-text
+      className="flex w-fit max-w-full items-start gap-[0.12em] text-hero-brand"
+    >
       <span className="sr-only">WebRunner</span>
       <span aria-hidden="true" dir="ltr" className="min-w-0">
         {WORDS.map((word, i) => (
