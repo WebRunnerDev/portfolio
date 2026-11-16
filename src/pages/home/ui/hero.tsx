@@ -1,13 +1,4 @@
-import {
-  lazy,
-  Suspense,
-  use,
-  useEffect,
-  useState,
-  type ComponentType,
-  type CSSProperties,
-  type RefObject,
-} from "react"
+import { Suspense, use, useState, type CSSProperties } from "react"
 import { Link } from "@tanstack/react-router"
 
 import type { Profile } from "@contracts/api/public"
@@ -19,7 +10,7 @@ import { fallbackLang } from "@/shared/ui/fallback-notice"
 
 import { HeroBrand } from "./hero-brand"
 import { CONTENT_START } from "./home-section"
-import { HeroLite } from "./hero-lite"
+import { HeroLite, HeroLogoAnchor } from "./hero-lite"
 import { HeroStatic } from "./hero-static"
 
 export type HeroProfile = Pick<Profile, "name" | "headline" | "fallback">
@@ -36,56 +27,43 @@ const ACTIONS_START = 0.6
 const delay = (seconds: number) =>
   ({ "--hero-delay": `${seconds}s` }) as CSSProperties
 
-type HeroFullProps = {
-  onFail: () => void
-  onShown: () => void
-  tiles: RefObject<Element | null>
-}
-
-// What a full chunk that didn't load renders: nothing, and `full` fails.
-function FullFailed({ onFail }: HeroFullProps) {
-  useEffect(onFail, [onFail])
-  return null
-}
-
-// Lazy: the full layer, the Cast Lattice, stays out of the initial JS and
-// the modulepreloads; it is imported only once the tier is `full`, which
-// waits for the input gate (ADR-0012). A chunk that doesn't load fails
-// `full`: `lite` for the rest of the visit.
-const HeroFull = lazy<ComponentType<HeroFullProps>>(() =>
-  import("./hero-full").then(
-    (m) => ({ default: m.HeroFull }),
-    () => ({ default: FullFailed })
-  )
-)
-
-// The effect behind the text. At `full`, `lite` stays in the same place
-// under the scene while its chunk loads and until its first frame has faded
-// in over it (ADR-0012), then leaves.
-function HeroEffect({
-  tier,
-  tiles,
-  onFullFail,
-}: {
-  tier: MotionTier
-  tiles: RefObject<Element | null>
-  onFullFail: () => void
-}) {
-  const [covered, setCovered] = useState(false)
+// The effect behind the text. At `full` the Swarm is the home page's, on a
+// canvas behind the whole page (HomeFull, ADR-0013): the hero keeps the
+// square its dust gathers into. `lite` stays until the scene's first frame
+// (`covered`), then fades out as the scene fades in, and leaves.
+function HeroEffect({ tier, covered }: { tier: MotionTier; covered: boolean }) {
+  const [left, setLeft] = useState(false)
   if (tier === "static") return <HeroStatic />
   return (
     <>
-      {(tier === "lite" || !covered) && <HeroLite />}
-      {tier === "full" && (
-        <Suspense>
-          <HeroFull
-            tiles={tiles}
-            onFail={onFullFail}
-            onShown={() => setCovered(true)}
-          />
-        </Suspense>
+      {(tier === "lite" || !left) && (
+        <HeroLite
+          leaving={tier === "full" && covered}
+          onLeft={() => setLeft(true)}
+        />
       )}
+      {tier === "full" && <HeroLogoAnchor />}
     </>
+  )
+}
+
+// At `full`, the Swarm's crawl readout (docs/design-brief.md › Главная на
+// Swarm › Hero): the scene writes it. Over the top of the hero, out of the
+// flow, so nothing moves when it comes; a readout of the scene, not text.
+function HeroReadout() {
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-x-0 top-zsd-lg"
+    >
+      <div className="mx-auto max-w-(--zsd-x-zsd-layout-content-max) px-zsd-lg md:px-zsd-xxl">
+        <p
+          dir="ltr"
+          data-swarm-readout
+          className="w-fit font-zsd-label-mono text-zsd-label-mono text-zsd-on-surface-muted"
+        />
+      </div>
+    </div>
   )
 }
 
@@ -109,15 +87,15 @@ function HeroSubtitle({ profile }: { profile: Promise<HeroProfile | null> }) {
 // One viewport tall less the header. The effect spans the whole hero up to
 // the viewport's edges and is never mirrored; the text follows the Direction.
 // Its logo tiles fly into the header's as it scrolls away, but at `static`.
-// `onFullFail` is called when `full` can't hold on this device after all.
+// `covered`: the full layer's scene has drawn, and `lite` gives way to it.
 export function Hero({
   tier,
   profile,
-  onFullFail,
+  covered,
 }: {
   tier: MotionTier
   profile: Promise<HeroProfile | null>
-  onFullFail: () => void
+  covered: boolean
 }) {
   const lang = useLang()
   const t = useT()
@@ -130,8 +108,9 @@ export function Hero({
       className={`${tier === "static" ? "" : "logo-flight-hero"} relative isolate flex min-h-[max(480px,calc(100svh-var(--zsd-x-zsd-layout-header-height)-var(--zsd-x-zsd-border-width-default)))] overflow-hidden`}
     >
       <div aria-hidden="true" dir="ltr" className="absolute inset-0 -z-10">
-        <HeroEffect tier={tier} tiles={tilesRef} onFullFail={onFullFail} />
+        <HeroEffect tier={tier} covered={covered} />
       </div>
+      {tier === "full" && <HeroReadout />}
       <div className="mx-auto flex w-full max-w-(--zsd-x-zsd-layout-content-max) flex-col justify-center px-zsd-lg py-zsd-section md:px-zsd-xxl">
         <HeroBrand tiles={tilesRef} />
         <p

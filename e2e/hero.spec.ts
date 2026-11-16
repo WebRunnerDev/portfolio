@@ -96,21 +96,45 @@ test("the lite tier runs the logo tiles and pauses off screen", async ({
 // `lite` in the middle of a test.
 const SOFTWARE_GL = { width: 640, height: 480 }
 
+// The Swarm's canvas: the home page's, behind the whole page (ADR-0013).
+const scene = (page: Page) => page.locator("[data-effect=full]")
+
 // Past the input gate (ADR-0012) and the crossfade: the scene alone.
 async function fullScene(page: Page) {
   await page.mouse.move(200, 200)
   await expect(hero(page)).toHaveAttribute("data-tier", "full", {
     timeout: 10_000,
   })
-  await expect(
-    hero(page).locator("[data-effect=full][data-ready=true]")
-  ).toBeAttached()
-  await expect(effect(page)).toHaveCount(1)
-  await expect(effect(page)).toHaveAttribute("data-effect", "full")
-  return effect(page)
+  await expect(scene(page)).toHaveAttribute("data-ready", "true")
+  await expect(effect(page)).toHaveCount(0)
+  return scene(page)
 }
 
-test("the full tier draws the Cast Lattice and pauses off screen", async ({
+// How many colors a row of the canvas has through the middle of the hero's
+// logo square, read in a frame after the scene drew it.
+const colorsThroughLogo = (page: Page) =>
+  page.evaluate(`new Promise((resolve) =>
+    requestAnimationFrame(() => {
+      const canvas = document.querySelector("[data-effect=full]")
+      const logo = document
+        .querySelector("[data-swarm-anchor=hero]")
+        .getBoundingClientRect()
+      const scale = canvas.width / canvas.clientWidth
+      const y = Math.round(
+        (canvas.clientHeight - (logo.top + logo.height / 2)) * scale
+      )
+      const gl = canvas.getContext("webgl2")
+      const row = new Uint8Array(canvas.width * 4)
+      gl.readPixels(0, y, canvas.width, 1, gl.RGBA, gl.UNSIGNED_BYTE, row)
+      const seen = new Set()
+      for (let i = 0; i < row.length; i += 4) {
+        seen.add((row[i] << 16) | (row[i + 1] << 8) | row[i + 2])
+      }
+      resolve(seen.size)
+    })
+  )`) as Promise<number>
+
+test("the full tier gathers the Swarm into the hero's logo", async ({
   page,
 }) => {
   const errors = consoleErrors(page)
@@ -118,30 +142,25 @@ test("the full tier draws the Cast Lattice and pauses off screen", async ({
   await page.setViewportSize(SOFTWARE_GL)
   await page.goto("/en")
   const canvas = await fullScene(page)
-  await expect(canvas).toHaveAttribute("data-ready", "true")
   await expect(canvas).toHaveAttribute("data-playing", "true")
   await expect(canvas).toHaveCSS("opacity", "1")
-  // At DPR 1 over the whole hero, and not blank: many colors in a row of
-  // the frame, read in a frame after the scene drew it.
+  // Over the whole viewport (but the scrollbar, as the hero) at DPR 1,
+  // behind the page.
+  await expect(canvas).toHaveCSS("position", "fixed")
   const box = (await hero(page).boundingBox())!
   await expect(canvas).toHaveJSProperty("width", Math.round(box.width))
-  const colors = await page.evaluate(`new Promise((resolve) =>
-    requestAnimationFrame(() => {
-      const canvas = document.querySelector("[data-effect=full]")
-      const gl = canvas.getContext("webgl2")
-      const row = new Uint8Array(canvas.width * 4)
-      gl.readPixels(0, canvas.height >> 1, canvas.width, 1, gl.RGBA, gl.UNSIGNED_BYTE, row)
-      const seen = new Set()
-      for (let i = 0; i < row.length; i += 4) {
-        seen.add((row[i] << 16) | (row[i + 1] << 8) | row[i + 2])
-      }
-      resolve(seen.size)
-    })
-  )`)
-  expect(colors).toBeGreaterThan(3)
+  await expect(canvas).toHaveJSProperty("height", SOFTWARE_GL.height)
+  // The readout walks the site's pages, then the dust has gathered.
+  const readout = hero(page).locator("[data-swarm-readout]")
+  await expect(readout).toHaveText("Indexed", { timeout: 10_000 })
+  await expect(readout).toHaveAttribute("dir", "ltr")
+  expect(await colorsThroughLogo(page)).toBeGreaterThan(20)
 
-  await page.addStyleTag({ content: "main { padding-bottom: 200vh }" })
-  await page.mouse.wheel(0, 3000)
+  // A hidden tab pauses it.
+  await page.evaluate(`
+    Object.defineProperty(document, "visibilityState", { get: () => "hidden" })
+    document.dispatchEvent(new Event("visibilitychange"))
+  `)
   await expect(canvas).toHaveAttribute("data-playing", "false")
   expect(errors).toEqual([])
 })
@@ -161,6 +180,8 @@ test("the full tier falls back to lite when the WebGL context is lost", async ({
     .loseContext()`)
   await expect(hero(page)).toHaveAttribute("data-tier", "lite")
   await expect(effect(page)).toHaveAttribute("data-effect", "lite")
+  await expect(scene(page)).toHaveCount(0)
+  await expect(hero(page).locator("[data-swarm-readout]")).toHaveCount(0)
   expect(errors).toEqual([])
 })
 

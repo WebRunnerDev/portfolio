@@ -1,7 +1,1 @@
-export {
-  exitProgress,
-  flightStart,
-  riseShare,
-  shownLogo,
-  useLogoFlight,
-} from "./logo-flight"
+export { flightStart, shownLogo, useLogoFlight } from "./logo-flight"
