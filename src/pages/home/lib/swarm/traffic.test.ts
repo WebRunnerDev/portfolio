@@ -73,6 +73,28 @@ describe("traffic", () => {
     expect(Math.max(...state.heat)).toBeGreaterThan(0.5)
   })
 
+  it("marks the strongest landing on a block and where it came from", () => {
+    const { web, state, run, viewer } = setup()
+    const e = web.edges.findIndex((edge) => edge.a < BLOCKS && edge.b >= BLOCKS)
+    const { a: block, b: far } = web.edges[e]
+    // A pluck by the block: its pulse lands there first.
+    run.pulses(e, 1, 1)
+    for (let i = 0; i < 10 && !state.hit[block]; i++) {
+      run.step(1 / 60, viewer, false)
+    }
+    expect(state.hit[block]).toBeCloseTo(0.5)
+    expect(state.hitFrom[block]).toBe(far)
+    // Far nodes are never hit: their dust puffs out by their heat.
+    expect(state.hit.length).toBe(BLOCKS)
+    state.hit[block] = 0
+    // The crawl hits harder than a pulse.
+    run.crawl(far)
+    for (let i = 0; i < 30 && !state.hit[block]; i++) {
+      run.step(1 / 60, viewer, false)
+    }
+    expect(state.hit[block]).toBeCloseTo(0.7)
+  })
+
   it("sends a pluck's pulses both ways, fading", () => {
     const { web, state, run, viewer } = setup()
     const e = web.edges.findIndex((edge) => edge.a >= BLOCKS)

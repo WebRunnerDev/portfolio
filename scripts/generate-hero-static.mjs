@@ -1,171 +1,226 @@
-// Renders the static Motion Tier: the Cast Lattice at rest
-// (docs/design-brief.md › Cast Lattice) as a still image, one per theme.
-// Run: node scripts/generate-hero-static.mjs
-// Outputs: src/pages/home/ui/grid-{light,dark}.webp, 2560 × 1440, opaque
-// `surface` like the scene's canvas.
-// Each cell is the scene's prism seen from above: its top and four 45°
-// bevels in the flat colors the shader gives them under the key light at
-// rest (src/pages/home/lib/cast-lattice/), the rims a one-pixel line, and a
-// few rust prisms where a still of the swell lights them. Lossless WebP: the
-// flat faces compress well; AVIF loses on this line art.
-import { mkdir } from "node:fs/promises"
+// Renders the static Motion Tier: the hero with the Swarm at rest
+// (docs/design-brief.md › Главная на Swarm › `lite` и `static`), a still of
+// the real scene, one per theme and per orientation.
+// Run: node scripts/generate-hero-static.mjs (builds the app first; add
+// --no-build to use dist/ as it is).
+// Outputs: src/pages/home/ui/swarm-{light,dark}-{landscape,portrait}.webp,
+// each at most BUDGET bytes (the owner's, #185).
+//
+// It serves the build through the Worker (`vite preview`), opens the home
+// page in Chromium at `full` on the GPU (software WebGL may drop the scene
+// to `lite` at this size), passes the input gate and lets the intro end,
+// then takes the pointer off the page. The text is hidden, not removed, so
+// the web still steps out of it. Of a few frames at rest it keeps the
+// calmest (the logo least warm: no splash on it), at the hero's CSS
+// size times its scale. The grain on the empty `surface` is flattened (it is
+// noise the encoder would pay for) and the dust softened a little; then the
+// highest WebP quality within BUDGET.
+import { spawn } from "node:child_process"
+import { writeFile } from "node:fs/promises"
 import { fileURLToPath } from "node:url"
+import { chromium } from "@playwright/test"
 import sharp from "sharp"
 
-const out = fileURLToPath(new URL("../src/pages/home/ui/", import.meta.url))
+const root = fileURLToPath(new URL("..", import.meta.url))
+const out = `${root}src/pages/home/ui/`
+const PORT = 4177
+const URL_ = `http://localhost:${PORT}/en`
 
-const WIDTH = 2560
-const HEIGHT = 1440
-// The scene's lattice (lattice.ts), prism (prism.ts) and light
-// (cast-lattice.ts, shaders.ts).
-const STEP = 48
-const HALF = STEP / 2
-const BEVEL = 5
-const TOP = HALF - BEVEL * Math.SQRT2
-const AZIMUTH = (-3 * Math.PI) / 4
-const ELEVATION = (38 * Math.PI) / 180
-const LIGHT = [
-  Math.cos(ELEVATION) * Math.cos(AZIMUTH),
-  Math.cos(ELEVATION) * Math.sin(AZIMUTH),
-  Math.sin(ELEVATION),
+const BUDGET = 11 * 1024
+const FRAMES = [
+  // The reference desktop (#185) and phone: the logo square sits where the
+  // scene lays it at each breakpoint.
+  { name: "landscape", width: 1440, height: 900, scale: 1 },
+  { name: "portrait", width: 390, height: 844, scale: 1.5 },
 ]
-const SWELL_SPREAD = 4 * STEP
-const SWELL_DENSITY = 0.04
+// Past the FPS probe, then past the intro (src/pages/home/lib/swarm/
+// intro.ts: INTRO_MS) and the pointer going idle.
+const PROBE_MS = 3000
+const SETTLE_MS = 6500
+const SHOTS = 40
+const SHOT_GAP_MS = 250
+// The logo square and this much around it, where a splash shows.
+const AROUND = 0.15
+// Off the empty surface: within this of it is grain.
+const GRAIN = 5
+const SOFTEN = 0.6
 
-// DESIGN.md colors: faces from `surface` toward `surface-raised`, rims
-// `outline-muted`, rust `primary`.
-const THEMES = {
-  light: {
-    surface: "#F3F4F6",
-    raised: "#E5E7EB",
-    edge: "#D1D5DB",
-    crest: "#B84530",
-  },
-  dark: {
-    surface: "#121212",
-    raised: "#1E1E1E",
-    edge: "#2E2E2E",
-    crest: "#B84530",
-  },
+// Everything but the scene hidden, the scrollbar too (the frame is the
+// hero's full width).
+const BARE = `
+  html { scrollbar-width: none }
+  body * { visibility: hidden !important }
+  [data-effect="full"] { visibility: visible !important }
+`
+
+function run(command, args, options = {}) {
+  const child = spawn(command, args, {
+    cwd: root,
+    stdio: "inherit",
+    ...options,
+  })
+  return child
 }
 
-const random = (i, j) => {
-  const x = Math.sin(i * 127.1 + j * 311.7) * 43758.5453
-  return x - Math.floor(x)
+async function waitFor(url, ms = 60_000) {
+  const until = Date.now() + ms
+  while (Date.now() < until) {
+    try {
+      if ((await fetch(url)).ok) return
+    } catch {
+      // Not up yet.
+    }
+    await new Promise((resolve) => setTimeout(resolve, 300))
+  }
+  throw new Error(`${url} did not come up`)
 }
-const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16))
-const hex = (channels) =>
-  `#${channels
-    .map((c) =>
-      Math.round(Math.min(255, Math.max(0, c)))
-        .toString(16)
-        .padStart(2, "0")
-    )
-    .join("")}`
-const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
 
-// The corners clockwise on screen (y down): right, down, left, up. Face 0
-// is the top; face k + 1 the bevel from corner k to corner k + 1.
-const CORNERS = [
-  [1, 0],
-  [0, 1],
-  [-1, 0],
-  [0, -1],
-]
-const NORMALS = [
-  [0, 0, 1],
-  ...CORNERS.map(([x0, y0], k) => {
-    const [x1, y1] = CORNERS[(k + 1) % 4]
-    return [(x0 + x1) / 2, (y0 + y1) / 2, Math.SQRT1_2]
-  }),
-]
-const LIGHTS = NORMALS.map((normal) => Math.max(dot(normal, LIGHT), 0))
+// How warm the logo is in a frame: a splash flashes its dust rust (the
+// logo's own threads are warm in every frame alike).
+async function warmth(png, box) {
+  const data = await sharp(png).extract(box).removeAlpha().raw().toBuffer()
+  let sum = 0
+  for (let i = 0; i < data.length; i += 3) {
+    const warm = data[i] - data[i + 2] - 25
+    if (warm > 0) sum += warm
+  }
+  return sum
+}
 
-// The shader's face colors: `surface` stepped toward the light, and lit rust.
-function faces({ surface, raised, crest }) {
-  const base = rgb(surface)
-  const step = rgb(raised).map((c, i) => c - base[i])
-  const sign = step.reduce((sum, c) => sum + c, 0) >= 0 ? 1 : -1
+async function shoot(browser, theme, frame) {
+  const page = await browser.newPage({
+    viewport: { width: frame.width, height: frame.height },
+    deviceScaleFactor: 2,
+    colorScheme: theme,
+  })
+  // A device past every `lite` limit (as e2e/full-layer.spec.ts).
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "hardwareConcurrency", { get: () => 16 })
+    Object.defineProperty(navigator, "deviceMemory", { get: () => 8 })
+  })
+  await page.goto(URL_)
+  await page.addStyleTag({ content: BARE })
+  await page.waitForTimeout(PROBE_MS)
+  await page.mouse.move(frame.width - 1, 1)
+  await page.waitForSelector('[data-effect="full"][data-ready="true"]', {
+    timeout: 20_000,
+  })
+  // The pointer leaves: no parallax, no parting, no lean.
+  await page.evaluate(
+    "window.dispatchEvent(new PointerEvent('pointerout', { pointerType: 'mouse' }))"
+  )
+  await page.waitForTimeout(SETTLE_MS)
+  const hero = await page.locator("section[data-tier]").boundingBox()
+  const logo = await page.locator('[data-swarm-anchor="hero"]').boundingBox()
+  // In the screenshot's device pixels, within the hero.
+  const pad = logo.width * AROUND
+  const left = Math.max(0, Math.round((logo.x - pad - hero.x) * 2))
+  const top = Math.max(0, Math.round((logo.y - pad - hero.y) * 2))
+  const box = {
+    left,
+    top,
+    width: Math.min(
+      Math.round((logo.width + 2 * pad) * 2),
+      Math.floor(hero.width * 2) - left
+    ),
+    height: Math.min(
+      Math.round((logo.height + 2 * pad) * 2),
+      Math.floor(hero.height * 2) - top
+    ),
+  }
+  let best = null
+  for (let i = 0; i < SHOTS; i++) {
+    const png = await page.screenshot({ clip: hero })
+    const score = await warmth(png, box)
+    if (!best || score < best.score) best = { png, score }
+    await page.waitForTimeout(SHOT_GAP_MS)
+  }
+  const tier = await page.getAttribute("section[data-tier]", "data-tier")
+  await page.close()
+  if (tier !== "full") {
+    throw new Error(`${theme} ${frame.name}: the scene fell to ${tier}`)
+  }
   return {
-    rest: LIGHTS.map((light) =>
-      hex(base.map((c, i) => c + sign * step[i] * (light - LIGHT[2]) * 1.5))
-    ),
-    crest: LIGHTS.map((light) =>
-      hex(rgb(crest).map((c) => c * (0.62 + 0.5 * light)))
-    ),
+    png: best.png,
+    width: Math.round(hero.width * frame.scale),
+    height: Math.round(hero.height * frame.scale),
   }
 }
 
-const point = (cx, cy, [x, y], r) => `${cx + x * r} ${cy + y * r}`
-
-// The five faces' outlines of a prism at (cx, cy).
-function prism(cx, cy) {
-  const top = `M${CORNERS.map((c) => point(cx, cy, c, TOP)).join("L")}Z`
-  const bevels = CORNERS.map((c0, k) => {
-    const c1 = CORNERS[(k + 1) % 4]
-    return `M${point(cx, cy, c0, HALF)}L${point(cx, cy, c1, HALF)}L${point(cx, cy, c1, TOP)}L${point(cx, cy, c0, TOP)}Z`
-  })
-  return [top, ...bevels]
-}
-
-// A still of the swell (shaders.ts) with its band's middle at FRONT: the
-// picked cells it lights whole.
-const FRONT = 0.68 * WIDTH
-function lit(i, j, cx) {
-  if (random(i, j) >= SWELL_DENSITY) return false
-  const near = Math.exp(-(((cx - FRONT) / SWELL_SPREAD) ** 2))
-  return near - 0.5 - 0.4 * random(j, i) >= 0.06
-}
-
-function cells() {
-  const rest = Array.from({ length: 5 }, () => [])
-  const crest = Array.from({ length: 5 }, () => [])
-  for (let j = -1; j <= HEIGHT / HALF + 1; j++) {
-    for (let i = -1; i <= WIDTH / HALF + 1; i++) {
-      // Cell centers sit where i + j is odd: between the lattice points.
-      if ((i + j) % 2 === 0) continue
-      const cx = i * HALF
-      const cy = j * HALF
-      const into = lit(i, j, cx) ? crest : rest
-      prism(cx, cy).forEach((d, face) => into[face].push(d))
+async function encode({ png, width, height }) {
+  const { data, info } = await sharp(png)
+    .removeAlpha()
+    .resize(width, height, { kernel: "lanczos3" })
+    .blur(SOFTEN)
+    .raw()
+    .toBuffer({ resolveWithObject: true })
+  // The surface is the most common color.
+  const counts = new Map()
+  for (let i = 0; i < data.length; i += 3) {
+    const key = (data[i] << 16) | (data[i + 1] << 8) | data[i + 2]
+    counts.set(key, (counts.get(key) ?? 0) + 1)
+  }
+  const key = [...counts].reduce((a, b) => (b[1] > a[1] ? b : a))[0]
+  const surface = [key >> 16, (key >> 8) & 255, key & 255]
+  for (let i = 0; i < data.length; i += 3) {
+    if (surface.every((c, k) => Math.abs(data[i + k] - c) <= GRAIN)) {
+      data.set(surface, i)
     }
   }
-  return { rest, crest }
-}
-
-function lines() {
-  // x + y = k·STEP and x − y = k·STEP, across the whole image.
-  const d = []
-  for (let k = 0; k <= (WIDTH + HEIGHT) / STEP; k++) {
-    const c = k * STEP
-    d.push(`M${c} 0L${c - HEIGHT} ${HEIGHT}`)
+  const image = sharp(data, { raw: info })
+  // The highest quality within the budget.
+  let fit = null
+  let lo = 10
+  let hi = 90
+  while (lo <= hi) {
+    const quality = Math.floor((lo + hi) / 2)
+    const webp = await image.clone().webp({ quality, effort: 6 }).toBuffer()
+    if (webp.length <= BUDGET) {
+      fit = { webp, quality }
+      lo = quality + 1
+    } else {
+      hi = quality - 1
+    }
   }
-  for (let k = -HEIGHT / STEP; k <= WIDTH / STEP; k++) {
-    const c = k * STEP
-    d.push(`M${c} 0L${c + HEIGHT} ${HEIGHT}`)
+  if (!fit) throw new Error(`no quality fits ${BUDGET} B`)
+  return fit
+}
+
+if (!process.argv.includes("--no-build")) {
+  const build = run("npm", ["run", "build"])
+  const code = await new Promise((resolve) => build.on("exit", resolve))
+  if (code !== 0) process.exit(code ?? 1)
+}
+const server = run(
+  "npx",
+  ["vite", "preview", "--port", String(PORT), "--strictPort"],
+  { stdio: "ignore", detached: true }
+)
+try {
+  await waitFor(URL_)
+  const browser = await chromium.launch({
+    args: [
+      "--use-gl=angle",
+      "--use-angle=gl-egl",
+      "--ignore-gpu-blocklist",
+      "--enable-gpu",
+    ],
+  })
+  try {
+    for (const theme of ["light", "dark"]) {
+      for (const frame of FRAMES) {
+        const shot = await shoot(browser, theme, frame)
+        const { webp, quality } = await encode(shot)
+        const file = `swarm-${theme}-${frame.name}.webp`
+        await writeFile(`${out}${file}`, webp)
+        console.log(
+          `${file}: ${shot.width} × ${shot.height}, q${quality}, ${webp.length} B`
+        )
+      }
+    }
+  } finally {
+    await browser.close()
   }
-  return d.join("")
-}
-
-function svg(theme) {
-  const colors = faces(theme)
-  const { rest, crest } = cells()
-  const paths = (shapes, fills) =>
-    shapes
-      .map((d, face) => `<path d="${d.join("")}" fill="${fills[face]}"/>`)
-      .join("")
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
-  <rect width="${WIDTH}" height="${HEIGHT}" fill="${theme.surface}"/>
-  ${paths(rest, colors.rest)}
-  ${paths(crest, colors.crest)}
-  <path d="${lines()}" stroke="${theme.edge}" stroke-width="1" fill="none" shape-rendering="crispEdges"/>
-</svg>`
-}
-
-await mkdir(out, { recursive: true })
-for (const [name, theme] of Object.entries(THEMES)) {
-  const webp = await sharp(Buffer.from(svg(theme)))
-    .webp({ lossless: true, effort: 6 })
-    .toFile(`${out}grid-${name}.webp`)
-  console.log(name, `${webp.size} B`)
+} finally {
+  process.kill(-server.pid)
 }

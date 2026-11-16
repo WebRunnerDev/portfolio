@@ -47,9 +47,14 @@ export const MASKS = 12
 // the key light and a rim; before the gather they are scattered over the
 // screen around the block and fly in at a time of their own (`aSeed.x`),
 // warm while they fly. A far node's (after the blocks) are placed by its
-// row in `uNodes`: position and size, then heat and turn. Its heat is the
-// light of what landed on it; the blocks show theirs faintly (#185 blows
-// their dust off instead).
+// row in `uNodes`: position and size, then heat and turn.
+// What lands on a block blows its dust off (`uSplash`: the direction it
+// came from in the block's space and when, `uSplashA` how hard): a wave
+// runs over the surface from there by the angle to it, the face it hit
+// bursts out and flashes rust, then the dust settles. A far node puffs out
+// by its heat instead. The pointer (`uPointer`, device pixels from the
+// bottom left; `uPush`, how much) parts the dust on screen with a little
+// swirl, wider on a wider viewport.
 export const DUST_VERTEX = /* glsl */ `#version 300 es
 layout(location = ${A_HOME}) in vec3 aHome;
 layout(location = ${A_NORMAL}) in vec3 aNormal;
@@ -58,8 +63,11 @@ layout(location = ${A_SEED}) in vec4 aSeed;
 uniform mat4 uViewProj;
 uniform mat4 uBlock[${BLOCKS}];
 uniform float uForm[${BLOCKS}];
+uniform vec4 uSplash[${BLOCKS}];
+uniform float uSplashA[${BLOCKS}];
 uniform highp sampler2D uNodes;
-uniform float uTime, uScale, uSizeK, uMinSize;
+uniform float uTime, uScale, uSizeK, uDpr, uPush;
+uniform vec2 uRes, uPointer;
 uniform vec3 uKey, uSteel, uRim, uFlash;
 out vec3 vColor;
 mat3 turn(float ax, float ay) {
@@ -71,13 +79,27 @@ void main() {
   int id = int(aNode + 0.5);
   float lit = length(aNormal);
   vec3 normal = aNormal / max(lit, 1e-4);
-  vec4 state = texelFetch(uNodes, ivec2(id, 1), 0);
+  vec3 home = aHome;
   vec3 p, n;
-  float scale, flash, size;
+  float scale, size;
+  float flash = 0.0;
   if (id < ${BLOCKS}) {
     mat4 m = uBlock[id];
     scale = length(m[0].xyz);
-    vec3 formed = (m * vec4(aHome, 1.0)).xyz;
+    float a = uSplashA[id];
+    float age = uTime - uSplash[id].w;
+    if (a > 0.0 && age > 0.0 && age < 4.0) {
+      float angle = acos(clamp(dot(normalize(aHome), uSplash[id].xyz),
+        -1.0, 1.0));
+      float front = 2.0 * age;
+      float wave = exp(-age * 1.3) * exp(-(angle - front) * (angle - front)
+        * 5.0);
+      float burst = exp(-age * 3.2) * exp(-angle * angle * 2.2);
+      home += normal * a * (0.16 * wave + 0.9 * burst * (0.3 + aSeed.x))
+        + (aSeed.yzw - 0.5) * a * burst * 0.9;
+      flash = a * (0.7 * wave + burst * (0.6 + 0.8 * aSeed.y));
+    }
+    vec3 formed = (m * vec4(home, 1.0)).xyz;
     n = normalize(mat3(m) * normal);
     float f = smoothstep(aSeed.x * 0.55, aSeed.x * 0.55 + 0.45, uForm[id]);
     vec3 drift = vec3(sin(uTime * 0.31 + aSeed.x * 40.0),
@@ -85,21 +107,40 @@ void main() {
     vec3 scatter = m[3].xyz + (aSeed.yzw - 0.5) * vec3(26.0, 15.0, 8.0)
       + drift;
     p = mix(scatter, formed, f);
-    flash = (1.0 - f) * f * 2.0 + state.x * 0.12;
+    flash += (1.0 - f) * f * 2.0;
     size = 0.026 * uSizeK;
   } else {
     vec4 at = texelFetch(uNodes, ivec2(id, 0), 0);
+    vec4 state = texelFetch(uNodes, ivec2(id, 1), 0);
     mat3 r = turn(state.y, state.z);
-    p = at.xyz + r * aHome * at.w;
+    float heat = state.x;
+    home += normal * heat * (0.4 + 1.2 * aSeed.x)
+      + (aSeed.yzw - 0.5) * heat * 1.1;
+    p = at.xyz + r * home * at.w;
     n = r * normal;
     scale = at.w;
-    flash = state.x * 0.9;
+    flash = heat * 0.9;
     size = 0.085;
   }
   vec4 clip = uViewProj * vec4(p, 1.0);
+  if (uPush > 0.003) {
+    vec2 d = (clip.xy / clip.w * 0.5 + 0.5) * uRes - uPointer;
+    float l = length(d);
+    float wide = clamp(uRes.x / (1440.0 * uDpr), 0.45, 1.0);
+    float r0 = 120.0 * uDpr * wide;
+    float push = uPush * exp(-l * l / (r0 * r0));
+    if (push > 0.003) {
+      vec2 dir = l > 0.001 ? d / l : vec2(1.0, 0.0);
+      dir = normalize(dir + vec2(-dir.y, dir.x) * (aSeed.y - 0.5) * 1.4);
+      p.xy += dir * push * (45.0 + 70.0 * aSeed.z) * wide * uDpr
+        * (clip.w / uScale);
+      p.z += push * (aSeed.w - 0.5) * 2.0 * scale;
+      clip = uViewProj * vec4(p, 1.0);
+    }
+  }
   gl_Position = clip;
   size *= scale * (0.75 + 0.5 * aSeed.z);
-  gl_PointSize = max(size * uScale / clip.w, uMinSize);
+  gl_PointSize = max(size * uScale / clip.w, uDpr);
   float lambert = max(dot(n, uKey), 0.0);
   float rim = pow(1.0 - abs(n.z), 3.0);
   vec3 color = uSteel * (0.1 + 0.72 * lambert) * lit

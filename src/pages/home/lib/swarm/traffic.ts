@@ -32,6 +32,9 @@ const MAX_PACKETS = 14
 const MAX_PULSES = 110
 // Packets a second.
 const PACKET_RATE = 3.2
+// How hard each blows a block's dust off where it lands (a pulse: times
+// its amplitude).
+const SPLASH = [0.9, 0.7, 0.6, 0.5]
 
 type Crawler = {
   e: number
@@ -61,6 +64,10 @@ export type Net = {
   length: Float32Array
   alpha: Float32Array
   head: Float32Array
+  // Per block: the strongest landing since the scene last took them (0
+  // for none) and the node it came from.
+  hit: Float32Array
+  hitFrom: Int32Array
 }
 
 export function net(web: Web, threads: Threads): Net {
@@ -77,6 +84,8 @@ export function net(web: Web, threads: Threads): Net {
     length: new Float32Array(edges).fill(1),
     alpha: new Float32Array(edges).fill(1),
     head: new Float32Array(edges * 2),
+    hit: new Float32Array(BLOCKS),
+    hitFrom: new Int32Array(BLOCKS),
   }
 }
 
@@ -230,6 +239,11 @@ export function traffic(n: Net, random: () => number) {
   // Crawler `c` reached its node: true if it goes on.
   function arrive(c: Crawler) {
     const node = c.to
+    const blow = SPLASH[c.kind] * (c.kind === Run.Pulse ? c.amp : 1)
+    if (node < BLOCKS && blow > n.hit[node]) {
+      n.hit[node] = blow
+      n.hitFrom[node] = c.from
+    }
     switch (c.kind) {
       case Run.Pulse: {
         n.heat[node] = Math.max(n.heat[node], c.amp * 0.8)

@@ -57,12 +57,21 @@ test("reduced motion gets the static tier, an image in place", async ({
   await page.goto("/en")
   await expect(hero(page)).toHaveAttribute("data-tier", "static")
   await expect(effect(page)).toHaveAttribute("data-effect", "static")
-  // Only the image of the current theme loads.
+  // Only the image of the current theme loads: the Swarm at rest, the
+  // landscape frame on a wide screen, the portrait one on a tall screen.
   const image = effect(page).locator("img:visible")
   await expect(image).toHaveCount(1)
-  await expect(image).toHaveAttribute("width", "2560")
-  await expect(image).toHaveAttribute("height", "1440")
-  await expect(image).toHaveJSProperty("naturalWidth", 2560)
+  await expect(image).toHaveAttribute("src", /swarm-light-landscape/)
+  await expect(image).toHaveJSProperty("naturalWidth", 1440)
+  await page.setViewportSize({ width: 390, height: 844 })
+  await expect
+    .poll(() =>
+      image.evaluate(
+        (img) => (img as unknown as { currentSrc: string }).currentSrc
+      )
+    )
+    .toMatch(/swarm-light-portrait/)
+  await expect(image).toHaveJSProperty("naturalWidth", 585)
   // Nothing moves: the brand's words and the logo tiles are in place.
   const parts = hero(page).locator(".hero-rise, .hero-gather")
   await expect(parts).toHaveCount(9)
