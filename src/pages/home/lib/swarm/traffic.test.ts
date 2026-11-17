@@ -166,6 +166,41 @@ describe("traffic", () => {
     expect(state.heat[web.edges[e].a]).toBeGreaterThan(0.5)
   })
 
+  it("sends a tap's packets from the nearest node, past the packets' cap", () => {
+    const { web, state, run, viewer } = setup()
+    // Nodes off screen but block 2, and a far node of the hero nearer the
+    // tap with every thread at it faded out.
+    state.sx.fill(-1000)
+    state.sx[2] = 300
+    state.sy[2] = 300
+    const faded = BLOCKS + web.far.findIndex((f) => f.group === HERO)
+    state.sx[faded] = 250
+    state.sy[faded] = 250
+    for (let k = web.start[faded]; k < web.start[faded + 1]; k++) {
+      state.alpha[web.list[k]] = 0
+    }
+    // Out of reach: nothing.
+    expect(run.tap(600, 300, viewer)).toBe(-1)
+    expect(Math.max(...state.heat)).toBe(0)
+
+    const threadsAt = web.start[3] - web.start[2]
+    for (let i = 0; i < 3; i++) expect(run.tap(240, 240, viewer)).toBe(2)
+    // It flashes and blows its dust off from the front.
+    expect(state.heat[2]).toBe(1)
+    expect(state.hit[2]).toBeCloseTo(1.1)
+    expect(state.hitFrom[2]).toBe(2)
+    // A packet down each of its threads per tap, past the 14 packets' cap.
+    run.step(1 / 600, viewer, false)
+    const heads = []
+    for (let k = web.start[2]; k < web.start[3]; k++) {
+      const e = web.list[k]
+      if (state.head[e * 2] > -0.5) heads.push(state.head[e * 2 + 1])
+    }
+    expect(3 * threadsAt).toBeGreaterThan(14)
+    expect(heads).toHaveLength(threadsAt)
+    for (const head of heads) expect(Math.abs(head)).toBeCloseTo(0.85)
+  })
+
   it("walks the runner toward the pointer", () => {
     const { web, state, run } = setup()
     // Nodes spread over the screen as laid.

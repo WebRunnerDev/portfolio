@@ -317,3 +317,112 @@ test("in RTL the effect and the brand don't mirror, the text does", async ({
   const projects = (await hero(page).getByRole("link").nth(1).boundingBox())!
   expect(cv.x).toBeGreaterThan(projects.x)
 })
+
+// ADR-0013 › Касание: on a phone a tap on the web, not on a link, sends
+// packets from the node nearest it; a swipe scrolls and sends none. The
+// scene counts the taps that sent packets on its canvas (`data-taps`).
+test.describe("on a touch screen", () => {
+  test.use({
+    viewport: { width: 390, height: 844 },
+    hasTouch: true,
+    isMobile: true,
+  })
+
+  test("a tap on the web sends packets, a swipe and a link don't", async ({
+    page,
+  }) => {
+    const errors = consoleErrors(page)
+    await cores(page, 8)
+    await page.addInitScript(`
+      window.durations = []
+      new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          if (entry.interactionId) window.durations.push(entry.duration)
+        }
+      }).observe({ type: "event", durationThreshold: 16, buffered: true })
+    `)
+    await page.goto(PINNED)
+    // The first tap is the input gate: the scene isn't there yet.
+    await page.touchscreen.tap(20, 300)
+    await expect(hero(page)).toHaveAttribute("data-tier", "full", {
+      timeout: 10_000,
+    })
+    const canvas = scene(page)
+    await expect(canvas).toHaveAttribute("data-ready", "true")
+    await expect(hero(page).locator("[data-swarm-readout]")).toHaveText(
+      /^Indexed · \d+ nodes$/,
+      { timeout: 10_000 }
+    )
+    await expect(canvas).not.toHaveAttribute("data-taps")
+
+    // A phone's CPU: the tap still paints within INP's "good".
+    const cdp = await page.context().newCDPSession(page)
+    await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 })
+    await page.evaluate("window.durations.length = 0")
+    // The logo's square: the blocks lie there, clear of the text. Taps
+    // before the intro's end send nothing, so it taps until one does.
+    const logo = (await hero(page)
+      .locator("[data-swarm-anchor=hero]")
+      .boundingBox())!
+    const x = logo.x + logo.width / 2
+    const y = logo.y + logo.height / 2
+    await expect(async () => {
+      await page.touchscreen.tap(x, y)
+      await expect(canvas).toHaveAttribute("data-taps", /^\d+$/, {
+        timeout: 1_000,
+      })
+    }).toPass({ timeout: 10_000 })
+    const durations = (await page.evaluate("window.durations")) as number[]
+    expect(durations.length).toBeGreaterThan(0)
+    expect(Math.max(...durations)).toBeLessThan(200)
+    await cdp.send("Emulation.setCPUThrottlingRate", { rate: 1 })
+    const taps = await canvas.getAttribute("data-taps")
+
+    // A swipe up from the same place scrolls the page and sends nothing.
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: "touchStart",
+      touchPoints: [{ x, y }],
+    })
+    for (let i = 1; i <= 10; i++) {
+      await cdp.send("Input.dispatchTouchEvent", {
+        type: "touchMove",
+        touchPoints: [{ x, y: y - i * 30 }],
+      })
+    }
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: "touchEnd",
+      touchPoints: [],
+    })
+    await expect.poll(() => page.evaluate("window.scrollY")).toBeGreaterThan(0)
+    await page.waitForTimeout(300)
+    await expect(canvas).toHaveAttribute("data-taps", taps!)
+
+    // A tap on a link goes there and sends nothing on the way. Below it a
+    // tap does send, so a node is in the link's reach: the link nearer the
+    // logo, back at the top of the page. Not just below: Chromium takes a
+    // tap a few pixels off a link for the link. The projects' data comes
+    // late, so the home page runs frames after the tap on the link.
+    await page.evaluate("window.scrollTo(0, 0)")
+    await page.waitForTimeout(500)
+    const link = hero(page).getByRole("link", { name: "See projects" })
+    const box = (await link.boundingBox())!
+    await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height + 40)
+    await expect(canvas).toHaveAttribute("data-taps", String(Number(taps) + 1))
+    await page.route("**/api/**", async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 1_000))
+      await route.fallback()
+    })
+    await page.evaluate(`
+      window.taps = []
+      new MutationObserver(() =>
+        window.taps.push(document.querySelector("[data-effect=full]").dataset.taps)
+      ).observe(document.querySelector("[data-effect=full]"), {
+        attributeFilter: ["data-taps"],
+      })
+    `)
+    await link.tap()
+    await expect(page).toHaveURL(/\/en\/projects$/)
+    expect(await page.evaluate("window.taps")).toEqual([])
+    expect(errors).toEqual([])
+  })
+})
