@@ -1,5 +1,7 @@
 import * as React from "react"
 
+import { proto } from "@/shared/lib/prototype"
+
 import {
   LEVELS,
   lowered,
@@ -51,6 +53,28 @@ export function HomeFull({
   )
   const fail = React.useEffectEvent(onFail)
   const shown = React.useEffectEvent(onShown)
+  // PROTOTYPE (spike/path-to-10, `?transition=dust`): leaving the home page
+  // the canvas moves under <body> and outlives it while the dust blows off.
+  const isReady = React.useRef(false)
+  const leaving = React.useRef(false)
+
+  React.useLayoutEffect(() => {
+    const canvas = ref.current
+    if (!canvas || proto("transition") !== "dust") return
+    return () => {
+      const left = scene.current
+      if (!left || !isReady.current || !canvas.isConnected) return
+      leaving.current = true
+      document.body.appendChild(canvas)
+      setTimeout(() => {
+        canvas.style.opacity = "0"
+      }, 450)
+      left.leave(() => {
+        left.destroy()
+        canvas.remove()
+      })
+    }
+  }, [ref])
 
   React.useEffect(() => {
     const canvas = ref.current
@@ -73,6 +97,7 @@ export function HomeFull({
       {
         onFrame: watch,
         onReady: () => {
+          isReady.current = true
           setReady(true)
           shown()
         },
@@ -85,7 +110,7 @@ export function HomeFull({
       return
     }
     return () => {
-      scene.current?.destroy()
+      if (!leaving.current) scene.current?.destroy()
       scene.current = null
     }
   }, [ref, lang, pinned])

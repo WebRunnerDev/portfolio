@@ -11,6 +11,10 @@ export const A_SEED = 3
 // The logo's seven blocks.
 export const BLOCKS = 7
 
+// PROTOTYPE (spike/path-to-10): points of a chapter's figure per row of
+// `uGlyph` (u, v in the figure's box, then its outward normal on screen).
+export const GLYPH_W = 2048
+
 // ACES filmic (Hill's fit, three.js's `ACESFilmicToneMapping`) at exposure
 // 1.05, then to sRGB.
 const TONE = /* glsl */ `
@@ -69,6 +73,15 @@ uniform highp sampler2D uNodes;
 uniform float uTime, uScale, uSizeK, uDpr, uPush;
 uniform vec2 uRes, uPointer;
 uniform vec3 uKey, uSteel, uRim, uFlash;
+// PROTOTYPE (spike/path-to-10): a chapter's block into its figure
+// (uGlyphK, on row uGlyphRow of uGlyph, in the box uGlyphBox: world top
+// left, then width and height), uGlyphShare of its dust; the dust blown
+// off as the page is left (uLeave, 0 to 1).
+uniform highp sampler2D uGlyph;
+uniform vec4 uGlyphBox[${BLOCKS}];
+uniform float uGlyphK[${BLOCKS}];
+uniform float uGlyphRow[${BLOCKS}];
+uniform float uGlyphShare, uGlyphPx, uLeave, uViewH;
 out vec3 vColor;
 mat3 turn(float ax, float ay) {
   float cx = cos(ax), sx = sin(ax), cy = cos(ay), sy = sin(ay);
@@ -78,6 +91,7 @@ mat3 turn(float ax, float ay) {
 void main() {
   int id = int(aNode + 0.5);
   float lit = length(aNormal);
+  float litK = lit;
   vec3 normal = aNormal / max(lit, 1e-4);
   vec3 home = aHome;
   vec3 p, n;
@@ -108,6 +122,22 @@ void main() {
       + drift;
     p = mix(scatter, formed, f);
     flash += (1.0 - f) * f * 2.0;
+    float gk = uGlyphK[id];
+    if (gk > 0.0 && aSeed.z < uGlyphShare) {
+      vec4 g = texelFetch(uGlyph,
+        ivec2(int(aSeed.y * ${GLYPH_W - 1}.0), int(uGlyphRow[id] + 0.5)), 0);
+      vec4 b = uGlyphBox[id];
+      vec3 target = vec3(b.x + g.x * b.z, b.y + g.y * b.w, 0.0);
+      target.xy += (vec2(aSeed.w, fract(aSeed.x * 7.13)) - 0.5) * uGlyphPx
+        * 2.5;
+      target.xy += vec2(g.z, -g.w) * uGlyphPx * (0.5 + 2.5 * aSeed.w);
+      target.z = (aSeed.x - 0.5) * uGlyphPx * 8.0;
+      float m = smoothstep(aSeed.x * 0.45, aSeed.x * 0.45 + 0.55, gk);
+      p = mix(p, target, m);
+      n = normalize(mix(n, normalize(vec3(g.z, -g.w, 1.6)), m));
+      litK = mix(litK, 1.0, m);
+      flash += m * (1.0 - m) * 1.6;
+    }
     size = 0.026 * uSizeK;
   } else {
     vec4 at = texelFetch(uNodes, ivec2(id, 0), 0);
@@ -121,6 +151,13 @@ void main() {
     scale = at.w;
     flash = heat * 0.9;
     size = 0.085;
+  }
+  if (uLeave > 0.0) {
+    vec3 dir = normalize(vec3((aSeed.yz - 0.5) * 2.0, aSeed.w - 0.35)
+      + n * 0.7);
+    float e = uLeave * uLeave;
+    p += dir * e * uViewH * (0.12 + 0.4 * aSeed.x);
+    flash += uLeave * (1.0 - uLeave) * 3.0 * (0.4 + aSeed.y);
   }
   vec4 clip = uViewProj * vec4(p, 1.0);
   if (uPush > 0.003) {
@@ -140,11 +177,12 @@ void main() {
   }
   gl_Position = clip;
   size *= scale * (0.75 + 0.5 * aSeed.z);
-  gl_PointSize = max(size * uScale / clip.w, uDpr);
+  gl_PointSize = max(size * uScale / clip.w, uDpr)
+    * (1.0 - smoothstep(0.55, 1.0, uLeave));
   float lambert = max(dot(n, uKey), 0.0);
   float rim = pow(1.0 - abs(n.z), 3.0);
-  vec3 color = uSteel * (0.1 + 0.72 * lambert) * lit
-    + uRim * rim * 0.32 * lit;
+  vec3 color = uSteel * (0.1 + 0.72 * lambert) * litK
+    + uRim * rim * 0.32 * litK;
   color *= 0.88 + 0.24 * aSeed.w;
   color += uFlash * clamp(flash, 0.0, 1.0) * 1.5;
   float fog = clamp(1.0 - (clip.w - 27.0) / 26.0, 0.25, 1.0);
@@ -226,7 +264,7 @@ vec3 heatRamp(float t) {
 export const THREAD_FRAGMENT = /* glsl */ `#version 300 es
 precision highp float;
 uniform vec4 uMask[${MASKS}];
-uniform float uMaskK, uDpr, uTone, uDark, uLineAlpha;
+uniform float uMaskK, uDpr, uTone, uDark, uLineAlpha, uFade;
 uniform vec3 uLine, uPrimary;
 in float vSide, vHeat, vAlpha, vDepth, vU, vLength;
 in vec2 vHead;
@@ -235,7 +273,7 @@ ${TONE}
 ${HEAT}
 void main() {
   float cover = (1.0 - smoothstep(0.45, 1.6, abs(vSide))) * vAlpha;
-  cover *= clamp(1.0 - (vDepth - 27.0) / 26.0, 0.22, 1.0);
+  cover *= clamp(1.0 - (vDepth - 27.0) / 26.0, 0.22, 1.0) * uFade;
   float masked = 1.0;
   for (int i = 0; i < ${MASKS}; i++) {
     vec4 r = uMask[i];

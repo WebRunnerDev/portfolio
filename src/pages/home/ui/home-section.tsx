@@ -4,6 +4,8 @@ import { ArrowRight } from "lucide-react"
 import { cn } from "cn"
 
 import { useLang } from "@/shared/i18n"
+import "./prototype-numeral.css"
+import { proto } from "@/shared/lib/prototype"
 import { Reveal, RevealText } from "@/shared/ui/reveal"
 
 const FOCUS_RING =
@@ -63,6 +65,8 @@ export function HomeSection({
   children: ReactNode
 }) {
   const lang = useLang()
+  // PROTOTYPE (spike/path-to-10): where the block lands for `?numeral=`.
+  const numeral = proto("numeral")
 
   return (
     <section
@@ -84,8 +88,19 @@ export function HomeSection({
             )}
           >
             <span aria-hidden="true" className="mb-zsd-md chapter-numeral">
-              <span data-swarm-text className="chapter-figure">
-                <span className="chapter-stop" />
+              <span
+                data-swarm-text
+                data-swarm-anchor={numeral === "fill" ? "chapter" : undefined}
+                className="chapter-figure"
+              >
+                <span className="relative chapter-stop">
+                  {numeral === "stop" && (
+                    <span
+                      data-swarm-anchor="chapter"
+                      className="absolute inset-0 m-auto size-[0.42em]"
+                    />
+                  )}
+                </span>
               </span>
             </span>
             <div data-swarm-text>
@@ -98,7 +113,11 @@ export function HomeSection({
             </div>
             <span
               aria-hidden="true"
-              data-swarm-anchor="chapter"
+              data-swarm-anchor={
+                numeral === "plain" || numeral === "outline"
+                  ? "chapter"
+                  : undefined
+              }
               className={cn(
                 "pointer-events-none absolute inset-e-0 top-0 size-16 lg:size-28",
                 !wide &&

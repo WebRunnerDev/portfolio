@@ -1,0 +1,20 @@
+/* PROTOTYPE, branch spike/path-to-10 only (`?numeral=`, @/shared/lib/prototype).
+ * stop: the chapter's block lands as its figure's full stop; the rust tile
+ * makes room for it and gives way while the scene runs.
+ * fill: the figure is made of the block's dust; the CSS digits fade out once
+ * the dust has settled into them (`data-swarm-glyph`, set by the scene). */
+html[data-proto-numeral="stop"] .chapter-stop {
+  margin-inline-start: 0.34em;
+}
+html[data-proto-numeral="stop"]:has([data-swarm-scene][data-ready="true"])
+  .chapter-stop {
+  background: transparent;
+}
+
+html[data-proto-numeral="fill"] .chapter-figure {
+  transition: color var(--zsd-x-zsd-motion-duration-slow)
+    var(--zsd-x-zsd-motion-easing-enter);
+}
+html[data-proto-numeral="fill"] section[data-swarm-glyph] .chapter-figure {
+  color: transparent;
+}
