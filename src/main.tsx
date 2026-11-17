@@ -6,7 +6,7 @@ import "./index.css"
 // PROTOTYPE (spike/path-to-10): the curtain of rhombi on a page change.
 import "./shared/lib/prototype/curtain.css"
 import { routeTree } from "./app/routeTree.gen"
-import { markProto } from "@/shared/lib/prototype"
+import { markProto, proto } from "@/shared/lib/prototype"
 import { pageTransitionTypes } from "@/shared/lib/view-transition"
 import { LOADER_DELAY_MS } from "@/shared/ui/loader"
 import { PageLoading } from "@/shared/ui/page-state"
@@ -22,7 +22,17 @@ import { PageLoading } from "@/shared/ui/page-state"
 // PageLoading) after LOADER_DELAY_MS: a faster answer never flashes a Loader.
 const router = createRouter({
   routeTree,
-  defaultViewTransition: { types: pageTransitionTypes },
+  // PROTOTYPE (spike/path-to-10, `?transition=dust`): leaving the home page
+  // while its Swarm runs, no View Transition: the live canvas carries it.
+  defaultViewTransition: {
+    types: (change) =>
+      proto("transition") === "dust" &&
+      /^\/[a-z]{2}\/?$/.test(change.fromLocation?.pathname ?? "") &&
+      change.pathChanged &&
+      document.querySelector("[data-swarm-scene][data-ready=true]")
+        ? false
+        : pageTransitionTypes(change),
+  },
   defaultStaleTime: 60_000,
   scrollRestoration: true,
   defaultPendingMs: LOADER_DELAY_MS,

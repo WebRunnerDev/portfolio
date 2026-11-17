@@ -21,6 +21,9 @@ import { usePlaying } from "../lib/use-playing"
 // at it, with its own count of nodes. Not kept between visits.
 let visitLevel: Level | null = null
 
+const CANVAS =
+  "pointer-events-none fixed inset-0 -z-10 size-full opacity-0 transition-opacity duration-(--zsd-x-zsd-motion-duration-slow) ease-zsd-enter data-[ready=true]:opacity-100"
+
 // The full layer of the home page: the Swarm on a canvas fixed over the
 // viewport behind the whole page (ADR-0013, docs/design-brief.md › Главная
 // на Swarm). Loaded after the input gate, paused on a hidden tab.
@@ -44,7 +47,7 @@ export function HomeFull({
   onFail: () => void
   onShown: () => void
 }) {
-  const { ref, playing } = usePlaying<HTMLCanvasElement>()
+  const { ref, playing } = usePlaying<HTMLElement>()
   const scene = React.useRef<Swarm | null>(null)
   const [ready, setReady] = React.useState(false)
   const [pinned] = React.useState(() => pinnedLevel(window.location.search))
@@ -53,19 +56,42 @@ export function HomeFull({
   )
   const fail = React.useEffectEvent(onFail)
   const shown = React.useEffectEvent(onShown)
-  // PROTOTYPE (spike/path-to-10, `?transition=dust`): leaving the home page
-  // the canvas moves under <body> and outlives it while the dust blows off.
+  // PROTOTYPE (spike/path-to-10, `?transition=dust`): the canvas lives under
+  // <body>, out of React's tree, so it outlives the home page: leaving it,
+  // the dust blows off over the next page, then the canvas goes.
+  const [external] = React.useState(() => proto("transition") === "dust")
+  const outside = React.useRef<HTMLCanvasElement | null>(null)
   const isReady = React.useRef(false)
   const leaving = React.useRef(false)
+  const canvasOf = () => {
+    if (!external) return ref.current as HTMLCanvasElement | null
+    if (!outside.current) {
+      const canvas = document.createElement("canvas")
+      canvas.setAttribute("aria-hidden", "true")
+      canvas.dataset.effect = "full"
+      canvas.dataset.swarmScene = ""
+      canvas.className = CANVAS
+      document.body.appendChild(canvas)
+      outside.current = canvas
+    }
+    return outside.current
+  }
+
+  React.useEffect(() => {
+    const canvas = outside.current
+    if (!canvas) return
+    canvas.dataset.playing = String(playing)
+    canvas.dataset.ready = String(ready)
+    canvas.dataset.quality = level
+  })
 
   React.useLayoutEffect(() => {
-    const canvas = ref.current
-    if (!canvas || proto("transition") !== "dust") return
+    if (!external) return
     return () => {
       const left = scene.current
-      if (!left || !isReady.current || !canvas.isConnected) return
+      const canvas = outside.current
+      if (!left || !canvas || !isReady.current) return
       leaving.current = true
-      document.body.appendChild(canvas)
       setTimeout(() => {
         canvas.style.opacity = "0"
       }, 450)
@@ -74,10 +100,10 @@ export function HomeFull({
         canvas.remove()
       })
     }
-  }, [ref])
+  }, [external])
 
   React.useEffect(() => {
-    const canvas = ref.current
+    const canvas = canvasOf()
     if (!canvas) return
     // Laid again (a new `lang`) at the level the visit is at now.
     const start = pinned ?? (visitLevel ??= pickLevel(thisDevice()))
@@ -110,9 +136,17 @@ export function HomeFull({
       return
     }
     return () => {
-      if (!leaving.current) scene.current?.destroy()
+      if (!leaving.current) {
+        scene.current?.destroy()
+        if (external) {
+          outside.current?.remove()
+          outside.current = null
+        }
+      }
       scene.current = null
     }
+    // canvasOf reads refs only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ref, lang, pinned])
 
   React.useEffect(() => {
@@ -120,16 +154,27 @@ export function HomeFull({
     else scene.current?.pause()
   }, [playing])
 
+  if (external) {
+    // In view always, as the canvas: what usePlaying watches.
+    return (
+      <span
+        ref={ref}
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-0 -z-20"
+      />
+    )
+  }
+
   return (
     <canvas
-      ref={ref}
+      ref={ref as React.RefObject<HTMLCanvasElement>}
       aria-hidden="true"
       data-effect="full"
       data-swarm-scene
       data-playing={playing}
       data-ready={ready}
       data-quality={level}
-      className="pointer-events-none fixed inset-0 -z-10 size-full opacity-0 transition-opacity duration-(--zsd-x-zsd-motion-duration-slow) ease-zsd-enter data-[ready=true]:opacity-100"
+      className={CANVAS}
     />
   )
 }
