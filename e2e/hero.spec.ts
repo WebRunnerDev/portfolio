@@ -200,6 +200,29 @@ test("the full tier draws the Swarm behind the whole page", async ({
   expect(errors).toEqual([])
 })
 
+// On a phone the logo square sits under the actions; the hero's text keeps
+// that band free however short the screen (index.css › hero-logo-band).
+for (const viewport of [
+  { width: 320, height: 568 },
+  { width: 360, height: 640 },
+]) {
+  test(`on a short phone (${viewport.width}×${viewport.height}) the logo square stays under the actions`, async ({
+    page,
+  }) => {
+    await cores(page, 8)
+    await page.setViewportSize(viewport)
+    await page.goto(PINNED)
+    await fullScene(page)
+    const actions = (await hero(page)
+      .locator("[data-swarm-text]")
+      .last()
+      .boundingBox())!
+    const logo = (await page.locator("[data-swarm-anchor=hero]").boundingBox())!
+    // `spacing-xl` (24 px) apart, give or take subpixels.
+    expect(logo.y).toBeGreaterThan(actions.y + actions.height + 23.5)
+  })
+}
+
 test("the full tier falls back to lite when the WebGL context is lost", async ({
   page,
 }) => {
