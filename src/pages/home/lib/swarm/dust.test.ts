@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { dust, HALF_DIAGONAL, PARTICLE, shapePoint } from "./dust"
+import { dust, HALF_DIAGONAL, PARTICLE, rounds, shapePoint } from "./dust"
 import { rng } from "./math"
 
 const run = <T>(slices: Generator<unknown, T>) => {
@@ -73,6 +73,23 @@ describe("dust", () => {
     expect([0, 1, 2, 3].map(node)).toEqual([40, 41, 42, 40])
     const after = run(dust(7, 0, 3, 10)).value
     expect(value.slice(0, 6)).not.toEqual(after.slice(0, 6))
+  })
+
+  it("draws fewer a node with a shorter range, nothing laid again", () => {
+    const { value } = run(dust(7, 100, 3, 10))
+    // The first `rounds` particles: 40 of each block's, every far one's.
+    const n = rounds(7, 100, 3, 10, 40)
+    expect(n).toBe(7 * 40 + 3 * 10)
+    const per = new Map<number, number>()
+    for (let k = 0; k < n; k++) {
+      const node = value[k * PARTICLE + 6]
+      per.set(node, (per.get(node) ?? 0) + 1)
+    }
+    for (let node = 0; node < 7; node++) expect(per.get(node)).toBe(40)
+    for (let node = 7; node < 10; node++) expect(per.get(node)).toBe(10)
+    // All of it at or past the count laid.
+    expect(rounds(7, 100, 3, 10, 100)).toBe(7 * 100 + 3 * 10)
+    expect(rounds(7, 100, 3, 10, 500)).toBe(7 * 100 + 3 * 10)
   })
 
   it("yields between slices", () => {

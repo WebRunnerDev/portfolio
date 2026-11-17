@@ -4,9 +4,6 @@
 export type MotionTier = "full" | "lite" | "static"
 
 export const REDUCED_MOTION = "(prefers-reduced-motion: reduce)"
-// A device at or below these runs `lite` without a probe.
-const MAX_LITE_CORES = 4
-const MAX_LITE_MEMORY_GB = 4
 // The FPS probe: how long it counts frames, and the rate `full` needs.
 export const PROBE_MS = 2000
 export const MIN_FULL_FPS = 40
@@ -14,27 +11,13 @@ export const MIN_FULL_FPS = 40
 // starts over instead of reading it as a slow device.
 const FRAME_GAP_MS = 500
 
-// Not in every browser's Navigator type (Chromium only).
-type DeviceHints = {
-  hardwareConcurrency?: number
-  deviceMemory?: number
-  connection?: { saveData?: boolean }
-}
-
 // The tier from what the browser tells at once. `full` here is only a
-// candidate: the FPS probe still has to pass (MotionTierProvider).
+// candidate: the FPS probe still has to pass (MotionTierProvider). A weak
+// device (few cores, little memory, Save-Data) is one too: the home page's
+// scene runs a lighter level on it and steps down if it can't hold that
+// (ADR-0013).
 export function detectTier(): MotionTier {
-  if (window.matchMedia(REDUCED_MOTION).matches) return "static"
-  const { hardwareConcurrency, deviceMemory, connection } =
-    navigator as DeviceHints
-  if (
-    (hardwareConcurrency ?? Infinity) <= MAX_LITE_CORES ||
-    (deviceMemory ?? Infinity) <= MAX_LITE_MEMORY_GB ||
-    connection?.saveData
-  ) {
-    return "lite"
-  }
-  return "full"
+  return window.matchMedia(REDUCED_MOTION).matches ? "static" : "full"
 }
 
 // Counts frames in windows of `duration` ms and reports each window's rate.

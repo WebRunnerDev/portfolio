@@ -125,3 +125,14 @@ export function* dust(
   }
   return out
 }
+
+// How many of `dust(blocks, perBlock, far, perFar)`'s first particles hold
+// `k` rounds: k of each block's and of each far node's, as many as they
+// have. Drawing that many draws `k` a block.
+export const rounds = (
+  blocks: number,
+  perBlock: number,
+  far: number,
+  perFar: number,
+  k: number
+) => blocks * Math.min(k, perBlock) + far * Math.min(k, perFar)
