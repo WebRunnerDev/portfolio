@@ -100,7 +100,7 @@ Public pages read `/api/public/:lang/*` (`worker/README.md` › Public API) thro
 
 - **Link:** with a Case Study the whole card is one link to `/{lang}/projects/:slug`, named by the title (a stretched `::after`); GitHub and the demo sit above it with `relative z-10`. Without one only those links remain and the card doesn't react to hover.
 - **Cover:** `coverKey` through Cloudflare Images (`imageUrl`), a `srcset` up to 1280w and `sizes` for the 1/2/3-column grid. `priority` (the first card) loads it at once with `fetchpriority="high"`; the others are `loading="lazy"`. No cover: the logo tiles.
-- **Status:** `in_progress` is `badge-success`, the others neutral; each with its icon and the `project.status.*` text.
+- **Status:** `in_progress` is `badge-active`: a `primary` outline, `primary-text`, and in place of an icon a rust tile that breathes (`status-tile` in `index.css`, opacity and scale on the tile curve; it stands lit under reduced motion). The others are neutral with their icon. Each has the `project.status.*` text, and both kinds are one size.
 - **E2E:** `e2e/projects.spec.ts`.
 
 ## Case Study
