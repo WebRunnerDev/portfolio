@@ -64,6 +64,7 @@ export function HomeFull({
       ref={ref}
       aria-hidden="true"
       data-effect="full"
+      data-swarm-scene
       data-playing={playing}
       data-ready={ready}
       className="pointer-events-none fixed inset-0 -z-10 size-full opacity-0 transition-opacity duration-(--zsd-x-zsd-motion-duration-slow) ease-zsd-enter data-[ready=true]:opacity-100"

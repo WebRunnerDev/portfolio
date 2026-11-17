@@ -38,7 +38,11 @@ export const CONTENT_START =
 // the airy beat of the rhythm. The index is a CSS counter on the sections
 // actually shown (the hero is 01), so a hidden empty section leaves no gap.
 // `actions` stand beside the link (the CV PDF). `className` sets the
-// section's own spacing.
+// section's own spacing. At `full` the Swarm (ADR-0013, docs/design-brief.md ›
+// Главная на Swarm › Главы) brings the chapter a block of the logo onto its
+// rail, a square that draws nothing: from `lg` under the title, riding with
+// it, else at the end of the figure's line. Its web keeps out of the figure,
+// the title and the content (`data-swarm-text`). Attributes the scene reads.
 export function HomeSection({
   id,
   title,
@@ -74,23 +78,38 @@ export function HomeSection({
           <div
             id={`home-${id}-title`}
             className={cn(
+              "relative",
               !wide &&
                 "lg:sticky lg:top-[calc(var(--zsd-x-zsd-layout-header-height)+var(--zsd-spacing-xl))] lg:self-start"
             )}
           >
             <span aria-hidden="true" className="mb-zsd-md chapter-numeral">
-              <span className="chapter-figure">
+              <span data-swarm-text className="chapter-figure">
                 <span className="chapter-stop" />
               </span>
             </span>
-            <RevealText
-              as="h2"
-              text={title}
-              delay={0.1}
-              className="font-heading text-zsd-headline-lg break-words hyphens-auto text-zsd-on-surface [&:lang(ar)]:tracking-normal"
+            <div data-swarm-text>
+              <RevealText
+                as="h2"
+                text={title}
+                delay={0.1}
+                className="font-heading text-zsd-headline-lg break-words hyphens-auto text-zsd-on-surface [&:lang(ar)]:tracking-normal"
+              />
+            </div>
+            <span
+              aria-hidden="true"
+              data-swarm-anchor="chapter"
+              className={cn(
+                "pointer-events-none absolute inset-e-0 top-0 size-16 lg:size-28",
+                !wide &&
+                  "lg:static lg:mt-zsd-xxl lg:block lg:aspect-square lg:size-auto lg:w-[min(100%,8rem)]"
+              )}
             />
           </div>
-          <div className={cn(!wide && "lg:[&>*:first-child]:mt-0")}>
+          <div
+            data-swarm-text
+            className={cn(!wide && "lg:[&>*:first-child]:mt-0")}
+          >
             {children}
             {link && (
               <Reveal className="mt-zsd-xl flex flex-wrap items-center gap-x-zsd-xl gap-y-zsd-md">

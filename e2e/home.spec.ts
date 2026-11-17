@@ -300,6 +300,42 @@ test("a section with nothing to show isn't rendered", async ({ page }) => {
   await expect(page.locator("section[data-testid^=home-]")).toHaveCount(0)
 })
 
+// The Swarm (ADR-0013, issue #186) brings each chapter shown a block of the
+// logo onto its rail and gathers the logo in the footer's square: squares
+// that draw nothing, read by the scene. A hidden chapter has no rail. The
+// footer's square takes room only while the scene runs, so not at `lite`.
+const rails = (page: Page) =>
+  page.locator('[data-swarm-anchor="chapter"][aria-hidden="true"]')
+const footerSquare = (page: Page) =>
+  page.locator('footer [data-swarm-anchor="footer"]')
+
+test("each chapter shown has a rail; the footer's square waits for the scene", async ({
+  page,
+}) => {
+  await mockPublicApi(page)
+  await page.goto("/en")
+  for (const id of SECTIONS) {
+    const rail = section(page, id).locator('[data-swarm-anchor="chapter"]')
+    await expect(rail).toHaveAttribute("aria-hidden", "true")
+    const box = (await rail.boundingBox())!
+    expect(box.width).toBeGreaterThan(0)
+    expect(box.width).toBeCloseTo(box.height)
+  }
+  await expect(page.locator("section[data-tier]")).toHaveAttribute(
+    "data-tier",
+    "lite"
+  )
+  await expect(footerSquare(page)).toHaveAttribute("aria-hidden", "true")
+  await expect(footerSquare(page)).toHaveCSS("display", "none")
+})
+
+test("a hidden chapter takes no rail", async ({ page }) => {
+  await mockPublicApi(page, { ...FULL, projects: [], posts: [] })
+  await page.goto("/en")
+  await expect(page.locator("section[data-testid^=home-]")).toHaveCount(2)
+  await expect(rails(page)).toHaveCount(2)
+})
+
 test("the CV shows without the about text and without a PDF", async ({
   page,
 }) => {
@@ -435,10 +471,11 @@ for (const [width, size] of [
     await expect(
       section(page, "cv").getByRole("heading", { level: 2 })
     ).toHaveCSS("font-size", "40px")
-    // It goes with the title: in its sticky box from `lg`, above it below.
+    // It goes with the title: in its sticky box from `lg`, above it below
+    // (a box for the Swarm's rail at the end of its line).
     await expect(numeral(page, "cv").locator("..")).toHaveCSS(
       "position",
-      width >= 1024 ? "sticky" : "static"
+      width >= 1024 ? "sticky" : "relative"
     )
   })
 }

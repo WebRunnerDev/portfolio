@@ -12,12 +12,6 @@ const FOCUS_RING =
 
 const HOVER = "duration-(--zsd-x-zsd-motion-duration-fast) ease-zsd-hover"
 
-// From `lg`, where the contacts start: the line of the hero's subtitle and of
-// the home chapters' content, a quarter of the content box in
-// (CONTENT_START in src/pages/home), so the page's offset runs to its end.
-const CONTENT_START =
-  "lg:ms-[calc((100%-3*var(--zsd-spacing-xxl))/4+var(--zsd-spacing-xxl))]"
-
 // The contact section closing every page (docs/design-brief.md › Footer), so
 // there is no contacts page: a label, a large title ended by a rust tile as
 // its full stop, the email as the main link, then a row for each other
@@ -27,6 +21,13 @@ const CONTENT_START =
 // reading direction on hover and focus, the tile showing where it stood, as
 // in the menu. Its blocks rise once it enters the viewport. The copy result shows
 // next to the button and is announced through the status region.
+// From `lg` it is four columns `xxl` apart, as the home chapters: the
+// contacts take the last three, on the line of the hero's subtitle and of
+// the chapters' content, so the page's offset runs to its end. The first
+// beside them holds the square the home page's Swarm gathers its logo into
+// (`data-swarm-anchor`; below `lg` over the label): it takes room only
+// while the scene runs (index.css › Swarm), and the scene's web keeps out of
+// the text (`data-swarm-text`). Attributes, not an import.
 export function SiteFooter() {
   const t = useT()
   const { state, copy } = useCopy()
@@ -34,30 +35,37 @@ export function SiteFooter() {
   return (
     <footer className="border-t border-border [view-transition-name:site-footer]">
       <div className="mx-auto max-w-(--zsd-x-zsd-layout-content-max) px-zsd-lg md:px-zsd-xxl">
-        <div className="pt-zsd-section pb-zsd-section lg:pt-zsd-section-lg">
-          <Reveal
-            as="p"
-            className="font-zsd-label-mono text-zsd-label-mono text-zsd-on-surface-muted uppercase"
-          >
-            <span id="footer-contacts">{t("footer.contacts")}</span>
-          </Reveal>
-          <RevealText
-            as="h2"
-            text={t("footer.title")}
-            delay={0.1}
-            className="mt-zsd-sm font-zsd-display-sm text-zsd-headline-lg text-balance break-words hyphens-auto sm:text-zsd-display-sm"
-            after={
-              <span
-                aria-hidden="true"
-                className="ms-[0.12em] me-[0.05em] mb-[0.05em] inline-block size-[0.2em] reveal-stop bg-zsd-primary"
-              />
-            }
+        <div className="pt-zsd-section pb-zsd-section lg:grid lg:grid-cols-4 lg:gap-x-zsd-xxl lg:pt-zsd-section-lg">
+          <div
+            aria-hidden="true"
+            data-swarm-anchor="footer"
+            className="pointer-events-none mb-zsd-xl size-36 lg:col-start-1 lg:row-start-2 lg:mt-zsd-xxl lg:mb-0 lg:aspect-square lg:size-auto lg:w-full lg:max-w-64 lg:self-start"
           />
+          <div data-swarm-text className="lg:col-span-4">
+            <Reveal
+              as="p"
+              className="font-zsd-label-mono text-zsd-label-mono text-zsd-on-surface-muted uppercase"
+            >
+              <span id="footer-contacts">{t("footer.contacts")}</span>
+            </Reveal>
+            <RevealText
+              as="h2"
+              text={t("footer.title")}
+              delay={0.1}
+              className="mt-zsd-sm font-zsd-display-sm text-zsd-headline-lg text-balance break-words hyphens-auto sm:text-zsd-display-sm"
+              after={
+                <span
+                  aria-hidden="true"
+                  className="ms-[0.12em] me-[0.05em] mb-[0.05em] inline-block size-[0.2em] reveal-stop bg-zsd-primary"
+                />
+              }
+            />
+          </div>
           <Reveal
             order={1}
-            className={`mt-zsd-xl lg:mt-zsd-xxl ${CONTENT_START}`}
+            className="mt-zsd-xl lg:col-span-3 lg:col-start-2 lg:mt-zsd-xxl"
           >
-            <ul aria-labelledby="footer-contacts">
+            <ul data-swarm-text aria-labelledby="footer-contacts">
               <li className="mb-zsd-xl flex flex-wrap items-center gap-x-zsd-sm">
                 <a
                   href={`mailto:${EMAIL}`}
@@ -124,7 +132,10 @@ export function SiteFooter() {
           </Reveal>
         </div>
         {/* Room at the bottom for the music player's button over the corner. */}
-        <div className="flex flex-wrap items-center justify-between gap-zsd-md border-t border-border pt-zsd-md pb-[calc(var(--zsd-spacing-control-height)+var(--zsd-spacing-xl))] text-zsd-body-sm text-zsd-on-surface-muted">
+        <div
+          data-swarm-text
+          className="flex flex-wrap items-center justify-between gap-zsd-md border-t border-border pt-zsd-md pb-[calc(var(--zsd-spacing-control-height)+var(--zsd-spacing-xl))] text-zsd-body-sm text-zsd-on-surface-muted"
+        >
           <p dir="ltr" className="flex items-center gap-zsd-sm">
             <span
               aria-hidden

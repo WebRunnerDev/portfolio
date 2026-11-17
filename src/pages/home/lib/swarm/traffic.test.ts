@@ -4,17 +4,42 @@ import { rng } from "./math"
 import { BLOCKS } from "./shaders"
 import { threads } from "./threads"
 import { net, Run, traffic, type Viewer } from "./traffic"
-import { heroWeb } from "./web"
+import {
+  chapter,
+  CHAIN,
+  CHAPTER_BLOCKS,
+  FOOTER,
+  HERO,
+  pageWeb,
+  type PageFrame,
+} from "./web"
 
-const frame = {
-  width: 1440,
-  height: 843,
-  logo: { left: 1115, top: 540, right: 1368, bottom: 793 },
-  text: [{ left: 48, top: 200, right: 900, bottom: 420 }],
+const page: PageFrame = {
+  view: { width: 1440, height: 900 },
+  hero: {
+    width: 1440,
+    height: 843,
+    logo: { left: 1115, top: 540, right: 1368, bottom: 793 },
+    text: [{ left: 48, top: 200, right: 900, bottom: 420 }],
+  },
+  chapters: [
+    {
+      width: 1440,
+      height: 1400,
+      logo: { left: 152, top: 400, right: 280, bottom: 528 },
+      text: [{ left: 152, top: 136, right: 1288, bottom: 1400 }],
+    },
+  ],
+  footer: {
+    width: 1440,
+    height: 700,
+    logo: { left: 152, top: 300, right: 400, bottom: 548 },
+    text: [{ left: 152, top: 96, right: 1100, bottom: 260 }],
+  },
 }
 
 function setup() {
-  const web = heroWeb(frame)
+  const web = pageWeb(page)
   const state = net(web, threads(web.edges.length, 14))
   // Every node on screen, threads two units long.
   state.sx.fill(500)
@@ -26,26 +51,58 @@ function setup() {
 }
 
 describe("traffic", () => {
-  it("crawls the whole web breadth first, lighting each node it reaches", () => {
+  it("crawls the hero's web breadth first, lighting each node it reaches", () => {
     const { web, state, run, viewer } = setup()
     run.crawl(BLOCKS + 3)
     expect(run.lit).toBe(1)
     let steps = 0
-    while (run.lit < web.nodes && steps++ < 400) {
+    while (run.lit < web.heroNodes && steps++ < 400) {
       run.step(1 / 60, viewer, false)
       run.resume()
     }
-    expect(run.lit).toBe(web.nodes)
-    expect([...state.lit].every(Boolean)).toBe(true)
+    expect(run.lit).toBe(web.heroNodes)
+    // The hero's only: the chapters' and the footer's wait for theirs.
+    for (let node = 0; node < web.nodes; node++) {
+      expect(state.lit[node]).toBe(web.group[node] === HERO ? 1 : 0)
+    }
     // Landings warm the nodes and the threads.
     expect(Math.max(...state.heat)).toBeGreaterThan(0.8)
     expect(Math.max(...state.threads.heat)).toBeGreaterThan(0.3)
   })
 
-  it("indexes every node at the end of the crawl", () => {
-    const { web, run } = setup()
+  it("indexes the hero's nodes at the end of the crawl", () => {
+    const { web, state, run } = setup()
     run.indexAll()
-    expect(run.lit).toBe(web.nodes)
+    expect(run.lit).toBe(web.heroNodes)
+    expect(state.lit.reduce((sum, lit) => sum + lit, 0)).toBe(web.heroNodes)
+  })
+
+  it("comes down the chain into a chapter and crawls its web", () => {
+    const { web, state, run, viewer } = setup()
+    const block = CHAPTER_BLOCKS[0]
+    run.chain(web.chain[0], CHAIN[0], chapter(0))
+    for (let i = 0; i < 400; i++) run.step(1 / 60, viewer, false)
+    // It lands on the chapter's block, blowing its dust off from the logo.
+    expect(state.lit[block]).toBe(1)
+    expect(state.hitFrom[block]).toBe(CHAIN[0])
+    expect(state.hit[block]).toBeGreaterThan(0)
+    for (let node = BLOCKS; node < web.nodes; node++) {
+      expect(state.lit[node]).toBe(web.group[node] === chapter(0) ? 1 : 0)
+    }
+    // Of the hero's nodes the readout counts, the block only.
+    expect(run.lit).toBe(1)
+  })
+
+  it("crawls the footer's web from the blocks gathered there", () => {
+    const { web, state, run, viewer } = setup()
+    run.burst(
+      Array.from({ length: BLOCKS }, (_, i) => i),
+      FOOTER
+    )
+    for (let i = 0; i < 400; i++) run.step(1 / 60, viewer, false)
+    for (let node = BLOCKS; node < web.nodes; node++) {
+      expect(state.lit[node]).toBe(web.group[node] === FOOTER ? 1 : 0)
+    }
   })
 
   it("sends a runner and packets once running, heads on their threads", () => {

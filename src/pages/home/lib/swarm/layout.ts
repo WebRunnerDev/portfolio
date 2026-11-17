@@ -1,6 +1,8 @@
+import { EASE } from "@/shared/lib/motion"
+
 import { centers } from "../tiles"
 import { HALF_DIAGONAL } from "./dust"
-import { lerp } from "./math"
+import { bezier, clamp, lerp } from "./math"
 
 // The camera: a narrow field of view from CAM_D in front of the plane z = 0,
 // which the viewport maps onto. The canvas is fixed over the viewport, so a
@@ -63,6 +65,47 @@ export function gatherSlot(view: Viewport, logo: Box, i: number, k: number) {
     scale: lerp(to.scale * SPREAD_SCALE, to.scale, k),
   }
 }
+
+// A chapter's block on its rail: in the middle of the rail's square, its
+// rhombus across it.
+export function railSlot(view: Viewport, box: Box): Slot {
+  return {
+    ...toWorld(view, box.left + box.width / 2, box.top + box.height / 2),
+    scale:
+      pxToWorld(view, Math.min(box.width, box.height) * 0.5) / HALF_DIAGONAL,
+  }
+}
+
+const layout = bezier(EASE.layout)
+
+// docs/design-brief.md › Главная на Swarm › На главной › Главы: how far a
+// chapter's block has come from the hero's logo to its rail, 0–1 on
+// `easing-layout`: from the rail's top just over the viewport's bottom to
+// half a viewport above that. Back the same way.
+export const arrival = (view: Viewport, rail: Box) =>
+  layout(clamp((view.height * 0.98 - rail.top) / (view.height * 0.5)))
+
+// › Футер: how far the blocks have gathered into the footer's logo, 0–1 on
+// `easing-layout`: from the top of its square (`logo`) at the viewport's
+// bottom over three quarters of a viewport, or over what is left of the
+// footer from there when that is less, so they have gathered by the end of
+// the page.
+export const gathering = (
+  view: Viewport,
+  logo: Pick<Box, "top">,
+  footer: Pick<DOMRect, "bottom">
+) =>
+  layout(
+    clamp(
+      (view.height - logo.top) /
+        Math.max(1, Math.min(view.height * 0.75, footer.bottom - logo.top))
+    )
+  )
+
+// A block whose logo has scrolled far above waits just over the viewport:
+// on its way down to a rail or the footer it comes in from the top, not
+// across the whole page. World units over the plane's middle.
+export const ABOVE = VIEW_H * 0.75
 
 // docs/design-brief.md › Главная на Swarm › На главной › Текст: a node in
 // a text box (grown by `margin`) steps out to its nearest edge. Writes the

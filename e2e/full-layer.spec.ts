@@ -110,6 +110,26 @@ test("the scene fades in over lite after its first frame, nothing shifts", async
   expect(shifts).toBe(0)
 })
 
+// Issue #186: while the scene runs the footer holds the square its blocks
+// gather into, above the label below `lg`.
+test("the scene opens the footer's square for the logo", async ({ page }) => {
+  await strongDevice(page)
+  await page.goto("/en")
+  const square = page.locator('footer [data-swarm-anchor="footer"]')
+  await expect(square).toHaveCSS("display", "none")
+  await page.waitForTimeout(PAST_PROBE_MS)
+  await page.mouse.move(200, 200)
+  await expect(scene(page)).toHaveAttribute("data-ready", "true", {
+    timeout: 10_000,
+  })
+  await expect(square).toHaveCSS("display", "block")
+  const box = (await square.boundingBox())!
+  expect(box.width).toBeGreaterThan(0)
+  expect(box.width).toBeCloseTo(box.height)
+  const label = (await page.locator("footer p").first().boundingBox())!
+  expect(box.y + box.height).toBeLessThanOrEqual(label.y)
+})
+
 test("a full chunk that fails to load leaves lite for the visit", async ({
   page,
 }) => {
