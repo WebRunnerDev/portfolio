@@ -19,13 +19,14 @@ const PLACEMENTS: TilePlacement[] = spread(0.3).map((offset, i) => ({
 
 // The square the Swarm's dust gathers into at `full` (ADR-0013,
 // docs/design-brief.md › Главная на Swarm › Hero): in the band under the
-// actions, at the end, clear of the text. The scene reads its box once a
-// frame; it draws nothing.
+// actions, at the end, clear of the text. Below `sm` its size comes from the
+// hero (index.css › hero-logo-band), which keeps the text out of it. The
+// scene reads its box once a frame; it draws nothing.
 export function HeroLogoAnchor() {
   return (
     <div
       data-swarm-anchor="hero"
-      className="absolute inset-e-[5%] bottom-[4%] aspect-square h-[24%] max-h-72 lg:bottom-[6%] lg:h-[30%]"
+      className="absolute inset-e-[5%] bottom-[4%] aspect-square h-[24%] max-h-72 max-sm:bottom-(--hero-logo-bottom) max-sm:h-(--hero-logo) lg:bottom-[6%] lg:h-[30%]"
     />
   )
 }

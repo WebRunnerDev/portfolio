@@ -1089,6 +1089,31 @@ html:active-view-transition-type(forward, back) {
   display: block;
 }
 
+/* ADR-0013, docs/design-brief.md › Главная на Swarm › Hero: the hero's least
+ * height and, below `sm`, the square the Swarm gathers its logo into
+ * (`HeroLogoAnchor`) at the end of the band under the actions. Below `sm`
+ * the square sits under the actions, so the hero's text keeps the band
+ * free (`pb-(--hero-logo-band)`), at every tier: centred text on a short
+ * phone ran into it. From `sm` on the square at the end never reaches the
+ * actions across, and the band would only push it under the fold. Sized
+ * from the least height, not the hero's own box, so band and square agree
+ * when the text makes the hero taller. */
+@utility hero-logo-band {
+  --hero-height: max(
+    480px,
+    calc(
+      100svh - var(--zsd-x-zsd-layout-header-height) -
+        var(--zsd-x-zsd-border-width-default)
+    )
+  );
+  --hero-logo: min(var(--hero-height) * 0.24, 18rem);
+  --hero-logo-bottom: calc(var(--hero-height) * 0.04);
+  --hero-logo-band: max(
+    var(--zsd-spacing-section),
+    var(--hero-logo) + var(--hero-logo-bottom) + var(--zsd-spacing-xl)
+  );
+}
+
 /* The brand: `display-lg` on `xl`, down to `display-sm` at 320px. */
 @utility text-hero-brand {
   font-family: var(--zsd-typography-display-lg-font-family);

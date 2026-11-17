@@ -107,13 +107,13 @@ export function Hero({
       ref={heroRef}
       data-tier={tier}
       data-swarm-web="hero"
-      className={`${tier === "static" ? "" : "logo-flight-hero"} relative isolate flex min-h-[max(480px,calc(100svh-var(--zsd-x-zsd-layout-header-height)-var(--zsd-x-zsd-border-width-default)))] overflow-hidden`}
+      className={`${tier === "static" ? "" : "logo-flight-hero"} relative isolate flex min-h-(--hero-height) overflow-hidden hero-logo-band`}
     >
       <div aria-hidden="true" dir="ltr" className="absolute inset-0 -z-10">
         <HeroEffect tier={tier} covered={covered} />
       </div>
       {tier === "full" && <HeroReadout />}
-      <div className="mx-auto flex w-full max-w-(--zsd-x-zsd-layout-content-max) flex-col justify-center px-zsd-lg py-zsd-section md:px-zsd-xxl">
+      <div className="mx-auto flex w-full max-w-(--zsd-x-zsd-layout-content-max) flex-col justify-center px-zsd-lg py-zsd-section max-sm:pb-(--hero-logo-band) md:px-zsd-xxl">
         <HeroBrand tiles={tilesRef} />
         <p
           data-swarm-text
