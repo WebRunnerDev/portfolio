@@ -3,6 +3,8 @@ import { createRoot } from "react-dom/client"
 import { RouterProvider, createRouter } from "@tanstack/react-router"
 
 import "./index.css"
+// PROTOTYPE (spike/path-to-10): the curtain of rhombi on a page change.
+import "./shared/lib/prototype/curtain.css"
 import { routeTree } from "./app/routeTree.gen"
 import { markProto } from "@/shared/lib/prototype"
 import { pageTransitionTypes } from "@/shared/lib/view-transition"

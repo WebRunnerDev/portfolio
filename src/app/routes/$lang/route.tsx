@@ -4,6 +4,7 @@ import { DEFAULT_LANG, isLang, withLang, type Lang } from "@contracts/lang"
 import { DirectionProvider } from "@/app/providers"
 import { NotFoundPage } from "@/pages/not-found"
 import { LangHead } from "@/shared/i18n"
+import { SmoothScroll } from "@/shared/lib/prototype"
 import { PrototypeBar } from "@/shared/ui/prototype-bar"
 import { CursorTile } from "@/widgets/cursor-tile"
 import { SiteFooter } from "@/widgets/footer"
@@ -38,6 +39,7 @@ export const Route = createFileRoute("/$lang")({
       <MusicPlayer />
       <CursorTile />
       <PrototypeBar />
+      <SmoothScroll />
     </DirectionProvider>
   ),
   notFoundComponent: NotFoundPage,

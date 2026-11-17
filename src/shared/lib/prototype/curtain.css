@@ -1,0 +1,58 @@
+/* PROTOTYPE, branch spike/path-to-10 only (`?transition=curtain`).
+ * docs/design-brief.md › Путь к 10: a page change opens through a curtain of
+ * rhombi. The new page shows through a lattice of rhombi (48px cells, the
+ * old Kinetic Grid's step) that grow from nothing until they merge; the old
+ * page holds still under it, then goes. Each rhombus is where two diagonal
+ * bands of the mask cross (`mask-composite: intersect`); `--curtain` is half
+ * the bands' width, 0% to 50% of the cell's diagonal. The header, footer and
+ * cursor tile keep their own view-transition-names and stay put. Under
+ * reduced motion the page change stays the plain fade. */
+@property --curtain {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 0%;
+}
+
+@keyframes curtain-open {
+  from {
+    --curtain: 0%;
+  }
+  to {
+    --curtain: 50%;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html[data-proto-transition="curtain"]:active-view-transition-type(
+      forward,
+      back
+    ) {
+    &::view-transition-old(root) {
+      animation: none;
+    }
+    &::view-transition-new(root) {
+      --cell: 48px;
+      animation: curtain-open calc(var(--zsd-x-zsd-motion-duration-slow) * 1.5)
+        var(--zsd-x-zsd-motion-easing-layout) both;
+      mask-image:
+        linear-gradient(
+          45deg,
+          transparent calc(50% - var(--curtain)),
+          #000 calc(50% - var(--curtain)),
+          #000 calc(50% + var(--curtain)),
+          transparent calc(50% + var(--curtain))
+        ),
+        linear-gradient(
+          -45deg,
+          transparent calc(50% - var(--curtain)),
+          #000 calc(50% - var(--curtain)),
+          #000 calc(50% + var(--curtain)),
+          transparent calc(50% + var(--curtain))
+        );
+      mask-size: var(--cell) var(--cell);
+      mask-position: center;
+      mask-repeat: repeat;
+      mask-composite: intersect;
+    }
+  }
+}
