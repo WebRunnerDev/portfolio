@@ -93,4 +93,16 @@ describe("ribbon and lay", () => {
     // Thread 0 is untouched.
     expect(out.slice(0, pairs(S) * 2 * FLOATS).every((v) => v === 0)).toBe(true)
   })
+
+  it("lays a thread into another slot when asked", () => {
+    const t = threads(2, S)
+    const own = new Float32Array(2 * pairs(S) * 2 * FLOATS)
+    const moved = new Float32Array(2 * pairs(S) * 2 * FLOATS)
+    const ends = Float32Array.of(0, 0, 0, 2, 0, -1)
+    lay(t, 1, ends, 0.1, own)
+    lay(t, 1, ends, 0.1, moved, 0)
+    const size = pairs(S) * 2 * FLOATS
+    expect(moved.slice(0, size)).toEqual(own.slice(size))
+    expect(moved.slice(size).every((v) => v === 0)).toBe(true)
+  })
 })

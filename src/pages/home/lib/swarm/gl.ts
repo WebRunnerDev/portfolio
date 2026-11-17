@@ -75,7 +75,7 @@ export function deleteTarget(gl: WebGL2RenderingContext, t: Target) {
 
 // A float texture of `width` × `height` RGBA texels that shaders read with
 // texelFetch (no filtering, which RGBA32F lacks without an extension), its
-// data in `data`, uploaded whole by `upload`.
+// data in `data`, uploaded by `upload`: whole, or its first `columns`.
 export function dataTexture(
   gl: WebGL2RenderingContext,
   width: number,
@@ -100,19 +100,22 @@ export function dataTexture(
   return {
     texture,
     data,
-    upload() {
+    upload(columns = width) {
+      if (columns < 1) return
       gl.bindTexture(gl.TEXTURE_2D, texture)
+      gl.pixelStorei(gl.UNPACK_ROW_LENGTH, Math.max(1, width))
       gl.texSubImage2D(
         gl.TEXTURE_2D,
         0,
         0,
         0,
-        Math.max(1, width),
+        Math.min(columns, Math.max(1, width)),
         height,
         gl.RGBA,
         gl.FLOAT,
         data
       )
+      gl.pixelStorei(gl.UNPACK_ROW_LENGTH, 0)
     },
   }
 }

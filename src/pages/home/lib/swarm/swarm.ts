@@ -150,6 +150,9 @@ const STRETCH = 0.45
 // Threads with both ends this far off screen (CSS pixels) one way aren't
 // laid or drawn this frame.
 const CULL = 80
+// A group's dust is drawn while one of its nodes is this near the screen
+// (CSS pixels): a node's dust puffs out past it by its heat.
+const NEAR = 160
 
 const DUST_UNIFORMS = [
   "uViewProj",
@@ -376,6 +379,11 @@ export function swarm(
   gl.vertexAttribPointer(T_INFO, 3, gl.FLOAT, false, 12, 0)
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, index, gl.STATIC_DRAW)
+  // The threads laid this frame go first in the buffers, one slot each:
+  // only those are uploaded and drawn.
+  const perThread = segments * 6
+  const perSlot = pairs(segments) * 2 * FLOATS
+  let drawn = 0
   // The finish and the glow draw one triangle from gl_VertexID.
   const emptyVao = gl.createVertexArray()
   gl.bindVertexArray(null)
@@ -428,6 +436,17 @@ export function swarm(
   const ends = new Float32Array(6)
   const masks = new Float32Array(MASKS * 4)
   const zones: Zone[] = []
+  // Per group: its far nodes (the first's index among them, how many), where
+  // its dust starts in the buffer and how much there is, and whether a node
+  // of it is near the screen this frame.
+  const members = Array.from({ length: FOOTER + 1 }, (_, g) => {
+    const first = web.far.findIndex((f) => f.group === g)
+    const n = web.far.filter((f) => f.group === g).length
+    return [Math.max(first, 0), n] as const
+  })
+  const dustFrom = new Int32Array(FOOTER + 1)
+  const dustCount = new Int32Array(FOOTER + 1)
+  const inView = new Uint8Array(FOOTER + 1)
   // Per far node, how much it lags the scroll by its depth.
   const lag = Float32Array.from(
     web.far,
@@ -575,15 +594,34 @@ export function swarm(
     return rails[s]?.getBoundingClientRect() ?? new DOMRect()
   }
 
+  // The dust of each group, one after another: the blocks and the hero's
+  // far nodes, then each chapter's and the footer's. A group with no node
+  // near the screen isn't drawn.
+  function* groupDust() {
+    const parts: Float32Array[] = []
+    for (let g = HERO; g <= FOOTER; g++) {
+      const [first, n] = members[g]
+      const part =
+        g === HERO
+          ? yield* dust(BLOCKS, quality.perBlock, n, quality.perFar)
+          : yield* dust(0, 0, n, quality.perFar, undefined, BLOCKS + first)
+      dustFrom[g] = parts.reduce((sum, p) => sum + p.length, 0) / PARTICLE
+      dustCount[g] = part.length / PARTICLE
+      parts.push(part)
+    }
+    const out = new Float32Array(parts.reduce((sum, p) => sum + p.length, 0))
+    let at = 0
+    for (const part of parts) {
+      out.set(part, at)
+      at += part.length
+    }
+    return out
+  }
+
   // Lays the dust in slices between tasks, then hands it to the GPU.
   async function layDust() {
     const id = ++laying
-    const slices = dust(
-      BLOCKS,
-      quality.perBlock,
-      web.far.length,
-      quality.perFar
-    )
+    const slices = groupDust()
     let slice = slices.next()
     while (!slice.done) {
       await new Promise((resolve) => setTimeout(resolve))
@@ -945,6 +983,7 @@ export function swarm(
       : 0
     const ease = 1 - Math.exp(-dts * 5)
     const viewW = VIEW_H * (width / height)
+    inView.fill(0)
     for (let j = 0; j < web.far.length; j++) {
       const node = BLOCKS + j
       const f = web.far[j]
@@ -966,6 +1005,7 @@ export function swarm(
         by = r.top + f.v * r.height
         by += lag[j] * (height / 2 - by)
       }
+      if (by > -NEAR && by < height + NEAR) inView[f.group] = 1
       stepOut(bx, by, zones, zoneCount, step)
       out[node * 2] = lerp(out[node * 2], step[0] * phase.mask, ease)
       out[node * 2 + 1] = lerp(out[node * 2 + 1], step[1] * phase.mask, ease)
@@ -1019,6 +1059,7 @@ export function swarm(
     before.y = pointer.y
     const heatDecay = Math.exp(-dts * (phase.done ? 1.5 : 1.1))
     const edgeData = edgeTexture.data
+    drawn = 0
     for (let e = 0; e < edgeCount; e++) {
       const edge = web.edges[e]
       const a = edge.a * 3
@@ -1061,7 +1102,6 @@ export function swarm(
         Math.max(sya, syb) < -CULL ||
         Math.min(sya, syb) > height + CULL
       ) {
-        edgeData[e * 4 + 1] = 0
         continue
       }
       if (plucking && alpha > 0.2) {
@@ -1106,12 +1146,14 @@ export function swarm(
       ends[3] = bx
       ends[4] = by
       ends[5] = bz
-      lay(wires, e, ends, base, points)
-      edgeData[e * 4] = edge.width * Math.min(widthAt[edge.a], widthAt[edge.b])
-      edgeData[e * 4 + 1] = alpha
-      edgeData[e * 4 + 2] = length
-      edgeData[(edgeCount + e) * 4] = state.head[e * 2]
-      edgeData[(edgeCount + e) * 4 + 1] = state.head[e * 2 + 1]
+      const slot = drawn++
+      lay(wires, e, ends, base, points, slot)
+      edgeData[slot * 4] =
+        edge.width * Math.min(widthAt[edge.a], widthAt[edge.b])
+      edgeData[slot * 4 + 1] = alpha
+      edgeData[slot * 4 + 2] = length
+      edgeData[(edgeCount + slot) * 4] = state.head[e * 2]
+      edgeData[(edgeCount + slot) * 4 + 1] = state.head[e * 2 + 1]
     }
 
     // The text boxes for the threads, in device pixels from the bottom.
@@ -1126,11 +1168,11 @@ export function swarm(
 
     // To the GPU: one upload each.
     gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer)
-    gl.bufferSubData(gl.ARRAY_BUFFER, 0, points)
+    if (drawn) gl.bufferSubData(gl.ARRAY_BUFFER, 0, points, 0, drawn * perSlot)
     gl.activeTexture(gl.TEXTURE0 + UNIT_NODES)
     nodeTexture.upload()
     gl.activeTexture(gl.TEXTURE0 + UNIT_EDGES)
-    edgeTexture.upload()
+    edgeTexture.upload(drawn)
 
     const w = canvas.width
     const h = canvas.height
@@ -1166,7 +1208,10 @@ export function swarm(
     gl.uniform3fv(dustAt.uFlash, colors.flash)
     gl.uniform1f(dustAt.uTone, tone)
     gl.bindVertexArray(dustVao)
-    gl.drawArrays(gl.POINTS, 0, count)
+    for (let g = HERO; g <= FOOTER; g++) {
+      if (g === HERO || inView[g])
+        gl.drawArrays(gl.POINTS, dustFrom[g], dustCount[g])
+    }
 
     // The threads over the dust, not into the depth: added in the dark,
     // blended over (premultiplied) in the light.
@@ -1187,7 +1232,9 @@ export function swarm(
     gl.uniform3fv(threadAt.uLine, colors.line)
     gl.uniform3fv(threadAt.uPrimary, colors.flash)
     gl.bindVertexArray(threadVao)
-    gl.drawElements(gl.TRIANGLES, index.length, gl.UNSIGNED_SHORT, 0)
+    if (drawn) {
+      gl.drawElements(gl.TRIANGLES, drawn * perThread, gl.UNSIGNED_SHORT, 0)
+    }
     gl.disable(gl.BLEND)
     gl.depthMask(true)
     gl.disable(gl.DEPTH_TEST)
