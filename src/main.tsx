@@ -4,6 +4,7 @@ import { RouterProvider, createRouter } from "@tanstack/react-router"
 
 import "./index.css"
 import { routeTree } from "./app/routeTree.gen"
+import { markProto } from "@/shared/lib/prototype"
 import { pageTransitionTypes } from "@/shared/lib/view-transition"
 import { LOADER_DELAY_MS } from "@/shared/ui/loader"
 import { PageLoading } from "@/shared/ui/page-state"
@@ -39,6 +40,9 @@ declare module "@tanstack/react-router" {
     lightbox?: true
   }
 }
+
+// PROTOTYPE (spike/path-to-10): the switches on <html> before the first paint.
+markProto()
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
