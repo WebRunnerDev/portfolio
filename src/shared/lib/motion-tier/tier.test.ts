@@ -37,30 +37,15 @@ describe("detectTier", () => {
     expect(detectTier()).toBe("static")
   })
 
-  it("is lite with 4 cores or fewer", () => {
-    device({ cores: 4, memory: 8 })
-    expect(detectTier()).toBe("lite")
-  })
-
-  it("is lite with 4 GB of memory or less", () => {
-    device({ cores: 8, memory: 4 })
-    expect(detectTier()).toBe("lite")
-  })
-
-  it("is lite when the user saves data", () => {
-    device({ cores: 8, memory: 8, saveData: true })
-    expect(detectTier()).toBe("lite")
+  it("is a full candidate on a weak device too (ADR-0013)", () => {
+    device({ cores: 2, memory: 2, saveData: true })
+    expect(detectTier()).toBe("full")
   })
 
   it("is a full candidate otherwise", () => {
     device({ cores: 8, memory: 8, saveData: false })
     expect(detectTier()).toBe("full")
-  })
-
-  it("doesn't hold back what the browser doesn't tell", () => {
     // Firefox and Safari have no deviceMemory nor connection.
-    device({ cores: 8 })
-    expect(detectTier()).toBe("full")
     device({})
     expect(detectTier()).toBe("full")
   })

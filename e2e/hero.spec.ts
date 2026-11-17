@@ -5,8 +5,9 @@ import { expect, test, type Page } from "@playwright/test"
 const hero = (page: Page) => page.locator("section[data-tier]")
 const effect = (page: Page) => hero(page).locator("[data-effect]")
 
-// The device hints tier detection reads: 2 cores make `lite`, 8 a `full`
-// candidate (the FPS probe and the input gate still have to pass).
+// The device hints the Swarm's level reads (ADR-0013): 8 cores and 8 GB
+// make a strong device. Any device is a `full` candidate (the FPS probe and
+// the input gate still have to pass).
 async function cores(page: Page, count: number) {
   await page.addInitScript((count) => {
     Object.defineProperty(navigator, "hardwareConcurrency", {
@@ -83,16 +84,17 @@ test("reduced motion gets the static tier, an image in place", async ({
 test("the lite tier runs the logo tiles and pauses off screen", async ({
   page,
 }) => {
-  await cores(page, 2)
+  // No input: the gate holds `full` back (ADR-0012).
   await page.goto("/en")
   await expect(hero(page)).toHaveAttribute("data-tier", "lite")
   await expect(effect(page)).toHaveAttribute("data-effect", "lite")
   await expect(effect(page)).toHaveAttribute("data-playing", "true")
   await expect(effect(page).locator("img")).toHaveCount(0)
 
-  // The page is too short to scroll the hero out of view: lengthen it.
+  // The page is too short to scroll the hero out of view: lengthen it. A
+  // scroll from script isn't an input.
   await page.addStyleTag({ content: "main { padding-bottom: 200vh }" })
-  await page.mouse.wheel(0, 3000)
+  await page.evaluate("window.scrollBy(0, 3000)")
   await expect(effect(page)).toHaveAttribute("data-playing", "false")
   await expect(effect(page).locator(".hero-breathe").first()).toHaveCSS(
     "animation-play-state",
@@ -100,10 +102,13 @@ test("the lite tier runs the logo tiles and pauses off screen", async ({
   )
 })
 
-// Headless Chromium draws WebGL in software (SwiftShader). At this size it
-// holds the 40 fps the scene needs, so the FPS meter doesn't drop it to
-// `lite` in the middle of a test.
+// Headless Chromium draws WebGL in software (SwiftShader). At this size
+// (`mobile`'s class: under 860 px) it holds the 40 fps the scene needs, so
+// the FPS meter doesn't step it down in the middle of a test.
 const SOFTWARE_GL = { width: 640, height: 480 }
+// A level pinned for a test that runs past the FPS meter's first window:
+// it holds there, whatever software WebGL draws (ADR-0013).
+const PINNED = "/en?swarm=mobile-lite"
 
 // The Swarm's canvas: the home page's, behind the whole page (ADR-0013).
 const scene = (page: Page) => page.locator("[data-effect=full]")
@@ -143,19 +148,18 @@ const colorsThroughLogo = (page: Page) =>
     })
   )`) as Promise<number>
 
-// Software WebGL on a CI runner holds the `desktop` numbers only just: the
-// FPS meter may drop the scene to `lite` after its first 2 s window, which
-// is right for a device without a GPU. So everything here is read within
-// that window; the end of the intro ("Indexed") waits for a level the test
-// can pin (#187).
+// Software WebGL on a CI runner holds the scene's numbers only just, and
+// the FPS meter steps it down, which is right for a device without a GPU.
+// So the level is pinned: the intro runs to its end.
 test("the full tier draws the Swarm behind the whole page", async ({
   page,
 }) => {
   const errors = consoleErrors(page)
   await cores(page, 8)
   await page.setViewportSize(SOFTWARE_GL)
-  await page.goto("/en")
+  await page.goto(PINNED)
   const canvas = await fullScene(page)
+  await expect(canvas).toHaveAttribute("data-quality", "mobile-lite")
   // Over the whole viewport (but the scrollbar, as the hero) at DPR 1,
   // behind the page, drawing and not blank: dust in the logo's row.
   const box = (await hero(page).boundingBox())!
@@ -174,13 +178,18 @@ test("the full tier draws the Swarm behind the whole page", async ({
     height: SOFTWARE_GL.height,
     playing: "true",
   })
-  expect(await colorsThroughLogo(page)).toBeGreaterThan(20)
-  // The readout counts the nodes the crawl lights in the hero's web.
+  // The readout counts the nodes the crawl lights in the hero's web, then
+  // says they are all indexed; the dust has gathered into the logo's row.
   const readout = hero(page).locator("[data-swarm-readout]")
-  await expect(readout).toHaveText(/^(Crawling|Indexed) · \d+ nodes$/, {
-    timeout: 1_000,
-  })
+  await expect(readout).toHaveText(/^(Crawling|Indexed) · \d+ nodes$/)
   await expect(readout).toHaveAttribute("dir", "ltr")
+  await expect(readout).toHaveText(/^Indexed · \d+ nodes$/, {
+    timeout: 10_000,
+  })
+  // Past the gather (INTRO_MS after the first frame).
+  await page.waitForTimeout(1_500)
+  await expect(canvas).toHaveAttribute("data-quality", "mobile-lite")
+  expect(await colorsThroughLogo(page)).toBeGreaterThan(20)
 
   // A hidden tab pauses it.
   await page.evaluate(`
@@ -211,20 +220,40 @@ test("the full tier falls back to lite when the WebGL context is lost", async ({
   expect(errors).toEqual([])
 })
 
-test("the full tier falls back to lite when the frame rate drops", async ({
+// ADR-0013 › Понижение на ходу: a level down first (fewer particles, a
+// 30 fps cap on a phone), `lite` only when that doesn't hold either.
+test("the full tier steps down when the frame rate drops, then falls back", async ({
   page,
 }) => {
   await cores(page, 8)
   await page.setViewportSize(SOFTWARE_GL)
   await page.goto("/en")
-  await fullScene(page)
+  const canvas = await fullScene(page)
+  // Each level the scene is at, in order.
+  await page.evaluate(`
+    window.levels = [document.querySelector("[data-effect=full]").dataset.quality]
+    new MutationObserver(([record]) => {
+      const level = record.target.dataset.quality
+      if (record.target.isConnected && window.levels.at(-1) !== level)
+        window.levels.push(level)
+    }).observe(document.querySelector("[data-effect=full]"), {
+      attributeFilter: ["data-quality"],
+    })
+  `)
   // A device that can't keep up: 20 frames a second from now on.
   await page.evaluate(`window.requestAnimationFrame = (tick) =>
     setTimeout(() => tick(performance.now()), 50)`)
-  await expect(hero(page)).toHaveAttribute("data-tier", "lite", {
+  await expect(canvas).toHaveAttribute("data-quality", "mobile-lite", {
     timeout: 10_000,
   })
+  await expect(hero(page)).toHaveAttribute("data-tier", "lite", {
+    timeout: 15_000,
+  })
   await expect(effect(page)).toHaveAttribute("data-effect", "lite")
+  expect(await page.evaluate("window.levels")).toEqual([
+    "mobile",
+    "mobile-lite",
+  ])
 })
 
 test("the brand ends in place and is read as one word", async ({ page }) => {
@@ -264,8 +293,7 @@ test("no Profile: the hero shows without a subtitle and nothing shifts", async (
 test("in RTL the effect and the brand don't mirror, the text does", async ({
   page,
 }) => {
-  // `lite`: its logo sits at one side, so a mirror would show.
-  await cores(page, 2)
+  // `lite` (no input): its logo sits at one side, so a mirror would show.
   await page.setViewportSize({ width: 1280, height: 800 })
   await page.goto("/en")
   const ltrEffect = (await effect(page).boundingBox())!

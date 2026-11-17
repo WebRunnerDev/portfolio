@@ -15,13 +15,17 @@ const PAST_PROBE_MS = 2_500
 // `lite` in the middle of a test.
 test.use({ viewport: { width: 640, height: 480 } })
 
-// A device past every `lite` limit: 16 cores and 8 GB.
-async function strongDevice(page: Page) {
-  await page.addInitScript(() => {
-    Object.defineProperty(navigator, "hardwareConcurrency", { get: () => 16 })
+// The device hints the scene's level reads (ADR-0013): 16 cores and 8 GB
+// a strong device, 2 cores a weak one.
+async function device(page: Page, cores: number) {
+  await page.addInitScript((cores) => {
+    Object.defineProperty(navigator, "hardwareConcurrency", {
+      get: () => cores,
+    })
     Object.defineProperty(navigator, "deviceMemory", { get: () => 8 })
-  })
+  }, cores)
 }
+const strongDevice = (page: Page) => device(page, 16)
 
 // The URLs of the full layer's chunk the page asked for.
 function fullRequests(page: Page) {
@@ -53,6 +57,27 @@ test("the full layer waits for the first input", async ({ page }) => {
   // `lite` gave way to the scene.
   await expect(hero(page).locator("[data-effect]")).toHaveCount(0)
 })
+
+// ADR-0013: a weak device is a `full` candidate like any other; after the
+// first input it gets the chunk, at the lite level of its class.
+for (const [viewport, level] of [
+  [{ width: 1280, height: 800 }, "desktop-lite"],
+  [{ width: 390, height: 844 }, "mobile-lite"],
+] as const) {
+  test(`a weak device gets the scene after input, at ${level}`, async ({
+    page,
+  }) => {
+    await device(page, 2)
+    await page.setViewportSize(viewport)
+    const chunk = page.waitForRequest(FULL_CHUNK)
+    await page.goto("/en")
+    await page.waitForTimeout(PAST_PROBE_MS)
+    await page.mouse.move(200, 200)
+    await chunk
+    await expect(scene(page)).toHaveAttribute("data-quality", level)
+    await expect(scene(page)).toHaveAttribute("data-ready", "true")
+  })
+}
 
 test("the scene fades in over lite after its first frame, nothing shifts", async ({
   page,

@@ -1,5 +1,5 @@
 import { palette, type Palette } from "./colors"
-import { dust, PARTICLE } from "./dust"
+import { dust, PARTICLE, rounds } from "./dust"
 import { dataTexture, deleteTarget, sizeTarget, target } from "./gl"
 import { intro, readout } from "./intro"
 import {
@@ -216,6 +216,10 @@ type Uniforms<T extends readonly string[]> = Record<
 export type Swarm = {
   play: () => void
   pause: () => void
+  // A step down mid-visit (ADR-0013 › Понижение на ходу): `lowered`'s
+  // particles, glow, DPR and frame cap from the next frame on, a shorter
+  // draw range rather than new dust. The web stays as it was laid.
+  lower: (quality: Quality) => void
   destroy: () => void
 }
 
@@ -264,6 +268,8 @@ export function swarm(
   // Light over 1 for the finish to tone map; without it the scene tone maps
   // in its own shaders.
   const hdr = quality.post && !!gl.getExtension("EXT_color_buffer_float")
+  // What a step down changes; the rest of `quality` is the scene's as built.
+  let live = quality
 
   const shaders: WebGLShader[] = []
   function build(vertex: string, fragment: string) {
@@ -410,6 +416,8 @@ export function swarm(
   let height = 0
   let dpr = 1
   let count = 0
+  // The hero's dust drawn: all of it until a step down draws fewer a block.
+  let heroDrawn = Infinity
 
   const blocks = new Float32Array(BLOCKS * 16)
   const form = new Float32Array(BLOCKS)
@@ -636,7 +644,7 @@ export function swarm(
   function resize() {
     width = Math.max(1, Math.round(canvas.clientWidth))
     height = Math.max(1, Math.round(canvas.clientHeight))
-    dpr = Math.min(window.devicePixelRatio || 1, quality.dpr)
+    dpr = Math.min(window.devicePixelRatio || 1, live.dpr)
     const w = Math.round(width * dpr)
     const h = Math.round(height * dpr)
     // Setting the size, even the same, clears the canvas.
@@ -1197,7 +1205,7 @@ export function swarm(
     gl.uniform1fv(dustAt.uSplashA, splashed.amp)
     gl.uniform1f(dustAt.uTime, t)
     gl.uniform1f(dustAt.uScale, (h * 0.5) / Math.tan(FOV / 2))
-    gl.uniform1f(dustAt.uSizeK, sizeK(quality.perBlock))
+    gl.uniform1f(dustAt.uSizeK, sizeK(live.perBlock))
     gl.uniform1f(dustAt.uDpr, dpr)
     gl.uniform1f(dustAt.uPush, push)
     gl.uniform2f(dustAt.uRes, w, h)
@@ -1208,9 +1216,13 @@ export function swarm(
     gl.uniform3fv(dustAt.uFlash, colors.flash)
     gl.uniform1f(dustAt.uTone, tone)
     gl.bindVertexArray(dustVao)
-    for (let g = HERO; g <= FOOTER; g++) {
-      if (g === HERO || inView[g])
-        gl.drawArrays(gl.POINTS, dustFrom[g], dustCount[g])
+    gl.drawArrays(
+      gl.POINTS,
+      dustFrom[HERO],
+      Math.min(dustCount[HERO], heroDrawn)
+    )
+    for (let g = HERO + 1; g <= FOOTER; g++) {
+      if (inView[g]) gl.drawArrays(gl.POINTS, dustFrom[g], dustCount[g])
     }
 
     // The threads over the dust, not into the depth: added in the dark,
@@ -1244,7 +1256,8 @@ export function swarm(
       // The glow, dark theme only: down to a quarter, across, then down.
       const down = downAt
       const blur = blurAt
-      const glowing = colors.dark && glowA && glowB && down && blur
+      const glowing =
+        colors.dark && live.glow > 0 && glowA && glowB && down && blur
       if (glowing) {
         gl.activeTexture(gl.TEXTURE0 + UNIT_SCENE)
         gl.bindTexture(gl.TEXTURE_2D, scene.texture)
@@ -1273,7 +1286,7 @@ export function swarm(
       gl.activeTexture(gl.TEXTURE0 + UNIT_GLOW)
       // Without a glow the scene stands in, at no weight.
       gl.bindTexture(gl.TEXTURE_2D, (glowing ? glowA : scene).texture)
-      gl.uniform1f(finishAt.uGlowK, glowing ? quality.glow * GLOW_GAIN : 0)
+      gl.uniform1f(finishAt.uGlowK, glowing ? live.glow * GLOW_GAIN : 0)
       gl.uniform3fv(finishAt.uSurface, colors.surface)
       gl.uniform2f(finishAt.uSize, w, h)
       gl.uniform1f(finishAt.uTone, 1 - tone)
@@ -1293,7 +1306,7 @@ export function swarm(
   function tick(now: number) {
     frame = requestAnimationFrame(tick)
     // A frame cap below the display's: skip frames that come too soon.
-    if (quality.fps < 60 && now - drawnAt < 1000 / quality.fps - 3) return
+    if (live.fps < 60 && now - drawnAt < 1000 / live.fps - 3) return
     const drawn = draw(now, last < 0 ? 0 : now - last)
     last = now
     if (!drawn) return
@@ -1357,6 +1370,17 @@ export function swarm(
       if (!frame && !failed) frame = requestAnimationFrame(tick)
     },
     pause,
+    lower: (next) => {
+      live = next
+      heroDrawn = rounds(
+        BLOCKS,
+        quality.perBlock,
+        members[HERO][1],
+        quality.perFar,
+        next.perBlock
+      )
+      resize()
+    },
     destroy: () => {
       pause()
       laying++
