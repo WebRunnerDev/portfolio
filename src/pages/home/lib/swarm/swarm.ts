@@ -124,6 +124,16 @@ const PUSH_UP = 4
 const PUSH_DOWN = 1.4
 const SPEED_PX = 400
 const SPEED_FADE = 1.8
+// A tap or a click on the web (ADR-0013 › Касание): one that comes up
+// within this of where it went down (CSS pixels), this soon (ms). A touch
+// the page scrolls with is cancelled on the way. Not on what takes a tap
+// of its own, nor the header, which is opaque over the scene.
+const TAP_SLOP = 10
+const TAP_MS = 500
+const NOT_WEB =
+  "a, button, input, select, textarea, label, summary, [contenteditable], " +
+  "[role=button], [role=link], [role=menuitem], [role=tab], " +
+  "[role=dialog], header"
 // The blocks lean toward the pointer on a spring, near it only.
 const LEAN_FOLLOW = 7
 const LEAN = 0.18
@@ -485,6 +495,12 @@ export function swarm(
   const near = { x: 0, y: 0 }
   let push = 0
   const viewer: Viewer = { width: 1, height: 1, pointer: null }
+  // A press that may become a tap, the tap the next frame resolves, and
+  // how many taps sent packets (`data-taps` on the canvas, for e2e).
+  const press = { id: -1, x: 0, y: 0, at: 0 }
+  const tapped = { x: 0, y: 0, pending: false }
+  let taps = 0
+  let shownTaps = 0
   let camera = { x: 0, y: 0 }
 
   let frame = 0
@@ -1045,6 +1061,11 @@ export function swarm(
     viewer.width = width
     viewer.height = height
     viewer.pointer = active ? pointer : null
+    // A tap: the nearest node by where the scene put the nodes this frame.
+    if (tapped.pending) {
+      tapped.pending = false
+      if (phase.done && run.tap(tapped.x, tapped.y, viewer) >= 0) taps++
+    }
     run.step(dts, viewer, phase.done)
 
     // What landed on a block blows its dust off, from the node it came by.
@@ -1300,6 +1321,10 @@ export function swarm(
     gl.activeTexture(gl.TEXTURE0)
 
     writeReadout(readout(phase, run.lit, web.heroNodes))
+    if (taps !== shownTaps) {
+      shownTaps = taps
+      canvas.dataset.taps = String(taps)
+    }
     return true
   }
 
@@ -1339,6 +1364,31 @@ export function swarm(
   const leave = (event: PointerEvent) => {
     if (!event.relatedTarget) pointer.inside = false
   }
+  // Only noted here: no layout is read and nothing is prevented, so the
+  // page scrolls and links work as they would without the scene. A second
+  // finger cancels the press.
+  const down = (event: PointerEvent) => {
+    press.id = -1
+    if (!event.isPrimary || event.button !== 0) return
+    const target = event.target
+    if (target instanceof Element && target.closest(NOT_WEB)) return
+    press.id = event.pointerId
+    press.x = event.clientX
+    press.y = event.clientY
+    press.at = event.timeStamp
+  }
+  const up = (event: PointerEvent) => {
+    if (event.pointerId !== press.id) return
+    press.id = -1
+    const moved = Math.hypot(event.clientX - press.x, event.clientY - press.y)
+    if (moved > TAP_SLOP || event.timeStamp - press.at > TAP_MS) return
+    tapped.x = event.clientX
+    tapped.y = event.clientY
+    tapped.pending = true
+  }
+  const cancel = (event: PointerEvent) => {
+    if (event.pointerId === press.id) press.id = -1
+  }
   // Not preventing the default leaves the context lost for good.
   const lost = () => fail()
   const resized = new ResizeObserver(resize)
@@ -1358,6 +1408,9 @@ export function swarm(
   canvas.addEventListener("webglcontextlost", lost)
   window.addEventListener("pointermove", move, { passive: true })
   window.addEventListener("pointerout", leave, { passive: true })
+  window.addEventListener("pointerdown", down, { passive: true })
+  window.addEventListener("pointerup", up, { passive: true })
+  window.addEventListener("pointercancel", cancel, { passive: true })
 
   function pause() {
     cancelAnimationFrame(frame)
@@ -1389,6 +1442,9 @@ export function swarm(
       canvas.removeEventListener("webglcontextlost", lost)
       window.removeEventListener("pointermove", move)
       window.removeEventListener("pointerout", leave)
+      window.removeEventListener("pointerdown", down)
+      window.removeEventListener("pointerup", up)
+      window.removeEventListener("pointercancel", cancel)
       for (const buffer of [dustBuffer, pointBuffer, infoBuffer, indexBuffer]) {
         gl.deleteBuffer(buffer)
       }

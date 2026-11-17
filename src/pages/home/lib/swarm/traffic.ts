@@ -37,6 +37,11 @@ const PACKET_RATE = 3.2
 // How hard each blows a block's dust off where it lands (a pulse: times
 // its amplitude).
 const SPLASH = [0.9, 0.7, 0.6, 0.5, 0.7]
+// A tap (ADR-0013 › Касание): the node nearest it within this (CSS
+// pixels) flashes, blows its dust off this hard and sends packets down its
+// threads, each for 4–6 hops.
+const TAP_REACH = 180
+const TAP_SPLASH = 1.1
 
 type Crawler = {
   e: number
@@ -130,10 +135,19 @@ export function traffic(n: Net, random: () => number) {
     n.sy[node] > -view.height * margin &&
     n.sy[node] < view.height * (1 + margin)
 
-  function spawn(e: number, from: number, kind: Run, amp = 1, t = 0) {
+  // `capped`: a tap's packets aren't, only the pool holds them back.
+  function spawn(
+    e: number,
+    from: number,
+    kind: Run,
+    amp = 1,
+    t = 0,
+    capped = true
+  ) {
     if (live >= POOL) return null
     if (kind === Run.Crawl && kinds[Run.Crawl] >= MAX_CRAWL) return null
-    if (kind === Run.Packet && kinds[Run.Packet] >= MAX_PACKETS) return null
+    if (capped && kind === Run.Packet && kinds[Run.Packet] >= MAX_PACKETS)
+      return null
     if (kind === Run.Pulse && kinds[Run.Pulse] >= MAX_PULSES) return null
     const c = pool[live++]
     c.e = e
@@ -387,6 +401,41 @@ export function traffic(n: Net, random: () => number) {
       const u = k / threads.segments
       spawn(e, a, Run.Pulse, amp, u)
       spawn(e, b, Run.Pulse, amp, 1 - u)
+    },
+    // A tap at (x, y) in CSS pixels: the nearest node on screen with a
+    // visible thread, within reach, flashes (a block blows its dust off
+    // from the front) and sends a packet down each of its visible threads.
+    // The node, or -1 when none is near.
+    tap(x: number, y: number, viewer: Viewer) {
+      view = viewer
+      let best = -1
+      let bestD = TAP_REACH
+      for (let node = 0; node < web.nodes; node++) {
+        if (!onScreen(node, 0)) continue
+        const d = Math.hypot(n.sx[node] - x, n.sy[node] - y)
+        if (d > bestD) continue
+        let threaded = false
+        for (let k = web.start[node]; k < web.start[node + 1]; k++) {
+          if (n.alpha[web.list[k]] > 0.3) threaded = true
+        }
+        if (!threaded) continue
+        best = node
+        bestD = d
+      }
+      if (best < 0) return -1
+      n.heat[best] = 1
+      if (best < BLOCKS && TAP_SPLASH > n.hit[best]) {
+        n.hit[best] = TAP_SPLASH
+        // From itself: no direction, the burst comes out the front.
+        n.hitFrom[best] = best
+      }
+      for (let k = web.start[best]; k < web.start[best + 1]; k++) {
+        const e = web.list[k]
+        if (n.alpha[e] <= 0.3) continue
+        const c = spawn(e, best, Run.Packet, 1, 0, false)
+        if (c) c.hops = 4 + Math.floor(random() * 3)
+      }
+      return best
     },
     // `dt` seconds of traffic; `running`: after the intro, the runner and
     // the packets go.
