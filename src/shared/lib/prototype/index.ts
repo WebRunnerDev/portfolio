@@ -78,3 +78,5 @@ export function markProto() {
     root.dataset[`proto${key[0].toUpperCase()}${key.slice(1)}`] = proto(key)
   }
 }
+
+export { SmoothScroll } from "./smooth-scroll"
