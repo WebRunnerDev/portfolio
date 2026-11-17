@@ -134,7 +134,8 @@ export function ribbon(count: number, segments: number) {
   return { info, index }
 }
 
-// Thread `e` from A to B (xyz at 0 and 3 of `ends`) into `out`: its points
+// Thread `e` from A to B (xyz at 0 and 3 of `ends`) into `out` at `slot`
+// (its own place unless asked): its points
 // along the line, bent by its wave across it (in the page's plane) and in
 // depth, each with `base` heat (how warm it stands) and its own. Allocates
 // nothing: it runs for every thread every frame.
@@ -143,7 +144,8 @@ export function lay(
   e: number,
   ends: Float32Array,
   base: number,
-  out: Float32Array
+  out: Float32Array,
+  slot = e
 ) {
   const s = t.segments
   const o = e * (s + 1)
@@ -158,7 +160,7 @@ export function lay(
   const nl = Math.hypot(nx, ny) || 1
   nx /= nl
   ny /= nl
-  let at = e * pairs(s) * 2 * FLOATS
+  let at = slot * pairs(s) * 2 * FLOATS
   // Pairs -1 to S + 1: the first and last doubled.
   for (let pair = -1; pair <= s + 1; pair++) {
     const m = pair < 0 ? 0 : pair > s ? s : pair

@@ -2,7 +2,16 @@ import { describe, expect, it } from "vitest"
 
 import { centers } from "../tiles"
 import { HALF_DIAGONAL } from "./dust"
-import { gatherSlot, logoSlot, stepOut, toWorld, VIEW_H } from "./layout"
+import {
+  arrival,
+  gatherSlot,
+  gathering,
+  logoSlot,
+  railSlot,
+  stepOut,
+  toWorld,
+  VIEW_H,
+} from "./layout"
 
 const view = { width: 1600, height: 900 }
 const logo = { left: 1000, top: 200, width: 500, height: 500 }
@@ -72,5 +81,56 @@ describe("stepOut", () => {
     // Only the first `count` zones count.
     stepOut(250, 150, zones, 0, out, 30)
     expect([...out]).toEqual([0, 0])
+  })
+})
+
+describe("railSlot", () => {
+  it("lays a chapter's block across its rail", () => {
+    const view = { width: 1440, height: 900 }
+    const rail = { left: 152, top: 300, width: 128, height: 128 }
+    const slot = railSlot(view, rail)
+    const center = toWorld(view, 216, 364)
+    expect(slot.x).toBeCloseTo(center.x)
+    expect(slot.y).toBeCloseTo(center.y)
+    // Its half-diagonal is half the rail.
+    const half = (64 / 900) * VIEW_H
+    expect(slot.scale * HALF_DIAGONAL).toBeCloseTo(half)
+  })
+})
+
+describe("arrival", () => {
+  const view = { width: 1440, height: 900 }
+  const at = (top: number) =>
+    arrival(view, { left: 0, top, width: 1, height: 1 })
+
+  it("brings a chapter's block in as its rail comes up the viewport", () => {
+    expect(at(950)).toBe(0)
+    expect(at(882)).toBe(0)
+    expect(at(650)).toBeGreaterThan(0.2)
+    expect(at(650)).toBeLessThan(0.8)
+    expect(at(432)).toBeCloseTo(1)
+    // And keeps it there above, until the rail comes back down.
+    expect(at(-2000)).toBe(1)
+  })
+})
+
+describe("gathering", () => {
+  const view = { width: 1440, height: 900 }
+  // The logo's square `top`, the footer's bottom `below` it.
+  const at = (top: number, below = 1200) =>
+    gathering(view, { top }, { bottom: top + below })
+
+  it("gathers the blocks as the footer's logo comes up", () => {
+    expect(at(1000)).toBe(0)
+    expect(at(900)).toBe(0)
+    expect(at(560)).toBeGreaterThan(0.2)
+    expect(at(560)).toBeLessThan(0.8)
+    expect(at(225)).toBeCloseTo(1)
+  })
+
+  it("has them gathered by the end of the page", () => {
+    // 400px of footer from the logo down: at the end of the page the
+    // logo's top is 500px down.
+    expect(at(500, 400)).toBeCloseTo(1)
   })
 })

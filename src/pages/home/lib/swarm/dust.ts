@@ -71,9 +71,9 @@ export function shapePoint(random: () => number) {
 }
 
 // The dust of `blocks` blocks, `perBlock` particles each, and of `far` far
-// nodes (numbered after the blocks), `perFar` each, laid in slices of
-// `slice` particles so no long task lands on an input: yields after every
-// slice, returns the buffer. Particles go round the nodes (particle i of
+// nodes (numbered from `first`, after the blocks unless asked), `perFar`
+// each, laid in slices of `slice` particles so no long task lands on an
+// input: yields after every slice, returns the buffer. Particles go round the nodes (particle i of
 // every node, then i + 1), so the first k rounds hold the first k of each
 // node: drawing fewer is a shorter draw range. A far node is a shell.
 export function* dust(
@@ -81,9 +81,11 @@ export function* dust(
   perBlock: number,
   far = 0,
   perFar = 0,
-  slice = 8192
+  slice = 8192,
+  first = blocks
 ) {
-  const random = rng(19)
+  // Far nodes numbered elsewhere get dust of their own.
+  const random = rng(19 + first - blocks)
   const out = new Float32Array((blocks * perBlock + far * perFar) * PARTICLE)
   let k = 0
   const put = (node: number, block: boolean) => {
@@ -116,7 +118,7 @@ export function* dust(
       }
     }
     if (i < perFar) {
-      for (let node = blocks; node < blocks + far; node++) {
+      for (let node = first; node < first + far; node++) {
         if (put(node, false)) yield
       }
     }

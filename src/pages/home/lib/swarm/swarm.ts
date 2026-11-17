@@ -3,9 +3,14 @@ import { dust, PARTICLE } from "./dust"
 import { dataTexture, deleteTarget, sizeTarget, target } from "./gl"
 import { intro, readout } from "./intro"
 import {
+  ABOVE,
+  arrival,
   CAM_D,
   FOV,
   gatherSlot,
+  gathering,
+  logoSlot,
+  railSlot,
   stepOut,
   toWorld,
   VIEW_H,
@@ -55,16 +60,36 @@ import {
   wave,
 } from "./threads"
 import { net, traffic, type Viewer } from "./traffic"
-import { heroWeb, Kind, type HeroFrame, type Rect } from "./web"
+import {
+  chapter,
+  CHAIN,
+  CHAPTER_BLOCKS,
+  CHAPTERS,
+  FOOTER,
+  HERO,
+  Kind,
+  linkShows,
+  pageWeb,
+  type Frame,
+  type PageFrame,
+  type Rect,
+} from "./web"
 
 // The page tells the scene where things are through attributes, read once
 // a frame (a class or an attribute, not an import, as the logo flight): the
-// hero the web lies over, its logo square the blocks gather into, the
-// boxes of its text the web steps out of, and its crawl readout.
-const HERO = "[data-swarm-web]"
+// hero the web lies over, its logo square the blocks gather into, each
+// chapter's rail (in its section) a block comes to, the footer's logo
+// square (in the footer) they all gather into at the end, the boxes of
+// text the web steps out of, and the hero's crawl readout.
+const HERO_WEB = "[data-swarm-web]"
 const HERO_ANCHOR = '[data-swarm-anchor="hero"]'
+const RAIL = '[data-swarm-anchor="chapter"]'
+const FOOTER_ANCHOR = '[data-swarm-anchor="footer"]'
 const TEXT = "[data-swarm-text]"
 const READOUT = "[data-swarm-readout]"
+// The page's elements are looked up again this often (ms): a chapter
+// whose data comes late, text that changed.
+const FIND_MS = 500
 
 // The key light, from the top left and in front, as in the spike.
 const KEY = (() => {
@@ -109,6 +134,25 @@ const LEAN_DAMP = 9
 // Where the intro's crawl starts: the far node nearest the hero's middle,
 // so it spreads both ways.
 const SEED = { u: 0.5, v: 0.5 }
+// Parallax of depth (docs/design-brief.md › Главная на Swarm, the brief's
+// Хореография: the text doesn't move): a far node this deep (world units)
+// lags the scroll by this share, a shallower one less.
+const LAG = 0.42
+const LAG_DEPTH = 13
+// A chapter's block lands: its dust blows off this hard, and the crawler
+// comes down the chain from this far above it (world units).
+const ARRIVE_SPLASH = 1.2
+const CHAIN_REACH = VIEW_H * 0.6
+// A chapter's block threads to its web; as its rail rides down a long
+// chapter those threads stretch, and fade from this share of the
+// viewport's height to twice it.
+const STRETCH = 0.45
+// Threads with both ends this far off screen (CSS pixels) one way aren't
+// laid or drawn this frame.
+const CULL = 80
+// A group's dust is drawn while one of its nodes is this near the screen
+// (CSS pixels): a node's dust puffs out past it by its heat.
+const NEAR = 160
 
 const DUST_UNIFORMS = [
   "uViewProj",
@@ -254,8 +298,17 @@ export function swarm(
     blurProgram,
   ].filter((p) => p !== null)
 
-  // The hero's web, laid once for the hero as it is now.
-  const web = heroWeb(heroFrame(), Math.round(50 * quality.nodes))
+  // The page's text, the chapters shown (their rails and sections, in the
+  // page's order) and the footer, found again every FIND_MS.
+  let texts: Element[] = []
+  let rails: Element[] = []
+  let sections: Element[] = []
+  let footerAnchor: Element | null = null
+  let footer: Element | null = null
+  let foundAt = -Infinity
+
+  // The page's web, laid once for the page as it is now.
+  const web = pageWeb(pageFrame(), quality.nodes)
   const nodes = web.nodes
   const edgeCount = web.edges.length
   const segments = quality.segments
@@ -266,7 +319,8 @@ export function swarm(
   const seed = (() => {
     let best = BLOCKS
     let bestD = Infinity
-    web.far.forEach(({ u, v }, j) => {
+    web.far.forEach(({ group, u, v }, j) => {
+      if (group !== HERO) return
       const d = Math.hypot(u - SEED.u, v - SEED.v)
       if (d < bestD) {
         bestD = d
@@ -325,6 +379,11 @@ export function swarm(
   gl.vertexAttribPointer(T_INFO, 3, gl.FLOAT, false, 12, 0)
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, index, gl.STATIC_DRAW)
+  // The threads laid this frame go first in the buffers, one slot each:
+  // only those are uploaded and drawn.
+  const perThread = segments * 6
+  const perSlot = pairs(segments) * 2 * FLOATS
+  let drawn = 0
   // The finish and the glow draw one triangle from gl_VertexID.
   const emptyVao = gl.createVertexArray()
   gl.bindVertexArray(null)
@@ -377,7 +436,38 @@ export function swarm(
   const ends = new Float32Array(6)
   const masks = new Float32Array(MASKS * 4)
   const zones: Zone[] = []
-  let texts: Element[] = []
+  // Per group: its far nodes (the first's index among them, how many), where
+  // its dust starts in the buffer and how much there is, and whether a node
+  // of it is near the screen this frame.
+  const members = Array.from({ length: FOOTER + 1 }, (_, g) => {
+    const first = web.far.findIndex((f) => f.group === g)
+    const n = web.far.filter((f) => f.group === g).length
+    return [Math.max(first, 0), n] as const
+  })
+  const dustFrom = new Int32Array(FOOTER + 1)
+  const dustCount = new Int32Array(FOOTER + 1)
+  const inView = new Uint8Array(FOOTER + 1)
+  // Per far node, how much it lags the scroll by its depth.
+  const lag = Float32Array.from(
+    web.far,
+    (f) => LAG * clamp(-f.z / LAG_DEPTH, 0, 1)
+  )
+
+  // This frame's boxes of the chapters' rails and sections.
+  const railBoxes: DOMRect[] = []
+  const sectionBoxes: DOMRect[] = []
+  // Per group: whether it is on the page. Per chapter slot: how far its
+  // block has come (0–1) and whether it has landed; per block, the same
+  // way, 0 for a block that stays in the logo.
+  const shown = new Uint8Array(FOOTER + 1)
+  const toRail = new Float32Array(CHAPTERS)
+  const landed = new Uint8Array(CHAPTERS)
+  const away = new Float32Array(BLOCKS)
+  const slotOf = Array.from({ length: BLOCKS }, (_, i) =>
+    (CHAPTER_BLOCKS as readonly number[]).indexOf(i)
+  )
+  let footerCrawled = false
+  const ALL_BLOCKS = Array.from({ length: BLOCKS }, (_, i) => i)
 
   // The pointer (mouse or pen) in client coordinates: for the parallax,
   // the runner, the pluck, the parting and the lean; its speed (0–1).
@@ -411,33 +501,127 @@ export function swarm(
     onFail()
   }
 
-  // The hero now (CSS pixels from its top left): its size, its logo square
-  // and its text. Without the page's anchors, the canvas as the hero.
-  function heroFrame(): HeroFrame {
-    const hero = document.querySelector(HERO)?.getBoundingClientRect()
+  // The page now, each part in CSS pixels from its top left. The hero: its
+  // size, its logo square and its text; without the page's anchors, the
+  // canvas as the hero. A chapter: its section, its rail and the box all
+  // its text takes (the web keeps to the edges and the gaps between
+  // chapters). The footer: its logo square and its text.
+  function pageFrame(): PageFrame {
+    const heroElement = document.querySelector(HERO_WEB)
+    const hero = heroElement?.getBoundingClientRect()
     const w = hero?.width || canvas.clientWidth || 1
     const h = hero?.height || canvas.clientHeight || 1
     const left = hero?.left ?? 0
     const top = hero?.top ?? 0
+    const textOf = (root: ParentNode, l: number, t: number) =>
+      [...root.querySelectorAll(TEXT)].map((element) =>
+        toRect(element.getBoundingClientRect(), l, t)
+      )
+    find(Infinity)
+    const chapters = sections.map((section, s): Frame => {
+      const box = section.getBoundingClientRect()
+      const text = textOf(section, box.left, box.top)
+      return {
+        width: box.width || 1,
+        height: box.height || 1,
+        logo: toRect(railBoxOf(s), box.left, box.top),
+        text: text.length
+          ? [
+              text.reduce((u, r) => ({
+                left: Math.min(u.left, r.left),
+                top: Math.min(u.top, r.top),
+                right: Math.max(u.right, r.right),
+                bottom: Math.max(u.bottom, r.bottom),
+              })),
+            ]
+          : [],
+      }
+    })
+    const footerBox = footer?.getBoundingClientRect()
+    const anchor = footerAnchor?.getBoundingClientRect()
     return {
-      width: w,
-      height: h,
-      logo: toRect(heroLogo(w, h), left, top),
-      text: [...document.querySelectorAll(TEXT)].map((element) =>
-        toRect(element.getBoundingClientRect(), left, top)
-      ),
+      view: {
+        width: canvas.clientWidth || 1,
+        height: canvas.clientHeight || 1,
+      },
+      hero: {
+        width: w,
+        height: h,
+        logo: toRect(heroLogo(w, h), left, top),
+        text: heroElement ? textOf(heroElement, left, top) : [],
+      },
+      chapters,
+      footer:
+        footer && footerBox?.height && anchor?.width
+          ? {
+              width: footerBox.width,
+              height: footerBox.height,
+              logo: toRect(anchor, footerBox.left, footerBox.top),
+              text: textOf(footer, footerBox.left, footerBox.top),
+            }
+          : null,
     }
+  }
+
+  // The page's elements, again once FIND_MS has passed since the last
+  // look or one of them has left the page.
+  function find(now: number) {
+    const gone = (list: Element[]) => list.some((e) => !e.isConnected)
+    if (
+      now - foundAt < FIND_MS &&
+      !gone(texts) &&
+      !gone(rails) &&
+      (!footerAnchor || footerAnchor.isConnected)
+    ) {
+      return
+    }
+    foundAt = Number.isFinite(now) ? now : -Infinity
+    texts = [...document.querySelectorAll(TEXT)]
+    rails = []
+    sections = []
+    for (const rail of document.querySelectorAll(RAIL)) {
+      const section = rail.closest("section")
+      if (!section || rails.length >= CHAPTERS) continue
+      rails.push(rail)
+      sections.push(section)
+    }
+    footerAnchor = document.querySelector(FOOTER_ANCHOR)
+    footer = footerAnchor?.closest("footer") ?? null
+  }
+
+  // A chapter's rail, measured; an empty box when it isn't on the page.
+  function railBoxOf(s: number): Box {
+    return rails[s]?.getBoundingClientRect() ?? new DOMRect()
+  }
+
+  // The dust of each group, one after another: the blocks and the hero's
+  // far nodes, then each chapter's and the footer's. A group with no node
+  // near the screen isn't drawn.
+  function* groupDust() {
+    const parts: Float32Array[] = []
+    for (let g = HERO; g <= FOOTER; g++) {
+      const [first, n] = members[g]
+      const part =
+        g === HERO
+          ? yield* dust(BLOCKS, quality.perBlock, n, quality.perFar)
+          : yield* dust(0, 0, n, quality.perFar, undefined, BLOCKS + first)
+      dustFrom[g] = parts.reduce((sum, p) => sum + p.length, 0) / PARTICLE
+      dustCount[g] = part.length / PARTICLE
+      parts.push(part)
+    }
+    const out = new Float32Array(parts.reduce((sum, p) => sum + p.length, 0))
+    let at = 0
+    for (const part of parts) {
+      out.set(part, at)
+      at += part.length
+    }
+    return out
   }
 
   // Lays the dust in slices between tasks, then hands it to the GPU.
   async function layDust() {
     const id = ++laying
-    const slices = dust(
-      BLOCKS,
-      quality.perBlock,
-      web.far.length,
-      quality.perFar
-    )
+    const slices = groupDust()
     let slice = slices.next()
     while (!slice.done) {
       await new Promise((resolve) => setTimeout(resolve))
@@ -533,12 +717,8 @@ export function swarm(
     }
   }
 
-  // The hero's text boxes this frame, on screen, into `zones`; returns how
-  // many. Elements are found again only when one has left the page.
+  // The text boxes this frame, on screen, into `zones`; returns how many.
   function readText() {
-    if (!texts.length || texts.some((element) => !element.isConnected)) {
-      texts = [...document.querySelectorAll(TEXT)]
-    }
     let n = 0
     for (const element of texts) {
       const r = element.getBoundingClientRect()
@@ -563,6 +743,51 @@ export function swarm(
     if (element) element.textContent = text
   }
 
+  // Block i stands in a logo (the hero's or the footer's), 0–1: not when
+  // it is on its way to a chapter's rail or there.
+  const inLogo = (i: number, kF: number) => Math.max(gone(away[i]), come(kF))
+
+  // A block's threads into where it stands go as it sets off (`gone`) and
+  // come as it lands (`come`), not across its whole way: a block in flight
+  // pulls only the chain.
+  const gone = (k: number) => 1 - clamp(k / 0.3)
+  const come = (k: number) => clamp((k - 0.6) / 0.4) ** 2
+
+  // How much a thread of `kind` from a to b shows this frame, `k` into the
+  // gather and `kF` into the footer. The logo's own come as its blocks form
+  // and go with a block that leaves for a chapter. The chain shows to each
+  // block that has, the one thread from the logo down. A block's threads
+  // into the hero's web show faintly while its dust is still scattered and
+  // go as it leaves; into a chapter's web as it lands on the rail, fading
+  // as they stretch while the rail rides down a long chapter; into the
+  // footer's as they gather there. A group's own threads and the long ones
+  // between groups show while the groups are on the page.
+  function visible(kind: Kind, a: number, b: number, k: number, kF: number) {
+    switch (kind) {
+      case Kind.Logo:
+        return k * Math.min(inLogo(a, kF), inLogo(b, kF))
+      case Kind.Chain:
+        return Math.max(
+          away[b] * (1 - kF),
+          k * Math.min(inLogo(a, kF), inLogo(b, kF))
+        )
+      case Kind.Attach: {
+        const g = web.group[b]
+        if (g === HERO) return lerp(0.25, 1, k) * gone(away[a]) * gone(kF)
+        if (g === FOOTER) return come(kF)
+        const l = Math.hypot(
+          state.sx[b] - state.sx[a],
+          state.sy[b] - state.sy[a]
+        )
+        return come(away[a]) * gone(kF) * clamp(2 - l / (STRETCH * height))
+      }
+      case Kind.Link:
+        return linkShows(web.group[a], web.group[b], shown) ? 1 : 0
+      default:
+        return shown[web.group[a]]
+    }
+  }
+
   function draw(now: number, dt: number) {
     if (!link() || !count) return false
     if (start < 0) start = now
@@ -573,9 +798,32 @@ export function swarm(
     const viewport: Viewport = { width, height }
 
     // Reads first (the page's boxes), writes last (the readout).
+    find(now)
     const logo = heroLogo()
-    const heroBox = document.querySelector(HERO)?.getBoundingClientRect()
+    const heroBox = document.querySelector(HERO_WEB)?.getBoundingClientRect()
     const zoneCount = readText()
+    const chapters = rails.length
+    for (let s = 0; s < chapters; s++) {
+      railBoxes[s] = rails[s].getBoundingClientRect()
+      sectionBoxes[s] = sections[s].getBoundingClientRect()
+    }
+    const footerBox = footer?.getBoundingClientRect()
+    const footerLogo = footerAnchor?.getBoundingClientRect()
+    const scrolled = window.scrollY
+
+    // Which parts of the page are on it; how far each chapter's block has
+    // come to its rail and the blocks into the footer's logo.
+    shown[HERO] = 1
+    for (let s = 0; s < CHAPTERS; s++) {
+      shown[chapter(s)] = s < chapters ? 1 : 0
+      toRail[s] = s < chapters ? arrival(viewport, railBoxes[s]) : 0
+    }
+    const hasFooter = !!(footerBox?.height && footerLogo?.width)
+    shown[FOOTER] = hasFooter ? 1 : 0
+    const kF = hasFooter ? gathering(viewport, footerLogo!, footerBox!) : 0
+    for (let i = 0; i < BLOCKS; i++) {
+      away[i] = slotOf[i] >= 0 ? toRail[slotOf[i]] : 0
+    }
 
     // The intro's crawl, then every node indexed.
     if (phase.crawling && !crawled) {
@@ -623,22 +871,52 @@ export function swarm(
 
     // The blocks: from the spread into the logo, turned less as they land,
     // then breathing in place, leaning to the pointer once they have. A lit
-    // block half forms before the gather.
+    // block half forms before the gather. A chapter's block flies from the
+    // logo to its rail, turning over on the way; at the end all of them
+    // gather into the footer's logo.
     const k = phase.gather
     const nodeData = nodeTexture.data
     for (let i = 0; i < BLOCKS; i++) {
       const slot = gatherSlot(viewport, logo, i, k)
+      let x = slot.x
+      // A logo scrolled far above: the block waits just over the viewport.
+      let y = Math.min(slot.y, ABOVE)
+      let scale = slot.scale
       let rx = lerp(-0.1 - t * 0.012, -0.26, k)
-      const ry = lerp(0.16 + t * 0.02, 0.36, k)
+      let ry = lerp(0.16 + t * 0.02, 0.36, k)
+      let rz = 0
       let z = lerp(-1.5 + (i % 3) * 0.8, 0, k)
-      z += Math.sin(t * 0.9 + blockPhases[i]) * 0.12 * k * slot.scale
+      const kc = away[i]
+      if (kc > 0) {
+        const to = railSlot(viewport, railBoxes[slotOf[i]])
+        x = lerp(x, to.x, kc)
+        y = lerp(y, to.y, kc)
+        scale = lerp(scale, to.scale, kc)
+        rx = lerp(rx, -0.3 + Math.sin(t * 0.7 + i) * 0.08, kc)
+        ry = lerp(ry, 0.45 + Math.sin(t * 0.5 + i) * 0.35, kc)
+        rz = lerp(rz, Math.sin(t * 0.35 + i) * 0.25, kc)
+        // The turn over on the way, done once it lands.
+        const arc = Math.sin(Math.PI * kc)
+        z += arc * 2.2
+        rx += arc * 1.2
+        ry += (1 - (1 - kc) ** 3) * Math.PI * (1 - kc)
+      }
+      if (kF > 0) {
+        const to = logoSlot(viewport, footerLogo!, i)
+        x = lerp(x, to.x, kF)
+        y = lerp(y, to.y, kF)
+        scale = lerp(scale, to.scale, kF)
+        rx = lerp(rx, -0.22, kF)
+        ry = lerp(ry, 0.3, kF)
+        rz = lerp(rz, 0, kF)
+        z += Math.sin(Math.PI * kF) * 4
+      }
+      z += Math.sin(t * 0.9 + blockPhases[i]) * 0.12 * k * scale
       rx += Math.sin(t * 0.6 + blockPhases[i]) * 0.03 * k
-      const dx = near.x - slot.x
-      const dy = near.y - slot.y
+      const dx = near.x - x
+      const dy = near.y - y
       const close =
-        Math.exp(-(dx * dx + dy * dy) / (slot.scale ** 2 * LEAN_REACH)) *
-        push *
-        k
+        Math.exp(-(dx * dx + dy * dy) / (scale ** 2 * LEAN_REACH)) * push * k
       const o = i * 4
       const toX = clamp(-dy * LEAN, -LEAN_MAX, LEAN_MAX) * close
       const toY = clamp(dx * LEAN, -LEAN_MAX, LEAN_MAX) * close
@@ -648,40 +926,86 @@ export function swarm(
         ((toY - lean[o + 1]) * LEAN_STIFF - lean[o + 3] * LEAN_DAMP) * dts
       lean[o] += lean[o + 2] * dts
       lean[o + 1] += lean[o + 3] * dts
-      z += close * slot.scale * 0.8
+      z += close * scale * 0.8
       compose(
         blocks,
         i * 16,
-        [slot.x, slot.y, z],
-        [rx + lean[o], ry + lean[o + 1], 0],
-        slot.scale
+        [x, y, z],
+        [rx + lean[o], ry + lean[o + 1], rz],
+        scale
       )
       form[i] = Math.max(k, litEased[i] * 0.45)
-      world[i * 3] = slot.x
-      world[i * 3 + 1] = slot.y
+      world[i * 3] = x
+      world[i * 3 + 1] = y
       world[i * 3 + 2] = z
-      radius[i] = slot.scale * 0.8
+      radius[i] = scale * 0.8
       widthAt[i] = lerp(0.62, 1, k)
-      project(slot.x, slot.y, z)
+      project(x, y, z)
       state.sx[i] = step[0]
       state.sy[i] = step[1]
     }
 
-    // The far nodes: where they lie in the hero, drawn in toward the logo
-    // as the intro ends, out of the text once it masks, eased.
+    // A chapter's block that lands blows its dust off, and the crawler
+    // comes down the chain to it, then crawls the chapter's web.
+    for (let s = 0; s < CHAPTERS; s++) {
+      if (toRail[s] > 0.985 && !landed[s]) {
+        landed[s] = 1
+        const b = CHAPTER_BLOCKS[s]
+        state.hit[b] = Math.max(state.hit[b], ARRIVE_SPLASH)
+        state.hitFrom[b] = CHAIN[s]
+        const e = web.chain[s]
+        const t0 = clamp(1 - CHAIN_REACH / state.length[e])
+        run.chain(e, CHAIN[s], chapter(s), t0)
+      }
+      if (toRail[s] < 0.6) landed[s] = 0
+    }
+    // The footer's web is crawled all over once the blocks have gathered.
+    if (kF > 0.85 && !footerCrawled) {
+      footerCrawled = true
+      run.burst(ALL_BLOCKS, FOOTER)
+    }
+    if (kF < 0.4) footerCrawled = false
+
+    // The far nodes: where they lie in their part of the page (the hero's
+    // drawn in toward the logo as the intro ends), deeper ones lagging the
+    // scroll, out of the text once it masks, eased. The hero's lag from the
+    // top of the page, the footer's up to the end, a chapter's around the
+    // viewport's middle. A chapter not on the page, or a footer, keeps its
+    // nodes far off.
     const hl = heroBox?.left ?? 0
     const ht = heroBox?.top ?? 0
     const hw = heroBox?.width || width
     const hh = heroBox?.height || height
     const lx = logo.left + logo.width / 2
     const ly = logo.top + logo.height / 2
+    const toEnd = hasFooter
+      ? Math.min(Math.max(footerBox!.bottom - height, 0), height)
+      : 0
     const ease = 1 - Math.exp(-dts * 5)
     const viewW = VIEW_H * (width / height)
+    inView.fill(0)
     for (let j = 0; j < web.far.length; j++) {
       const node = BLOCKS + j
       const f = web.far[j]
-      const bx = lx + (hl + f.u * hw - lx) * phase.spread
-      const by = ly + (ht + f.v * hh - ly) * phase.spread
+      let bx: number
+      let by: number
+      if (f.group === HERO) {
+        bx = lx + (hl + f.u * hw - lx) * phase.spread
+        by = ly + (ht + f.v * hh - ly) * phase.spread
+        by += lag[j] * Math.min(scrolled, height)
+      } else if (!shown[f.group]) {
+        bx = width / 2
+        by = -10 * height
+      } else if (f.group === FOOTER) {
+        bx = footerBox!.left + f.u * footerBox!.width
+        by = footerBox!.top + f.v * footerBox!.height - lag[j] * toEnd
+      } else {
+        const r = sectionBoxes[f.group - 1]
+        bx = r.left + f.u * r.width
+        by = r.top + f.v * r.height
+        by += lag[j] * (height / 2 - by)
+      }
+      if (by > -NEAR && by < height + NEAR) inView[f.group] = 1
       stepOut(bx, by, zones, zoneCount, step)
       out[node * 2] = lerp(out[node * 2], step[0] * phase.mask, ease)
       out[node * 2 + 1] = lerp(out[node * 2 + 1], step[1] * phase.mask, ease)
@@ -718,8 +1042,8 @@ export function swarm(
     // What landed on a block blows its dust off, from the node it came by.
     for (let i = 0; i < BLOCKS; i++) {
       if (!state.hit[i]) continue
-      const by = state.hitFrom[i] * 3
-      for (let c = 0; c < 3; c++) from[c] = world[by + c] - world[i * 3 + c]
+      const from3 = state.hitFrom[i] * 3
+      for (let c = 0; c < 3; c++) from[c] = world[from3 + c] - world[i * 3 + c]
       splash(splashed, i, t, state.hit[i], blocks, i * 16, from)
       state.hit[i] = 0
     }
@@ -735,6 +1059,7 @@ export function swarm(
     before.y = pointer.y
     const heatDecay = Math.exp(-dts * (phase.done ? 1.5 : 1.1))
     const edgeData = edgeTexture.data
+    drawn = 0
     for (let e = 0; e < edgeCount; e++) {
       const edge = web.edges[e]
       const a = edge.a * 3
@@ -761,13 +1086,24 @@ export function swarm(
       }
       const length = Math.max(Math.hypot(bx - ax, by - ay, bz - az), 1e-3)
       state.length[e] = length
-      // The logo's own threads come as its blocks form; a block's threads
-      // into the web show faintly while its dust is still scattered.
-      if (edge.kind === Kind.Logo) state.alpha[e] = k
-      else if (edge.kind === Kind.Attach) state.alpha[e] = lerp(0.25, 1, k)
-      const alpha = state.alpha[e]
+      const alpha = visible(edge.kind, edge.a, edge.b, k, kF)
+      state.alpha[e] = alpha
 
+      // Off screen or out of sight: not laid, not drawn.
       wires.cool[e] -= dts
+      const sxa = state.sx[edge.a]
+      const sxb = state.sx[edge.b]
+      const sya = state.sy[edge.a]
+      const syb = state.sy[edge.b]
+      if (
+        alpha < 0.002 ||
+        Math.max(sxa, sxb) < -CULL ||
+        Math.min(sxa, sxb) > width + CULL ||
+        Math.max(sya, syb) < -CULL ||
+        Math.min(sya, syb) > height + CULL
+      ) {
+        continue
+      }
       if (plucking && alpha > 0.2) {
         const sax = state.sx[edge.a]
         const say = state.sy[edge.a]
@@ -799,10 +1135,10 @@ export function swarm(
       for (let m = 0; m <= segments; m++) wires.heat[o + m] *= heatDecay
 
       let base = edge.base * Math.min(litEased[edge.a], litEased[edge.b])
-      if (edge.kind === Kind.Logo) {
+      if (edge.kind === Kind.Logo || edge.kind === Kind.Chain) {
         base *=
           (0.82 + 0.18 * Math.sin(t * 1.3 + phases[e])) *
-          clamp(5 / length, 0.22, 1)
+          clamp(5 / length, edge.kind === Kind.Chain ? 0.6 : 0.22, 1)
       }
       ends[0] = ax
       ends[1] = ay
@@ -810,12 +1146,14 @@ export function swarm(
       ends[3] = bx
       ends[4] = by
       ends[5] = bz
-      lay(wires, e, ends, base, points)
-      edgeData[e * 4] = edge.width * Math.min(widthAt[edge.a], widthAt[edge.b])
-      edgeData[e * 4 + 1] = alpha
-      edgeData[e * 4 + 2] = length
-      edgeData[(edgeCount + e) * 4] = state.head[e * 2]
-      edgeData[(edgeCount + e) * 4 + 1] = state.head[e * 2 + 1]
+      const slot = drawn++
+      lay(wires, e, ends, base, points, slot)
+      edgeData[slot * 4] =
+        edge.width * Math.min(widthAt[edge.a], widthAt[edge.b])
+      edgeData[slot * 4 + 1] = alpha
+      edgeData[slot * 4 + 2] = length
+      edgeData[(edgeCount + slot) * 4] = state.head[e * 2]
+      edgeData[(edgeCount + slot) * 4 + 1] = state.head[e * 2 + 1]
     }
 
     // The text boxes for the threads, in device pixels from the bottom.
@@ -830,11 +1168,11 @@ export function swarm(
 
     // To the GPU: one upload each.
     gl.bindBuffer(gl.ARRAY_BUFFER, pointBuffer)
-    gl.bufferSubData(gl.ARRAY_BUFFER, 0, points)
+    if (drawn) gl.bufferSubData(gl.ARRAY_BUFFER, 0, points, 0, drawn * perSlot)
     gl.activeTexture(gl.TEXTURE0 + UNIT_NODES)
     nodeTexture.upload()
     gl.activeTexture(gl.TEXTURE0 + UNIT_EDGES)
-    edgeTexture.upload()
+    edgeTexture.upload(drawn)
 
     const w = canvas.width
     const h = canvas.height
@@ -870,7 +1208,10 @@ export function swarm(
     gl.uniform3fv(dustAt.uFlash, colors.flash)
     gl.uniform1f(dustAt.uTone, tone)
     gl.bindVertexArray(dustVao)
-    gl.drawArrays(gl.POINTS, 0, count)
+    for (let g = HERO; g <= FOOTER; g++) {
+      if (g === HERO || inView[g])
+        gl.drawArrays(gl.POINTS, dustFrom[g], dustCount[g])
+    }
 
     // The threads over the dust, not into the depth: added in the dark,
     // blended over (premultiplied) in the light.
@@ -891,7 +1232,9 @@ export function swarm(
     gl.uniform3fv(threadAt.uLine, colors.line)
     gl.uniform3fv(threadAt.uPrimary, colors.flash)
     gl.bindVertexArray(threadVao)
-    gl.drawElements(gl.TRIANGLES, index.length, gl.UNSIGNED_SHORT, 0)
+    if (drawn) {
+      gl.drawElements(gl.TRIANGLES, drawn * perThread, gl.UNSIGNED_SHORT, 0)
+    }
     gl.disable(gl.BLEND)
     gl.depthMask(true)
     gl.disable(gl.DEPTH_TEST)
@@ -943,7 +1286,7 @@ export function swarm(
     // Resizing binds the targets on the active unit: not the data's.
     gl.activeTexture(gl.TEXTURE0)
 
-    writeReadout(readout(phase, run.lit, nodes))
+    writeReadout(readout(phase, run.lit, web.heroNodes))
     return true
   }
 

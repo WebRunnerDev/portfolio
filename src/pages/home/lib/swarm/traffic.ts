@@ -1,6 +1,6 @@
 import { BLOCKS } from "./shaders"
 import { tremble, warm, type Threads } from "./threads"
-import { other, type Web } from "./web"
+import { HERO, other, type Web } from "./web"
 
 // docs/design-brief.md › Главная на Swarm › Сцена › Краулер: what runs on
 // the web. Light only where something lands: a node's heat rises on
@@ -16,15 +16,17 @@ export const Run = {
   Packet: 2,
   // A pluck's impulses, out both ways from the touch, fading at each node.
   Pulse: 3,
+  // Down the chain into a chapter, then a crawl of its web.
+  Chain: 4,
 } as const
 export type Run = (typeof Run)[keyof typeof Run]
 
 // World units a second.
-const SPEED = [9, 15, 20, 19]
+const SPEED = [9, 15, 20, 19, 18]
 // How bright the head is on the thread, by kind.
-const HEAD = [1.25, 0.7, 0.85, 0]
+const HEAD = [1.25, 0.7, 0.85, 0, 1.1]
 // Heat each leaves on the thread behind it (packets leave none).
-const TRAIL = [0.45, 0.62, 0, 0]
+const TRAIL = [0.45, 0.62, 0, 0, 0.55]
 // Pool and per-kind limits, as in the spike.
 const POOL = 192
 const MAX_CRAWL = 46
@@ -34,7 +36,7 @@ const MAX_PULSES = 110
 const PACKET_RATE = 3.2
 // How hard each blows a block's dust off where it lands (a pulse: times
 // its amplitude).
-const SPLASH = [0.9, 0.7, 0.6, 0.5]
+const SPLASH = [0.9, 0.7, 0.6, 0.5, 0.7]
 
 type Crawler = {
   e: number
@@ -46,12 +48,14 @@ type Crawler = {
   amp: number
   hops: number
   burst: number
+  // The group a crawl keeps to.
+  group: number
 }
 
 export type Net = {
   web: Web
   threads: Threads
-  // Per node: heat (light, cools), lit (the crawl has been there), the
+  // Per node: heat (light, cools), lit (a crawl has been there), the
   // last crawl that visited it, and where it is on screen (CSS pixels).
   heat: Float32Array
   lit: Uint8Array
@@ -111,8 +115,9 @@ export function traffic(n: Net, random: () => number) {
     amp: 0,
     hops: 0,
     burst: 0,
+    group: HERO,
   }))
-  const kinds = new Int32Array(4)
+  const kinds = new Int32Array(5)
   let live = 0
   let bursts = 0
   let packets = 0
@@ -140,6 +145,7 @@ export function traffic(n: Net, random: () => number) {
     c.amp = amp
     c.hops = 0
     c.burst = 0
+    c.group = HERO
     kinds[kind]++
     return c
   }
@@ -153,24 +159,29 @@ export function traffic(n: Net, random: () => number) {
     pool[i] = last
   }
 
+  // Lights `node`; the readout counts the hero's.
   function light(node: number, amount: number) {
     n.heat[node] = Math.max(n.heat[node], amount)
     if (!n.lit[node]) {
       n.lit[node] = 1
-      lit++
+      if (web.group[node] === HERO) lit++
     }
   }
 
-  // The intro's crawl from `node` along every thread to a node this burst
-  // hasn't reached.
-  function spread(node: number, burst: number) {
+  // A crawl from `node` along every thread to a node of `group` this
+  // burst hasn't reached.
+  function spread(node: number, burst: number, group: number) {
     n.visited[node] = burst
     for (let k = web.start[node]; k < web.start[node + 1]; k++) {
       const e = web.list[k]
       const to = other(web.edges[e], node)
       if (n.visited[to] === burst || n.alpha[e] < 0.15) continue
+      if (web.group[to] !== group) continue
       const c = spawn(e, node, Run.Crawl)
-      if (c) c.burst = burst
+      if (c) {
+        c.burst = burst
+        c.group = group
+      }
     }
   }
 
@@ -270,7 +281,12 @@ export function traffic(n: Net, random: () => number) {
       case Run.Crawl:
         light(node, 0.9)
         shake(node)
-        spread(node, c.burst)
+        spread(node, c.burst, c.group)
+        return false
+      case Run.Chain:
+        light(node, 1)
+        shake(node)
+        spread(node, ++bursts, c.group)
         return false
       default: {
         light(node, 1)
@@ -302,7 +318,7 @@ export function traffic(n: Net, random: () => number) {
     packets += dt * PACKET_RATE
     while (packets >= 1) {
       packets--
-      for (let tries = 0; tries < 12; tries++) {
+      for (let tries = 0; tries < 24; tries++) {
         const e = Math.floor(random() * edges)
         if (n.alpha[e] < 0.5) continue
         const from = random() < 0.5 ? web.edges[e].a : web.edges[e].b
@@ -315,37 +331,51 @@ export function traffic(n: Net, random: () => number) {
   }
 
   return {
-    // How many nodes the crawl has lit.
+    // How many of the hero's nodes a crawl has lit.
     get lit() {
       return lit
     },
-    // The intro's crawl, breadth first from `node`.
+    // The intro's crawl, breadth first over the hero's web from `node`.
     crawl(node: number) {
       light(node, 1)
-      spread(node, ++bursts)
+      spread(node, ++bursts, HERO)
     },
-    // A crawl that stalled (every crawler landed, nodes left dark) goes on
-    // from a lit node with a dark neighbour.
-    resume() {
-      if (kinds[Run.Crawl] || lit >= web.nodes) return
+    // One crawl over the web of `group` from each of `nodes` (the footer's,
+    // from the blocks gathered there).
+    burst(nodes: readonly number[], group: number) {
       const burst = ++bursts
+      for (const node of nodes) spread(node, burst, group)
+    },
+    // Down chain thread `e` from `from` (starting `t` along it), then a
+    // crawl of the web of `group` from where it lands.
+    chain(e: number, from: number, group: number, t = 0) {
+      const c = spawn(e, from, Run.Chain, 1, t)
+      if (c) c.group = group
+    },
+    // The intro's crawl that stalled (every crawler landed, nodes of the
+    // hero left dark) goes on from a lit node with a dark neighbour there.
+    resume() {
+      if (kinds[Run.Crawl] || lit >= web.heroNodes) return
+      const burst = ++bursts
+      const hero = (node: number) => web.group[node] === HERO
       for (let node = 0; node < web.nodes; node++) {
-        if (n.lit[node]) n.visited[node] = burst
+        if (n.lit[node] && hero(node)) n.visited[node] = burst
       }
       for (let node = 0; node < web.nodes; node++) {
-        if (!n.lit[node]) continue
+        if (!n.lit[node] || !hero(node)) continue
         for (let k = web.start[node]; k < web.start[node + 1]; k++) {
-          if (!n.lit[other(web.edges[web.list[k]], node)]) {
-            spread(node, burst)
+          const to = other(web.edges[web.list[k]], node)
+          if (!n.lit[to] && hero(to)) {
+            spread(node, burst, HERO)
             return
           }
         }
       }
     },
-    // The end of the crawl: every node indexed.
+    // The end of the intro's crawl: every node of the hero indexed.
     indexAll() {
       for (let node = 0; node < web.nodes; node++) {
-        if (!n.lit[node]) {
+        if (!n.lit[node] && web.group[node] === HERO) {
           n.lit[node] = 1
           lit++
         }

@@ -1077,6 +1077,18 @@ html:active-view-transition-type(forward, back) {
   }
 }
 
+/* ADR-0013, docs/design-brief.md › Главная на Swarm › Футер: the square in
+ * the footer (`SiteFooter` in @/widgets/footer) the home page's Swarm
+ * gathers its logo into. It takes room only while the scene runs (its
+ * canvas, `data-swarm-scene`): elsewhere nothing gathers there. An
+ * attribute, not an import, as the logo flight. */
+[data-swarm-anchor="footer"] {
+  display: none;
+}
+:root:has([data-swarm-scene]) [data-swarm-anchor="footer"] {
+  display: block;
+}
+
 /* The brand: `display-lg` on `xl`, down to `display-sm` at 320px. */
 @utility text-hero-brand {
   font-family: var(--zsd-typography-display-lg-font-family);

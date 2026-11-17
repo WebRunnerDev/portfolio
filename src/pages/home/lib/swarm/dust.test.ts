@@ -66,6 +66,15 @@ describe("dust", () => {
     expect(both).toEqual(blocks)
   })
 
+  it("numbers far nodes from where it is told, with dust of their own", () => {
+    const { value } = run(dust(0, 0, 3, 10, undefined, 40))
+    expect(value.length).toBe(3 * 10 * PARTICLE)
+    const node = (k: number) => value[k * PARTICLE + 6]
+    expect([0, 1, 2, 3].map(node)).toEqual([40, 41, 42, 40])
+    const after = run(dust(7, 0, 3, 10)).value
+    expect(value.slice(0, 6)).not.toEqual(after.slice(0, 6))
+  })
+
   it("yields between slices", () => {
     expect(run(dust(7, 1000, 0, 0, 1000)).yields).toBe(7)
   })
