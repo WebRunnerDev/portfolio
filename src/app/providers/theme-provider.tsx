@@ -131,8 +131,13 @@ export function ThemeProvider({
         }
       }
 
+      // `data-theme-switch` keeps the header in the page's crossfade
+      // (index.css).
       if (canAnimateThemeChange()) {
-        document.startViewTransition(swap)
+        root.dataset.themeSwitch = ""
+        document.startViewTransition(swap).finished.finally(() => {
+          delete root.dataset.themeSwitch
+        })
         return
       }
 
