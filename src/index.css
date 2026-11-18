@@ -973,6 +973,31 @@ html:active-view-transition-type(forward, back) {
   }
 }
 
+/* docs/design-brief.md › Детали, DESIGN.md › Badge: the tile in the active
+ * project's badge (`ProjectStatus` in @/entities/project) breathes like a lit
+ * node of the home page's web: it dims and shrinks a little and comes back,
+ * in the rhythm of the `lite` hero's tiles (`hero-breathe`), on the tile
+ * curve. Opacity and transform only. Under reduced motion it stands lit. */
+@keyframes status-breathe {
+  from {
+    opacity: 0.4;
+    transform: rotate(45deg) scale(0.75);
+  }
+}
+
+@utility status-tile {
+  display: block;
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--zsd-colors-primary);
+  transform: rotate(45deg);
+  animation: status-breathe calc(2 * var(--zsd-x-zsd-motion-choreography-max))
+    var(--zsd-x-zsd-motion-easing-layout) infinite alternate;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
 /* docs/design-brief.md › Ритм главной, › Арт-дирекция этапа 7 › База, п. 2:
  * the rule that opens a chapter of the home page (`HomeSection` in
  * src/pages/home), a Reveal: an `outline-muted` hairline across the content

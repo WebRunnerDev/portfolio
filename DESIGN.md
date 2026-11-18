@@ -24,7 +24,7 @@ x-zsd:
       - public/logo.svg
   preferences:
     must-use:
-      - Rust accent in both modes, only for the main action, focus, the active navigation item, and rhombus tiles.
+      - Rust accent in both modes, only for the main action, focus, the active navigation item, the active project status, and rhombus tiles.
       - Zero radius. Chamfered corners at 45 degrees on cards and the main action.
       - A border on each raised surface, because surface contrast is low.
       - Fonts that contain Kazakh Cyrillic and Latin diacritics.
@@ -254,9 +254,9 @@ components:
     typography: "{typography.label-mono}"
     rounded: "{rounded.none}"
     padding: "{spacing.xs}"
-  badge-success:
-    backgroundColor: "{colors.success}"
-    textColor: "{colors.on-success}"
+  badge-active:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.primary-text}"
     typography: "{typography.label-mono}"
     rounded: "{rounded.none}"
     padding: "{spacing.xs}"
@@ -314,7 +314,7 @@ Prefer CSS and Web Animations to a motion library (ADR 0010).
 `x-zsd.modes.dark` gives the dark values.
 The system preference selects the mode until the user selects a mode.
 
-- `primary`: Use for the main action, the active navigation item, and rhombus tiles. Use one main action in each view.
+- `primary`: Use for the main action, the active navigation item, the border of the active project badge, and rhombus tiles. Use one main action in each view.
 - `primary-hover`: Use for the main action on hover and press.
 - `on-primary`: Use for text and icons on `primary` and `primary-hover`.
 - `primary-text`: Use for accent text, text links, the focus outline, and the accent shadow.
@@ -327,7 +327,7 @@ The system preference selects the mode until the user selects a mode.
 - `outline-muted`: Use for card borders, dividers, and inactive tiles.
 - `error`: Use for error text, invalid field boundaries, and error alerts.
 - `on-error`: Use for text on `error`.
-- `success`: Use for success text and the active project status.
+- `success`: Use for success text.
 - `on-success`: Use for text on `success`.
 
 ### Contrast pairs
@@ -423,7 +423,10 @@ For an empty list, explain what appears there.
 
 ### Badge
 
-Use `badge` with an `outline-muted` border for technology tags. Use `badge-success` for an active project, always with its status text.
+Use `badge` with an `outline-muted` border for technology tags and for a project that is not active.
+Use `badge-active` with a `primary` border for an active project, always with its status text.
+In place of an icon, it shows a small `tile` that breathes in opacity and scale. With reduced motion, the tile stands lit.
+The two project badges have the same size and padding.
 
 ### Tile
 

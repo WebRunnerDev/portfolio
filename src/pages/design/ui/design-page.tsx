@@ -29,7 +29,7 @@ const COLOR_TOKENS = [
   ["outline-muted", "Card borders, dividers, inactive tiles"],
   ["error", "Errors"],
   ["on-error", "Text on error"],
-  ["success", "Success, active project"],
+  ["success", "Success text"],
   ["on-success", "Text on success"],
 ] as const
 
@@ -763,7 +763,7 @@ function CardsSection() {
         <div className="flex flex-wrap items-center gap-zsd-sm">
           <Badge>React</Badge>
           <Badge>Cloudflare D1</Badge>
-          <Badge success>Active</Badge>
+          <Badge active>Active</Badge>
         </div>
       </div>
     </Section>
@@ -800,7 +800,7 @@ function ProjectCard({
                 <span className={CARD_TITLE_SHIFT}>{title}</span>
               </a>
             </h3>
-            {active && <Badge success>Active</Badge>}
+            {active && <Badge active>Active</Badge>}
           </div>
           <p className="text-zsd-body-sm text-zsd-on-surface-muted">
             {description}
@@ -838,23 +838,25 @@ function TileCover() {
   )
 }
 
+// `badge-active`: a `primary` outline and a breathing tile (`status-tile`),
+// as `ProjectStatus` shows an active project.
 function Badge({
   children,
-  success,
+  active,
 }: {
   children: ReactNode
-  success?: boolean
+  active?: boolean
 }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-zsd-xs px-zsd-sm py-zsd-xs font-zsd-label-mono text-zsd-label-mono uppercase rtl:normal-case",
-        success
-          ? "bg-zsd-success text-zsd-on-success"
-          : "border border-zsd-outline-muted bg-zsd-surface text-zsd-on-surface-muted"
+        "inline-flex items-center gap-zsd-xs border bg-zsd-surface px-zsd-sm py-zsd-xs font-zsd-label-mono text-zsd-label-mono uppercase rtl:normal-case",
+        active
+          ? "border-zsd-primary text-zsd-primary-text"
+          : "border-zsd-outline-muted text-zsd-on-surface-muted"
       )}
     >
-      {success && <CircleCheck className="size-3" aria-hidden />}
+      {active && <span className="status-tile" aria-hidden />}
       {children}
     </span>
   )

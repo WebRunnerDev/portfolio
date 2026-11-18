@@ -213,6 +213,51 @@ test("an empty list says what appears there", async ({ page }) => {
   await expect(cards(page)).toHaveCount(0)
 })
 
+// DESIGN.md › Badge, docs/design-brief.md › Детали: the active project's
+// badge speaks rust, not green: a `primary` outline round `primary-text` on
+// `surface`, one size with the neutral badge, and a tile that breathes in
+// place of an icon. The text stays its accessible name.
+const PRIMARY = "rgb(184, 69, 48)"
+const PRIMARY_TEXT = { light: "rgb(168, 63, 44)", dark: "rgb(218, 106, 82)" }
+const SURFACE = { light: "rgb(243, 244, 246)", dark: "rgb(18, 18, 18)" }
+
+for (const colorScheme of ["light", "dark"] as const) {
+  test(`the active badge is a rust outline with a breathing tile (${colorScheme})`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme })
+    await mockPublicApi(page)
+    await page.goto("/en/projects")
+    const active = cards(page).nth(0).getByTestId("project-status")
+    const completed = cards(page).nth(1).getByTestId("project-status")
+    await expect(active).toHaveText("In progress")
+
+    await expect(active).toHaveCSS("border-top-color", PRIMARY)
+    await expect(active).toHaveCSS("color", PRIMARY_TEXT[colorScheme])
+    await expect(active).toHaveCSS("background-color", SURFACE[colorScheme])
+    const [a, c] = [
+      (await active.boundingBox())!,
+      (await completed.boundingBox())!,
+    ]
+    expect(a.height).toBe(c.height)
+
+    const tile = active.getByTestId("status-tile")
+    await expect(tile).toHaveCSS("animation-name", "status-breathe")
+    await expect(tile).toHaveCSS("background-color", PRIMARY)
+    await expect(active.locator("svg")).toHaveCount(0)
+    await expect(active.locator("[aria-hidden=true]")).toHaveCount(1)
+  })
+}
+
+test("reduced motion stands the active badge's tile lit", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" })
+  await mockPublicApi(page)
+  await page.goto("/en/projects")
+  const tile = cards(page).nth(0).getByTestId("status-tile")
+  await expect(tile).toHaveCSS("animation-name", "none")
+  await expect(tile).toHaveCSS("opacity", "1")
+})
+
 test("the grid mirrors on /ar and fits 360px", async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 800 })
   await mockPublicApi(page)
