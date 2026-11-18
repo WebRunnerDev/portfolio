@@ -125,7 +125,9 @@ async function fullScene(page: Page) {
 }
 
 // How many colors a row of the canvas has through the middle of the hero's
-// logo square, read in a frame after the scene drew it.
+// logo square, read in the next frame. A level capped below the display's
+// rate (`mobile-lite`: 30 fps) skips every other frame, and a frame it
+// skipped reads blank (no `preserveDrawingBuffer`): poll it.
 const colorsThroughLogo = (page: Page) =>
   page.evaluate(`new Promise((resolve) =>
     requestAnimationFrame(() => {
@@ -189,7 +191,7 @@ test("the full tier draws the Swarm behind the whole page", async ({
   // Past the gather (INTRO_MS after the first frame).
   await page.waitForTimeout(1_500)
   await expect(canvas).toHaveAttribute("data-quality", "mobile-lite")
-  expect(await colorsThroughLogo(page)).toBeGreaterThan(20)
+  await expect.poll(() => colorsThroughLogo(page)).toBeGreaterThan(20)
 
   // A hidden tab pauses it.
   await page.evaluate(`
