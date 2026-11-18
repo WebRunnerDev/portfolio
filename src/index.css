@@ -335,6 +335,24 @@
   animation-timing-function: var(--zsd-x-zsd-motion-easing-enter);
 }
 
+/* The header shows the new page's at once. Its two snapshots aren't one
+ * size: on the home page the header logo waits over the hero (logo flight),
+ * and the snapshot takes it in, so a crossfade would stretch the controls
+ * of one over the other's box. */
+::view-transition-group(site-header),
+::view-transition-new(site-header) {
+  animation: none;
+}
+::view-transition-old(site-header) {
+  display: none;
+}
+
+/* A theme switch (ThemeProvider) crossfades the screen as one, the header
+ * with it. */
+html[data-theme-switch] header {
+  view-transition-name: none;
+}
+
 /* DESIGN.md › Motion: going deeper (`forward`, from pageTransitionTypes in
  * @/shared/lib/view-transition) the old page leaves toward the start and the
  * new one comes from the end; `back` the other way. Along the reading

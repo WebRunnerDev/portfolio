@@ -284,6 +284,32 @@ test("a project row opens its page from anywhere on it", async ({ page }) => {
   await expect(page).toHaveURL("/en/projects/notes")
 })
 
+// Issue #199: the sections come after the page renders; Back still lands
+// where the reader left it. A reload drops the loaded data, and a slow API
+// keeps the page short when the router restores the scroll.
+test("Back returns to where the home page was scrolled", async ({ page }) => {
+  await mockPublicApi(page)
+  await page.goto("/en")
+  const link = section(page, "posts").getByRole("link", {
+    name: /Post rtl-tests/,
+  })
+  await link.scrollIntoViewIfNeeded()
+  const scrollY = await page.evaluate<number>("window.scrollY")
+  expect(scrollY).toBeGreaterThan(0)
+  await link.click()
+  await expect(page).toHaveURL("/en/blog/rtl-tests")
+  await page.reload()
+  await page.route("**/api/public/**", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 800))
+    await route.fallback()
+  })
+  await page.goBack()
+  await expect(page).toHaveURL("/en")
+  await expect
+    .poll(() => page.evaluate<number>("window.scrollY"))
+    .toBeGreaterThan(scrollY - 50)
+})
+
 test("a section with nothing to show isn't rendered", async ({ page }) => {
   await mockPublicApi(page, {
     profile: { ...PROFILE, about: null },
