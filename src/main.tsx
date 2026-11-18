@@ -4,22 +4,30 @@ import { RouterProvider, createRouter } from "@tanstack/react-router"
 
 import "./index.css"
 import { routeTree } from "./app/routeTree.gen"
-import { pageTransitionTypes } from "@/shared/lib/view-transition"
+import { leavesHome, pageTransitionTypes } from "@/shared/lib/view-transition"
 import { LOADER_DELAY_MS } from "@/shared/ui/loader"
 import { PageLoading } from "@/shared/ui/page-state"
 
 // ADR-0005: page changes run in a View Transition; without the API they are
 // instant. `pageTransitionTypes` names the direction and the shared cover,
-// index.css sets the animation.
+// index.css sets the animation. Leaving the home page while its Swarm runs
+// goes without one: the live canvas carries it (ADR-0014). An attribute,
+// not an import: the scene is in the home page's chunk.
 // Loader data stays fresh as long as the Public API's `max-age`: going back to
 // a page within a minute doesn't ask again. A new Lang is a new cache entry.
 // Back puts the scroll where it was: closing the Lightbox with Back leaves
 // the Album where the reader left it.
 // A route still loading its data or code shows its `pendingComponent` (else
 // PageLoading) after LOADER_DELAY_MS: a faster answer never flashes a Loader.
+const LIVE_SCENE = "[data-swarm-scene][data-ready=true]"
 const router = createRouter({
   routeTree,
-  defaultViewTransition: { types: pageTransitionTypes },
+  defaultViewTransition: {
+    types: (change) =>
+      leavesHome(change) && document.querySelector(LIVE_SCENE)
+        ? false
+        : pageTransitionTypes(change),
+  },
   defaultStaleTime: 60_000,
   scrollRestoration: true,
   defaultPendingMs: LOADER_DELAY_MS,

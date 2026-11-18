@@ -1,5 +1,6 @@
 export {
   coverKey,
+  leavesHome,
   pageTransitionTypes,
   sharedCover,
   transitionDirection,

@@ -79,3 +79,20 @@ export function pageTransitionTypes({
   shareCover(direction && coverKey(direction === "forward" ? to : from!))
   return direction ? [direction] : []
 }
+
+// ADR-0014: from the home page (`/{lang}`) to a page that isn't one. While
+// the home page's Swarm runs, that change goes without a View Transition: a
+// snapshot can't hold the live canvas, whose dust blows off over the next
+// page. Another Lang's home page is a View Transition as before.
+export function leavesHome({
+  fromLocation,
+  toLocation,
+  pathChanged,
+}: LocationChange): boolean {
+  return (
+    pathChanged &&
+    fromLocation !== undefined &&
+    segments(fromLocation.pathname).length === 1 &&
+    segments(toLocation.pathname).length !== 1
+  )
+}

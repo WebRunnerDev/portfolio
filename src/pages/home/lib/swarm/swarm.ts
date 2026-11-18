@@ -78,7 +78,8 @@ import {
 // The page tells the scene where things are through attributes, read once
 // a frame (a class or an attribute, not an import, as the logo flight): the
 // hero the web lies over, its logo square the blocks gather into, each
-// chapter's rail (in its section) a block comes to, the footer's logo
+// chapter's rail (in its section: the full stop of its figure) a block
+// comes to, the footer's logo
 // square (in the footer) they all gather into at the end, the boxes of
 // text the web steps out of, and the hero's crawl readout.
 const HERO_WEB = "[data-swarm-web]"
@@ -183,6 +184,8 @@ const DUST_UNIFORMS = [
   "uRim",
   "uFlash",
   "uTone",
+  "uLeave",
+  "uViewH",
 ] as const
 const THREAD_UNIFORMS = [
   "uViewProj",
@@ -197,6 +200,7 @@ const THREAD_UNIFORMS = [
   "uLineAlpha",
   "uLine",
   "uPrimary",
+  "uFade",
 ] as const
 const FINISH_UNIFORMS = [
   "uScene",
@@ -217,6 +221,8 @@ const UNIT_SCENE = 0
 const UNIT_GLOW = 1
 const UNIT_NODES = 2
 const UNIT_EDGES = 3
+// How long the dust takes to blow off as the home page is left (ADR-0014).
+const LEAVE_MS = 900
 
 type Uniforms<T extends readonly string[]> = Record<
   T[number],
@@ -230,6 +236,9 @@ export type Swarm = {
   // particles, glow, DPR and frame cap from the next frame on, a shorter
   // draw range rather than new dust. The web stays as it was laid.
   lower: (quality: Quality) => void
+  // The home page is left (ADR-0014): the dust blows off over LEAVE_MS
+  // without reading the page, then `done`; at once if it never drew.
+  leave: (done: () => void) => void
   destroy: () => void
 }
 
@@ -322,6 +331,11 @@ export function swarm(
   let footerAnchor: Element | null = null
   let footer: Element | null = null
   let foundAt = -Infinity
+
+  let leaveAt = -1
+  let leaveDone: (() => void) | null = null
+  let lastT = 0
+  let lastMask = 0
 
   // The page's web, laid once for the page as it is now.
   const web = pageWeb(pageFrame(), quality.nodes)
@@ -812,8 +826,141 @@ export function swarm(
     }
   }
 
+  // The scene to the canvas: its dust, its threads over it, the finish.
+  function render(t: number, maskK: number, leave: number) {
+    const w = canvas.width
+    const h = canvas.height
+    const tone = scene && hdr ? 0 : 1
+    if (scene) {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, scene.framebuffer)
+      gl.clearColor(0, 0, 0, 0)
+    } else {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+      gl.clearColor(...colors.surface, 1)
+    }
+    gl.viewport(0, 0, w, h)
+    gl.enable(gl.DEPTH_TEST)
+    gl.depthMask(true)
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+    gl.useProgram(dustProgram)
+    gl.uniformMatrix4fv(dustAt.uViewProj, false, viewProj)
+    gl.uniformMatrix4fv(dustAt.uBlock, false, blocks)
+    gl.uniform1fv(dustAt.uForm, form)
+    gl.uniform4fv(dustAt.uSplash, splashed.at)
+    gl.uniform1fv(dustAt.uSplashA, splashed.amp)
+    gl.uniform1f(dustAt.uTime, t)
+    gl.uniform1f(dustAt.uScale, (h * 0.5) / Math.tan(FOV / 2))
+    gl.uniform1f(dustAt.uSizeK, sizeK(live.perBlock))
+    gl.uniform1f(dustAt.uDpr, dpr)
+    gl.uniform1f(dustAt.uPush, push)
+    gl.uniform2f(dustAt.uRes, w, h)
+    gl.uniform2f(dustAt.uPointer, pointer.x * dpr, (height - pointer.y) * dpr)
+    gl.uniform3fv(dustAt.uKey, KEY)
+    gl.uniform3fv(dustAt.uSteel, colors.steel)
+    gl.uniform3fv(dustAt.uRim, colors.rim)
+    gl.uniform3fv(dustAt.uFlash, colors.flash)
+    gl.uniform1f(dustAt.uTone, tone)
+    gl.uniform1f(dustAt.uLeave, leave)
+    gl.uniform1f(dustAt.uViewH, VIEW_H)
+    gl.bindVertexArray(dustVao)
+    gl.drawArrays(
+      gl.POINTS,
+      dustFrom[HERO],
+      Math.min(dustCount[HERO], heroDrawn)
+    )
+    for (let g = HERO + 1; g <= FOOTER; g++) {
+      if (inView[g]) gl.drawArrays(gl.POINTS, dustFrom[g], dustCount[g])
+    }
+
+    // The threads over the dust, not into the depth: added in the dark,
+    // blended over (premultiplied) in the light.
+    gl.depthMask(false)
+    gl.enable(gl.BLEND)
+    if (colors.dark) gl.blendFunc(gl.ONE, gl.ONE)
+    else gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
+    gl.useProgram(threadProgram)
+    gl.uniformMatrix4fv(threadAt.uViewProj, false, viewProj)
+    gl.uniform2f(threadAt.uRes, w, h)
+    gl.uniform1f(threadAt.uDpr, dpr)
+    gl.uniform1f(threadAt.uFocal, projection[5] * h * 0.5)
+    gl.uniform4fv(threadAt.uMask, masks)
+    gl.uniform1f(threadAt.uMaskK, maskK)
+    gl.uniform1f(threadAt.uTone, tone)
+    gl.uniform1f(threadAt.uDark, colors.dark ? 1 : 0)
+    gl.uniform1f(threadAt.uLineAlpha, LINE_ALPHA)
+    gl.uniform3fv(threadAt.uLine, colors.line)
+    gl.uniform3fv(threadAt.uPrimary, colors.flash)
+    gl.uniform1f(threadAt.uFade, 1 - clamp(leave / 0.6))
+    gl.bindVertexArray(threadVao)
+    if (drawn) {
+      gl.drawElements(gl.TRIANGLES, drawn * perThread, gl.UNSIGNED_SHORT, 0)
+    }
+    gl.disable(gl.BLEND)
+    gl.depthMask(true)
+    gl.disable(gl.DEPTH_TEST)
+
+    if (scene && finishProgram && finishAt) {
+      gl.bindVertexArray(emptyVao)
+      // The glow, dark theme only: down to a quarter, across, then down.
+      const down = downAt
+      const blur = blurAt
+      const glowing =
+        colors.dark && live.glow > 0 && glowA && glowB && down && blur
+      if (glowing) {
+        gl.activeTexture(gl.TEXTURE0 + UNIT_SCENE)
+        gl.bindTexture(gl.TEXTURE_2D, scene.texture)
+        gl.bindFramebuffer(gl.FRAMEBUFFER, glowA.framebuffer)
+        gl.viewport(0, 0, glowA.width, glowA.height)
+        gl.useProgram(downProgram)
+        gl.uniform2f(down.uTexel, 1 / w, 1 / h)
+        gl.drawArrays(gl.TRIANGLES, 0, 3)
+        gl.useProgram(blurProgram)
+        for (const [from, to, x, y] of [
+          [glowA, glowB, 1, 0],
+          [glowB, glowA, 0, 1],
+        ] as const) {
+          gl.bindFramebuffer(gl.FRAMEBUFFER, to.framebuffer)
+          gl.bindTexture(gl.TEXTURE_2D, from.texture)
+          gl.uniform2f(blur.uStep, x / from.width, y / from.height)
+          gl.drawArrays(gl.TRIANGLES, 0, 3)
+        }
+      }
+
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+      gl.viewport(0, 0, w, h)
+      gl.useProgram(finishProgram)
+      gl.activeTexture(gl.TEXTURE0 + UNIT_SCENE)
+      gl.bindTexture(gl.TEXTURE_2D, scene.texture)
+      gl.activeTexture(gl.TEXTURE0 + UNIT_GLOW)
+      // Without a glow the scene stands in, at no weight.
+      gl.bindTexture(gl.TEXTURE_2D, (glowing ? glowA : scene).texture)
+      gl.uniform1f(finishAt.uGlowK, glowing ? live.glow * GLOW_GAIN : 0)
+      gl.uniform3fv(finishAt.uSurface, colors.surface)
+      gl.uniform2f(finishAt.uSize, w, h)
+      gl.uniform1f(finishAt.uTone, 1 - tone)
+      gl.uniform1f(finishAt.uVignette, colors.dark ? VIGNETTE : 0)
+      gl.uniform1f(finishAt.uGrain, GRAIN)
+      gl.uniform1f(finishAt.uTime, t)
+      gl.drawArrays(gl.TRIANGLES, 0, 3)
+    }
+    gl.bindVertexArray(null)
+    // Resizing binds the targets on the active unit: not the data's.
+    gl.activeTexture(gl.TEXTURE0)
+  }
+
+  // The page is gone: the last frame's scene, blown off.
+  function drawLeaving(now: number) {
+    const lv = clamp((now - leaveAt) / LEAVE_MS)
+    render(lastT + (now - leaveAt) / 1000, lastMask, lv)
+    const done = leaveDone
+    if (lv >= 1 && done) queueMicrotask(done)
+    return true
+  }
+
   function draw(now: number, dt: number) {
     if (!link() || !count) return false
+    if (leaveAt >= 0) return drawLeaving(now)
     if (start < 0) start = now
     const elapsed = now - start
     const t = elapsed / 1000
@@ -834,7 +981,6 @@ export function swarm(
     const footerBox = footer?.getBoundingClientRect()
     const footerLogo = footerAnchor?.getBoundingClientRect()
     const scrolled = window.scrollY
-
     // Which parts of the page are on it; how far each chapter's block has
     // come to its rail and the blocks into the footer's logo.
     shown[HERO] = 1
@@ -1203,122 +1349,9 @@ export function swarm(
     gl.activeTexture(gl.TEXTURE0 + UNIT_EDGES)
     edgeTexture.upload(drawn)
 
-    const w = canvas.width
-    const h = canvas.height
-    const tone = scene && hdr ? 0 : 1
-    if (scene) {
-      gl.bindFramebuffer(gl.FRAMEBUFFER, scene.framebuffer)
-      gl.clearColor(0, 0, 0, 0)
-    } else {
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null)
-      gl.clearColor(...colors.surface, 1)
-    }
-    gl.viewport(0, 0, w, h)
-    gl.enable(gl.DEPTH_TEST)
-    gl.depthMask(true)
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-
-    gl.useProgram(dustProgram)
-    gl.uniformMatrix4fv(dustAt.uViewProj, false, viewProj)
-    gl.uniformMatrix4fv(dustAt.uBlock, false, blocks)
-    gl.uniform1fv(dustAt.uForm, form)
-    gl.uniform4fv(dustAt.uSplash, splashed.at)
-    gl.uniform1fv(dustAt.uSplashA, splashed.amp)
-    gl.uniform1f(dustAt.uTime, t)
-    gl.uniform1f(dustAt.uScale, (h * 0.5) / Math.tan(FOV / 2))
-    gl.uniform1f(dustAt.uSizeK, sizeK(live.perBlock))
-    gl.uniform1f(dustAt.uDpr, dpr)
-    gl.uniform1f(dustAt.uPush, push)
-    gl.uniform2f(dustAt.uRes, w, h)
-    gl.uniform2f(dustAt.uPointer, pointer.x * dpr, (height - pointer.y) * dpr)
-    gl.uniform3fv(dustAt.uKey, KEY)
-    gl.uniform3fv(dustAt.uSteel, colors.steel)
-    gl.uniform3fv(dustAt.uRim, colors.rim)
-    gl.uniform3fv(dustAt.uFlash, colors.flash)
-    gl.uniform1f(dustAt.uTone, tone)
-    gl.bindVertexArray(dustVao)
-    gl.drawArrays(
-      gl.POINTS,
-      dustFrom[HERO],
-      Math.min(dustCount[HERO], heroDrawn)
-    )
-    for (let g = HERO + 1; g <= FOOTER; g++) {
-      if (inView[g]) gl.drawArrays(gl.POINTS, dustFrom[g], dustCount[g])
-    }
-
-    // The threads over the dust, not into the depth: added in the dark,
-    // blended over (premultiplied) in the light.
-    gl.depthMask(false)
-    gl.enable(gl.BLEND)
-    if (colors.dark) gl.blendFunc(gl.ONE, gl.ONE)
-    else gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
-    gl.useProgram(threadProgram)
-    gl.uniformMatrix4fv(threadAt.uViewProj, false, viewProj)
-    gl.uniform2f(threadAt.uRes, w, h)
-    gl.uniform1f(threadAt.uDpr, dpr)
-    gl.uniform1f(threadAt.uFocal, projection[5] * h * 0.5)
-    gl.uniform4fv(threadAt.uMask, masks)
-    gl.uniform1f(threadAt.uMaskK, phase.mask)
-    gl.uniform1f(threadAt.uTone, tone)
-    gl.uniform1f(threadAt.uDark, colors.dark ? 1 : 0)
-    gl.uniform1f(threadAt.uLineAlpha, LINE_ALPHA)
-    gl.uniform3fv(threadAt.uLine, colors.line)
-    gl.uniform3fv(threadAt.uPrimary, colors.flash)
-    gl.bindVertexArray(threadVao)
-    if (drawn) {
-      gl.drawElements(gl.TRIANGLES, drawn * perThread, gl.UNSIGNED_SHORT, 0)
-    }
-    gl.disable(gl.BLEND)
-    gl.depthMask(true)
-    gl.disable(gl.DEPTH_TEST)
-
-    if (scene && finishProgram && finishAt) {
-      gl.bindVertexArray(emptyVao)
-      // The glow, dark theme only: down to a quarter, across, then down.
-      const down = downAt
-      const blur = blurAt
-      const glowing =
-        colors.dark && live.glow > 0 && glowA && glowB && down && blur
-      if (glowing) {
-        gl.activeTexture(gl.TEXTURE0 + UNIT_SCENE)
-        gl.bindTexture(gl.TEXTURE_2D, scene.texture)
-        gl.bindFramebuffer(gl.FRAMEBUFFER, glowA.framebuffer)
-        gl.viewport(0, 0, glowA.width, glowA.height)
-        gl.useProgram(downProgram)
-        gl.uniform2f(down.uTexel, 1 / w, 1 / h)
-        gl.drawArrays(gl.TRIANGLES, 0, 3)
-        gl.useProgram(blurProgram)
-        for (const [from, to, x, y] of [
-          [glowA, glowB, 1, 0],
-          [glowB, glowA, 0, 1],
-        ] as const) {
-          gl.bindFramebuffer(gl.FRAMEBUFFER, to.framebuffer)
-          gl.bindTexture(gl.TEXTURE_2D, from.texture)
-          gl.uniform2f(blur.uStep, x / from.width, y / from.height)
-          gl.drawArrays(gl.TRIANGLES, 0, 3)
-        }
-      }
-
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null)
-      gl.viewport(0, 0, w, h)
-      gl.useProgram(finishProgram)
-      gl.activeTexture(gl.TEXTURE0 + UNIT_SCENE)
-      gl.bindTexture(gl.TEXTURE_2D, scene.texture)
-      gl.activeTexture(gl.TEXTURE0 + UNIT_GLOW)
-      // Without a glow the scene stands in, at no weight.
-      gl.bindTexture(gl.TEXTURE_2D, (glowing ? glowA : scene).texture)
-      gl.uniform1f(finishAt.uGlowK, glowing ? live.glow * GLOW_GAIN : 0)
-      gl.uniform3fv(finishAt.uSurface, colors.surface)
-      gl.uniform2f(finishAt.uSize, w, h)
-      gl.uniform1f(finishAt.uTone, 1 - tone)
-      gl.uniform1f(finishAt.uVignette, colors.dark ? VIGNETTE : 0)
-      gl.uniform1f(finishAt.uGrain, GRAIN)
-      gl.uniform1f(finishAt.uTime, t)
-      gl.drawArrays(gl.TRIANGLES, 0, 3)
-    }
-    gl.bindVertexArray(null)
-    // Resizing binds the targets on the active unit: not the data's.
-    gl.activeTexture(gl.TEXTURE0)
+    lastT = t
+    lastMask = phase.mask
+    render(t, phase.mask, 0)
 
     writeReadout(readout(phase, run.lit, web.heroNodes))
     if (taps !== shownTaps) {
@@ -1336,7 +1369,7 @@ export function swarm(
     last = now
     if (!drawn) return
     drawnAt = now
-    onFrame(now)
+    if (leaveAt < 0) onFrame(now)
     if (!ready) {
       ready = true
       onReady()
@@ -1433,6 +1466,24 @@ export function swarm(
         next.perBlock
       )
       resize()
+    },
+    leave: (done) => {
+      if (!ready || failed || leaveAt >= 0) {
+        done()
+        return
+      }
+      leaveAt = performance.now()
+      // A hidden tab draws no frames, a lost context stops them: `done`
+      // comes then by the clock.
+      const finish = () => {
+        if (leaveDone !== finish) return
+        leaveDone = null
+        clearTimeout(late)
+        done()
+      }
+      const late = setTimeout(finish, LEAVE_MS + 200)
+      leaveDone = finish
+      if (!frame) frame = requestAnimationFrame(tick)
     },
     destroy: () => {
       pause()
