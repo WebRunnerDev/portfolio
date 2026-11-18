@@ -28,5 +28,11 @@
     "package": "zod",
     "reason": "The fix is in 4.6.6; zod 3 has none, and steiger (0.8.0 too) pins ^3.25.76. Steiger is the FSD lint CLI and validates only our own config with it; nothing of it ships. Every zod 4 copy is at >=4.6.6 through the package.json overrides.",
     "expires": "2027-01-15"
+  },
+  {
+    "id": "GHSA-fc5q-39xc-vjpf",
+    "package": "picomatch",
+    "reason": "No patched version (4.0.7 is the latest and still in range). Reached only through build and dev tools (vite and vitest via tinyglobby, lint-staged, steiger via micromatch, unplugin of the router plugin, the shadcn CLI) that match our own glob patterns; nothing of it ships to the browser or the Worker.",
+    "expires": "2027-01-15"
   }
 ]
