@@ -1,6 +1,12 @@
 // Meta Injection (ADR-0001): HTML navigations under a Lang get index.html with
 // their <html lang dir>, title, description, OG, canonical and hreflang.
-import { LANGS, langDirection, type Lang } from "@contracts/lang"
+import {
+  LANGS,
+  langDirection,
+  pickLang,
+  withLang,
+  type Lang,
+} from "@contracts/lang"
 import {
   BRAND,
   DEFAULT_OG_IMAGE,
@@ -12,6 +18,7 @@ import {
   notFoundMeta,
   pageUrl,
   parsePagePath,
+  profilePage,
   type PageMeta,
 } from "@contracts/meta"
 import { LANG_ATTRIBUTE, langMatches } from "@contracts/lang-preloads"
@@ -55,7 +62,9 @@ export function headTags(
   const property = (name: string, content: string) =>
     tag("meta", { property: name, content })
   const { article, langs = LANGS } = meta
-  const posting = blogPosting(url.origin, lang, path, meta)
+  const data =
+    blogPosting(url.origin, lang, path, meta) ??
+    profilePage(url.origin, lang, path, meta)
   const feed = blogFeed(lang, path)
 
   return [
@@ -86,8 +95,8 @@ export function headTags(
     article && property("article:modified_time", article.modifiedTime),
     tag("meta", { name: "twitter:card", content: "summary_large_image" }),
     // Not run as a script: CSP leaves it alone.
-    posting &&
-      `<script ${MARK} type="application/ld+json">${jsonLd(posting)}</script>`,
+    data &&
+      `<script ${MARK} type="application/ld+json">${jsonLd(data)}</script>`,
   ]
     .filter(Boolean)
     .join("")
@@ -114,10 +123,67 @@ export async function servePage(
   request: Request,
   env: Env
 ): Promise<Response | null> {
-  const url = new URL(request.url)
-  const page = parsePagePath(url.pathname)
+  const page = parsePagePath(new URL(request.url).pathname)
   if (!page) return null
+  const { lang, path } = page
+  return renderPage(
+    request,
+    env,
+    lang,
+    path,
+    await resolveMeta(env, lang, path)
+  )
+}
 
+// The Lang depends on these: caches must keep an answer per value.
+export const LANG_VARY = "Cookie, Accept-Language"
+
+// A path without a Lang that no file has (`/`, `/cv`, `/fr/cv`, `/nope`).
+// The Lang is the visitor's, picked as the client's `/` picks it (cookie,
+// then Accept-Language, then EN). When the path on that Lang is a page, a
+// 302 there with the query: first with the Lang put in front (`/cv` →
+// `/ru/cv`), then in place of a language code (`/fr/cv` → `/ru/cv`; withLang
+// alone would take `cv` for one). Otherwise the Not Found page on that Lang
+// with 404.
+export async function serveWithoutLang(
+  request: Request,
+  env: Env
+): Promise<Response> {
+  const url = new URL(request.url)
+  const lang = pickLang({
+    cookie: request.headers.get("Cookie"),
+    acceptLanguage: request.headers.get("Accept-Language"),
+  })
+  const swapped = withLang(url.pathname, lang)
+  for (const target of new Set([
+    `/${lang}${url.pathname}`.replace(/\/+$/, ""),
+    swapped,
+  ])) {
+    const { path } = parsePagePath(target)!
+    if (await resolveMeta(env, lang, path)) {
+      return new Response(null, {
+        status: 302,
+        headers: { Location: target + url.search, Vary: LANG_VARY },
+      })
+    }
+  }
+  const { path } = parsePagePath(swapped)!
+  const page = await renderPage(request, env, lang, path, null)
+  const headers = new Headers(page.headers)
+  headers.set("Vary", LANG_VARY)
+  return new Response(page.body, { status: page.status, headers })
+}
+
+// index.html with the head of the page at `path` on `lang`: `found` is its
+// meta, null for no page (a 404 with the Not Found meta).
+async function renderPage(
+  request: Request,
+  env: Env,
+  lang: Lang,
+  path: string,
+  found: PageMeta | null
+): Promise<Response> {
+  const url = new URL(request.url)
   // Always the root index.html: its ETag would be the same for every page,
   // so the request goes without the client's conditions.
   const html = await env.ASSETS.fetch(new URL("/", url), {
@@ -127,8 +193,6 @@ export async function servePage(
     return html
   }
 
-  const { lang, path } = page
-  const found = await resolveMeta(env, lang, path)
   const meta = found ?? notFoundMeta(lang)
   const preview = isPreview(url)
   const noindex = preview || !!meta.noindex

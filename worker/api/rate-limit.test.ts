@@ -141,10 +141,14 @@ describe("rate limit on /api/*", { timeout: 30_000 }, () => {
   const withAssets = {
     ...env,
     ASSETS: {
-      fetch: async () =>
-        new Response("<!doctype html><html><head></head></html>", {
-          headers: { "Content-Type": "text/html; charset=utf-8" },
-        }),
+      fetch: async (input: RequestInfo | URL) =>
+        new URL(new Request(input).url).pathname === "/favicon.svg"
+          ? new Response("<svg/>", {
+              headers: { "Content-Type": "image/svg+xml" },
+            })
+          : new Response("<!doctype html><html><head></head></html>", {
+              headers: { "Content-Type": "text/html; charset=utf-8" },
+            }),
     },
   } as unknown as Env
 

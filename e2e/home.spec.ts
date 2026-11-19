@@ -178,6 +178,21 @@ async function mockPublicApi(page: Page, data: Data = FULL) {
 const section = (page: Page, id: string) => page.getByTestId(`home-${id}`)
 const SECTIONS = ["cv", "projects", "gallery", "posts"]
 
+test("the home page carries the owner as JSON-LD once the Profile arrives", async ({
+  page,
+}) => {
+  await mockPublicApi(page)
+  await page.goto("/de")
+  const ld = page.locator('script[type="application/ld+json"]')
+  await expect(ld).toHaveCount(1)
+  expect(JSON.parse((await ld.textContent())!)).toMatchObject({
+    "@type": "Person",
+    name: PROFILE.name,
+    jobTitle: PROFILE.headline,
+    url: expect.stringMatching(/\/de$/),
+  })
+})
+
 test("the sections follow the hero in order, each with its data", async ({
   page,
 }) => {

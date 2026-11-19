@@ -37,6 +37,40 @@ test("unknown path under a Lang is a 404 with the SPA", async ({ page }) => {
   await expect(page.getByRole("banner")).toBeVisible()
 })
 
+test("a path without a Lang that is no page is a 404, then the Not Found page", async ({
+  page,
+}) => {
+  const response = await page.goto("/nope")
+  expect(response?.status()).toBe(404)
+  await expect(page).toHaveURL(/\/en\/nope$/)
+  await expect(page.getByRole("banner")).toBeVisible()
+})
+
+test("/cv redirects to the CV on the visitor's Lang", async ({ request }) => {
+  const response = await request.get("/cv?from=card", {
+    headers: { "Accept-Language": "kk" },
+    maxRedirects: 0,
+  })
+  expect(response.status()).toBe(302)
+  expect(response.headers()["location"]).toBe("/kk/cv?from=card")
+})
+
+test("robots.txt points at the sitemap and keeps training crawlers out", async ({
+  request,
+}) => {
+  const robots = await (await request.get("/robots.txt")).text()
+  expect(robots).toContain("Sitemap: https://webrunner.dev/sitemap.xml")
+  expect(robots).toMatch(/User-agent: GPTBot[\s\S]*?Disallow: \/\n/)
+  // AI search goes by `User-agent: *`.
+  expect(robots).not.toMatch(/User-agent: (OAI-SearchBot|Claude-SearchBot)/)
+})
+
+test("the sitemap is XML from the Worker, not the SPA", async ({ request }) => {
+  const response = await request.get("/sitemap.xml")
+  // The e2e D1 has no tables: the Worker answers 503, never index.html.
+  expect(response.headers()["content-type"] ?? "").not.toContain("text/html")
+})
+
 test("the title follows SPA navigation", async ({ page }) => {
   await page.goto("/en/cv")
   await expect(page).toHaveTitle("CV · WebRunner")

@@ -7,6 +7,7 @@ import { useMotionTier } from "@/shared/lib/motion-tier"
 import { CvSection } from "./cv-section"
 import { GallerySection } from "./gallery-section"
 import { Hero } from "./hero"
+import { HomePerson } from "./home-person"
 import { PostsSection } from "./posts-section"
 import { ProjectsSection } from "./projects-section"
 
@@ -50,6 +51,9 @@ export function HomePage() {
   return (
     <>
       <Hero tier={tier} profile={profile} covered={tier === "full" && shown} />
+      <Suspense>
+        <HomePerson profile={profile} />
+      </Suspense>
       {tier === "full" && (
         <Suspense>
           <HomeFull
