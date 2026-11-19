@@ -3,9 +3,9 @@ import { X } from "lucide-react"
 
 import type { Post } from "@contracts/api/public"
 import { useLang, useT } from "@/shared/i18n"
+import { PageHead } from "@/shared/ui/prototype-head"
 
 import { PostCard } from "./post-card"
-import { PageHead } from "@/shared/ui/prototype-head"
 
 const route = getRouteApi("/$lang/blog/")
 
@@ -48,7 +48,16 @@ export function BlogPage() {
 
   return (
     <div className="mx-auto w-full max-w-(--zsd-x-zsd-layout-content-max) px-zsd-lg py-zsd-section md:px-zsd-xxl lg:py-zsd-section-lg">
-      <PageHead>
+      <PageHead
+        figure={5}
+        items={[...posts].reverse().map((p) => ({
+          key: p.slug,
+          label: p.title,
+          state: "plain",
+          note: p.publishedAt.slice(0, 7).replace("-", "."),
+        }))}
+        summary={`${posts.length} posts · since ${posts.at(-1)?.publishedAt.slice(0, 4) ?? "—"}`}
+      >
         <h1 className="font-heading text-zsd-headline-md break-words md:text-zsd-headline-lg">
           {t("nav.blog")}
         </h1>
@@ -65,10 +74,7 @@ export function BlogPage() {
         </div>
       )}
       {posts.length > 0 ? (
-        <ul
-          data-swarm-text
-          className="mt-zsd-xl grid gap-zsd-xl sm:grid-cols-2 lg:grid-cols-3"
-        >
+        <ul className="mt-zsd-xl grid gap-zsd-xl sm:grid-cols-2 lg:grid-cols-3">
           {posts.map((post, i) => (
             <li key={post.id}>
               <PostCard post={post} activeTag={tag} priority={i === 0} />

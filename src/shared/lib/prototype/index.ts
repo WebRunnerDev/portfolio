@@ -1,16 +1,13 @@
 // PROTOTYPE, branch spike/page-head only, never merged to main.
-// docs/plan.md › Этап 7 › п. 10: the head of the pages other than home, and
-// the title's morph into the page's h1. A value comes from the URL
+// docs/plan.md › Этап 7 › п. 10: the head of the pages other than home. A value comes from the URL
 // (`?head=band`) and is kept for the session, so it survives page changes;
 // the bar (`PrototypeBar`) sets them.
 
 export const PROTO = {
-  // The head of an inner page: as now; the brief's CSS lattice of rhombi
-  // with a few lit; a live band of the Swarm under the title; the Swarm
-  // behind the whole head, its logo gathering at the end of the title.
-  head: ["plain", "lattice", "band", "swarm"],
-  // A project's or a post's title grows into its page's h1 (View Transition).
-  morph: ["off", "on"],
+  // The head of an inner page: as now; the page as its home chapter opened
+  // (figure, full stop, rule, a readout of what is in it); a strip of the
+  // page's own items as rhombi, one each, tied to the cards; both.
+  head: ["plain", "chapter", "data", "both"],
 } as const
 
 export type ProtoKey = keyof typeof PROTO
@@ -18,7 +15,6 @@ export type ProtoValue<K extends ProtoKey> = (typeof PROTO)[K][number]
 
 export const PROTO_LABELS: Record<ProtoKey, string> = {
   head: "Шапка",
-  morph: "Заголовок",
 }
 
 const STORE = "proto:"

@@ -78,6 +78,7 @@ export function AlbumCard({
   return (
     <article
       data-testid="album-card"
+      data-item={album.slug}
       className="group/card focus-chamfer-md relative h-full"
     >
       {/* DESIGN.md › Shapes: the outer layer draws the chamfered border. */}

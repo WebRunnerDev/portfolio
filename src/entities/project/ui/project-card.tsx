@@ -4,7 +4,7 @@ import { cn } from "cn"
 import type { Project } from "@contracts/api/public"
 import { IMAGE_WIDTHS, imageUrl } from "@contracts/media"
 import { useLang } from "@/shared/i18n"
-import { sharedCover, sharedTitle } from "@/shared/lib/view-transition"
+import { sharedCover } from "@/shared/lib/view-transition"
 import { CARD_TITLE_SHIFT, CardCorner } from "@/shared/ui/card"
 import { FallbackNotice, fallbackLang } from "@/shared/ui/fallback-notice"
 import { Logo } from "@/shared/ui/logo"
@@ -98,6 +98,7 @@ export function ProjectCard({
   return (
     <article
       data-testid="project-card"
+      data-item={project.slug}
       className={cn("group/card relative h-full", linked && "focus-chamfer-md")}
     >
       {/* DESIGN.md › Shapes: the outer layer draws the chamfered border. */}
@@ -135,12 +136,7 @@ export function ProjectCard({
                     params={{ lang, slug: project.slug }}
                     className="card-link outline-none after:absolute after:inset-0"
                   >
-                    <span
-                      {...sharedTitle("project", project.slug)}
-                      className={CARD_TITLE_SHIFT}
-                    >
-                      {project.title}
-                    </span>
+                    <span className={CARD_TITLE_SHIFT}>{project.title}</span>
                   </Link>
                 ) : (
                   project.title

@@ -2,7 +2,6 @@ import { Outlet, createFileRoute, redirect } from "@tanstack/react-router"
 
 import { DEFAULT_LANG, isLang, withLang, type Lang } from "@contracts/lang"
 import { DirectionProvider } from "@/app/providers"
-import { loadHomeFull } from "@/pages/home"
 import { NotFoundPage } from "@/pages/not-found"
 import { LangHead } from "@/shared/i18n"
 import { useWeightedScroll } from "@/shared/lib/weighted-scroll"
@@ -11,11 +10,7 @@ import { SiteFooter } from "@/widgets/footer"
 import { SiteHeader } from "@/widgets/header"
 import { SiteMenu } from "@/widgets/menu"
 import { PrototypeBar } from "@/shared/ui/prototype-bar"
-import { registerPageScene } from "@/shared/ui/prototype-head"
 import { MusicPlayer } from "@/widgets/music-player"
-
-// PROTOTYPE (spike/page-head): the Swarm for the inner pages' head.
-registerPageScene(loadHomeFull)
 
 // Every page lives under a Lang; an unknown one redirects to EN, same path.
 // An unknown path under a Lang renders NotFoundPage inside the layout.

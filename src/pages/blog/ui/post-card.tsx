@@ -4,7 +4,7 @@ import { cn } from "cn"
 import type { Post } from "@contracts/api/public"
 import { IMAGE_WIDTHS, imageUrl } from "@contracts/media"
 import { useLang } from "@/shared/i18n"
-import { sharedCover, sharedTitle } from "@/shared/lib/view-transition"
+import { sharedCover } from "@/shared/lib/view-transition"
 import { CARD_TITLE_SHIFT, CardCorner } from "@/shared/ui/card"
 import { FallbackNotice, fallbackLang } from "@/shared/ui/fallback-notice"
 
@@ -71,6 +71,7 @@ export function PostCard({
   return (
     <article
       data-testid="post-card"
+      data-item={post.slug}
       className="group/card focus-chamfer-md relative h-full"
     >
       {/* DESIGN.md › Shapes: the outer layer draws the chamfered border. */}
@@ -98,12 +99,7 @@ export function PostCard({
               params={{ lang, slug: post.slug }}
               className="card-link outline-none after:absolute after:inset-0"
             >
-              <span
-                {...sharedTitle("post", post.slug)}
-                className={CARD_TITLE_SHIFT}
-              >
-                {post.title}
-              </span>
+              <span className={CARD_TITLE_SHIFT}>{post.title}</span>
             </Link>
           </h2>
           <FallbackNotice fallback={post.fallback} />

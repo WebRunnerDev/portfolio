@@ -8,10 +8,9 @@ import {
   ProjectTechnologies,
 } from "@/entities/project"
 import { useLang, useT } from "@/shared/i18n"
-import { sharedCover, sharedTitle } from "@/shared/lib/view-transition"
+import { sharedCover } from "@/shared/lib/view-transition"
 import { FallbackNotice, fallbackLang } from "@/shared/ui/fallback-notice"
 import { Markdown } from "@/shared/ui/markdown"
-import { PageHead } from "@/shared/ui/prototype-head"
 
 const route = getRouteApi("/$lang/projects/$slug")
 
@@ -41,51 +40,44 @@ export function ProjectPage() {
         />
         {t("nav.projects")}
       </Link>
-      <PageHead>
-        <header className="mt-zsd-lg grid gap-zsd-xl lg:grid-cols-2 lg:items-start">
-          <div className="flex min-w-0 flex-col items-start gap-zsd-md">
-            <h1
-              lang={textLang}
-              className="font-heading text-zsd-headline-md break-words md:text-zsd-headline-lg"
-            >
-              <span
-                {...sharedTitle("project", project.slug)}
-                className="inline-block"
-              >
-                {project.title}
-              </span>
-            </h1>
-            <ProjectStatus status={project.status} />
-            <FallbackNotice fallback={project.fallback} />
-            <p
-              lang={textLang}
-              className="max-w-(--zsd-x-zsd-layout-prose-max) text-zsd-body-lg text-zsd-on-surface-muted"
-            >
-              {project.description}
-            </p>
-            <ProjectTechnologies technologies={project.technologies} />
-            <ProjectLinks project={project} />
-          </div>
-          {coverKey && (
-            // Decorative: the title names the page. The card's cover grows
-            // into it.
-            <img
-              {...sharedCover("project", project.slug)}
-              src={imageUrl(coverKey, 1280)}
-              srcSet={IMAGE_WIDTHS.map(
-                (w) => `${imageUrl(coverKey, w)} ${w}w`
-              ).join(", ")}
-              sizes={COVER_SIZES}
-              width={1280}
-              height={720}
-              alt=""
-              fetchPriority="high"
-              decoding="async"
-              className="aspect-video w-full border border-zsd-outline-muted bg-zsd-surface-raised object-cover"
-            />
-          )}
-        </header>
-      </PageHead>
+      <header className="mt-zsd-lg grid gap-zsd-xl lg:grid-cols-2 lg:items-start">
+        <div className="flex min-w-0 flex-col items-start gap-zsd-md">
+          <h1
+            lang={textLang}
+            className="font-heading text-zsd-headline-md break-words md:text-zsd-headline-lg"
+          >
+            {project.title}
+          </h1>
+          <ProjectStatus status={project.status} />
+          <FallbackNotice fallback={project.fallback} />
+          <p
+            lang={textLang}
+            className="max-w-(--zsd-x-zsd-layout-prose-max) text-zsd-body-lg text-zsd-on-surface-muted"
+          >
+            {project.description}
+          </p>
+          <ProjectTechnologies technologies={project.technologies} />
+          <ProjectLinks project={project} />
+        </div>
+        {coverKey && (
+          // Decorative: the title names the page. The card's cover grows
+          // into it.
+          <img
+            {...sharedCover("project", project.slug)}
+            src={imageUrl(coverKey, 1280)}
+            srcSet={IMAGE_WIDTHS.map(
+              (w) => `${imageUrl(coverKey, w)} ${w}w`
+            ).join(", ")}
+            sizes={COVER_SIZES}
+            width={1280}
+            height={720}
+            alt=""
+            fetchPriority="high"
+            decoding="async"
+            className="aspect-video w-full border border-zsd-outline-muted bg-zsd-surface-raised object-cover"
+          />
+        )}
+      </header>
       <Markdown
         tree={caseStudy}
         lang={textLang}

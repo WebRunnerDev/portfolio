@@ -1235,78 +1235,141 @@ html:active-view-transition-type(forward, back) {
   }
 }
 
-/* PROTOTYPE (spike/page-head), never merged to main. `?head=lattice` (and
- * `band`/`swarm` until the scene draws): the lattice of rhombi under an
- * inner page's title, two diagonal hairlines per cell, laid from the band's
- * physical right where the lit cells are and fading toward the left. A lit
- * cell is a rust tile inside a cell, breathing; under reduced motion it
- * stands lit. `?morph=on`: the title's morph into the page's h1. */
-html:where([data-proto-head]) {
-  overflow-x: clip;
-}
-.page-lattice {
-  --lattice-line: color-mix(
-    in oklab,
-    var(--color-zsd-outline) 70%,
-    transparent
-  );
-  background-image:
-    linear-gradient(
-      45deg,
-      transparent calc(50% - 0.7px),
-      var(--lattice-line) 50%,
-      transparent calc(50% + 0.7px)
-    ),
-    linear-gradient(
-      -45deg,
-      transparent calc(50% - 0.7px),
-      var(--lattice-line) 50%,
-      transparent calc(50% + 0.7px)
+/* PROTOTYPE (spike/page-head), never merged to main. `?head=data|both`: the
+ * strip of a list page's items (`PageHead` in @/shared/ui/prototype-head).
+ * Rhombi a step apart on a hairline from the start edge; the thread up to
+ * the item pointed at lights rust, from the start, and the item's rhombus
+ * turns rust; its card does too (`data-hot`). A project in progress is a
+ * rust outline breathing like its badge, a completed one solid, an archived
+ * one a hairline outline; a post or an album solid. */
+.page-strip-row {
+  --tile: 1.125rem;
+  --step: 3.5rem;
+  position: relative;
+  display: flex;
+  gap: calc(var(--step) - var(--tile));
+  padding-block-end: 1.75rem;
+  &::before,
+  &::after {
+    content: "";
+    position: absolute;
+    inset-inline-start: 0;
+    top: calc(var(--tile) / 2);
+    height: 1px;
+    transform-origin: left;
+  }
+  &:dir(rtl)::before,
+  &:dir(rtl)::after {
+    transform-origin: right;
+  }
+  /* The thread runs on past the last item to the box's end. */
+  &::before {
+    inset-inline-end: 0;
+    background: linear-gradient(
+      to right,
+      var(--zsd-colors-outline) calc(var(--count) * var(--step)),
+      transparent
     );
-  background-size: var(--lattice-cell) var(--lattice-cell);
-  background-position: right top;
-  mask-image: linear-gradient(to left, #000 0, #000 25%, transparent 92%);
+  }
+  &:dir(rtl)::before {
+    background: linear-gradient(
+      to left,
+      var(--zsd-colors-outline) calc(var(--count) * var(--step)),
+      transparent
+    );
+  }
+  &::after {
+    width: calc(var(--at) * var(--step) + var(--tile) / 2);
+    background: var(--zsd-colors-primary);
+    transform: scaleX(0);
+    transition: transform var(--zsd-x-zsd-motion-duration-base)
+      var(--zsd-x-zsd-motion-easing-enter);
+  }
+  &[data-lit="true"]::after {
+    transform: none;
+  }
+  @media (width >= 48rem) {
+    --tile: 1.375rem;
+    --step: 4.5rem;
+  }
 }
-.page-lattice-lit {
-  --lit-side: calc(var(--lattice-cell) * 0.5);
-  position: absolute;
-  inset-block-start: calc(
-    var(--lattice-cell) * (1 + var(--row) * 0.5) - var(--lit-side) / 2
-  );
-  right: calc(
-    var(--lattice-cell) * (var(--col) + 0.5 - var(--row) * 0.5) -
-      var(--lit-side) / 2
-  );
-  width: var(--lit-side);
-  height: var(--lit-side);
+.page-strip-cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: var(--tile);
+}
+.page-strip-tile {
+  position: relative;
+  width: var(--tile);
+  height: var(--tile);
+  cursor: pointer;
   rotate: 45deg;
-  background: var(--color-zsd-primary);
-  animation: lattice-lit 3.6s var(--zsd-x-zsd-motion-easing-layout) infinite
-    var(--delay);
-}
-@keyframes lattice-lit {
-  0%,
-  100% {
-    opacity: 0.2;
-    scale: 0.7;
+  scale: 0.72;
+  background: var(--zsd-colors-surface);
+  box-shadow: inset 0 0 0 1px var(--zsd-colors-outline);
+  transition:
+    scale var(--zsd-x-zsd-motion-duration-fast)
+      var(--zsd-x-zsd-motion-easing-hover),
+    background-color var(--zsd-x-zsd-motion-duration-fast)
+      var(--zsd-x-zsd-motion-easing-hover);
+  &[data-state="done"],
+  &[data-state="plain"] {
+    background: var(--zsd-colors-outline);
   }
-  45% {
-    opacity: 1;
+  &[data-state="archived"] {
+    box-shadow: inset 0 0 0 1px var(--zsd-colors-outline-muted);
+  }
+  &[data-state="active"] {
+    box-shadow: inset 0 0 0 1px var(--zsd-colors-primary);
+    &::after {
+      content: "";
+      position: absolute;
+      inset: 30%;
+      background: var(--zsd-colors-primary);
+      animation: status-breathe
+        calc(2 * var(--zsd-x-zsd-motion-choreography-max))
+        var(--zsd-x-zsd-motion-easing-layout) infinite alternate;
+    }
+  }
+  &[data-hot="true"] {
     scale: 1;
+    background: var(--zsd-colors-primary);
+    box-shadow: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+    &::after {
+      animation: none !important;
+    }
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .page-lattice-lit {
-    animation: none;
+/* In: the rhombi turn in one after another along the thread. */
+@media (prefers-reduced-motion: no-preference) {
+  .page-strip-tile {
+    animation: strip-in var(--zsd-x-zsd-motion-duration-slow)
+      var(--zsd-x-zsd-motion-easing-layout) backwards;
+    animation-delay: calc(
+      0.3s + var(--i) * var(--zsd-x-zsd-motion-stagger-item)
+    );
+  }
+  .page-strip-row::before {
+    animation: chapter-line var(--zsd-x-zsd-motion-duration-reveal)
+      var(--zsd-x-zsd-motion-easing-enter) backwards;
   }
 }
-::view-transition-group(page-title) {
-  animation-duration: var(--zsd-x-zsd-motion-duration-slow);
-  animation-timing-function: var(--zsd-x-zsd-motion-easing-layout);
+@keyframes strip-in {
+  from {
+    rotate: -45deg;
+    scale: 0;
+  }
 }
-::view-transition-old(page-title),
-::view-transition-new(page-title) {
-  height: 100%;
-  animation-duration: var(--zsd-x-zsd-motion-duration-slow);
-  animation-timing-function: var(--zsd-x-zsd-motion-easing-layout);
+.page-strip-note {
+  position: absolute;
+  top: calc(var(--tile) + 0.5rem);
+  white-space: nowrap;
+}
+[data-item][data-hot] > div:first-child {
+  background: var(--zsd-colors-primary);
 }

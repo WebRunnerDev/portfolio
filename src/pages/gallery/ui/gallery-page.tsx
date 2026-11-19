@@ -1,8 +1,8 @@
 import { getRouteApi } from "@tanstack/react-router"
 
 import { AlbumCard } from "./album-card"
-import { PageHead } from "@/shared/ui/prototype-head"
 import { useT } from "@/shared/i18n"
+import { PageHead } from "@/shared/ui/prototype-head"
 
 const route = getRouteApi("/$lang/gallery/")
 
@@ -14,16 +14,22 @@ export function GalleryPage() {
 
   return (
     <div className="mx-auto w-full max-w-(--zsd-x-zsd-layout-content-max) px-zsd-lg py-zsd-section md:px-zsd-xxl lg:py-zsd-section-lg">
-      <PageHead>
+      <PageHead
+        figure={4}
+        items={albums.map((a) => ({
+          key: a.slug,
+          label: a.title,
+          state: "plain",
+          note: String(a.photoCount),
+        }))}
+        summary={`${albums.length} albums · ${albums.reduce((n, a) => n + a.photoCount, 0)} photos`}
+      >
         <h1 className="font-heading text-zsd-headline-md break-words md:text-zsd-headline-lg">
           {t("nav.gallery")}
         </h1>
       </PageHead>
       {albums.length > 0 ? (
-        <ul
-          data-swarm-text
-          className="mt-zsd-xl grid gap-zsd-xl sm:grid-cols-2 lg:grid-cols-3"
-        >
+        <ul className="mt-zsd-xl grid gap-zsd-xl sm:grid-cols-2 lg:grid-cols-3">
           {albums.map((album, i) => (
             <li key={album.id}>
               <AlbumCard album={album} priority={i === 0} />

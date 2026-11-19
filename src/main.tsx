@@ -5,7 +5,7 @@ import { RouterProvider, createRouter } from "@tanstack/react-router"
 import "./index.css"
 import { routeTree } from "./app/routeTree.gen"
 import { leavesHome, pageTransitionTypes } from "@/shared/lib/view-transition"
-import { markProto, proto } from "@/shared/lib/prototype"
+import { markProto } from "@/shared/lib/prototype"
 import { LOADER_DELAY_MS } from "@/shared/ui/loader"
 import { PageLoading } from "@/shared/ui/page-state"
 
@@ -25,12 +25,7 @@ const router = createRouter({
   routeTree,
   defaultViewTransition: {
     types: (change) =>
-      // PROTOTYPE (spike/page-head): an inner page's Swarm blows off too.
-      (leavesHome(change) ||
-        (proto("head") !== "plain" &&
-          proto("head") !== "lattice" &&
-          change.pathChanged)) &&
-      document.querySelector(LIVE_SCENE)
+      leavesHome(change) && document.querySelector(LIVE_SCENE)
         ? false
         : pageTransitionTypes(change),
   },

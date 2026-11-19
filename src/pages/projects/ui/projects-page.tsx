@@ -1,8 +1,8 @@
 import { getRouteApi } from "@tanstack/react-router"
 
 import { ProjectCard } from "@/entities/project"
-import { PageHead } from "@/shared/ui/prototype-head"
 import { useT } from "@/shared/i18n"
+import { PageHead } from "@/shared/ui/prototype-head"
 
 const route = getRouteApi("/$lang/projects/")
 
@@ -14,16 +14,26 @@ export function ProjectsPage() {
 
   return (
     <div className="mx-auto w-full max-w-(--zsd-x-zsd-layout-content-max) px-zsd-lg py-zsd-section md:px-zsd-xxl lg:py-zsd-section-lg">
-      <PageHead>
+      <PageHead
+        figure={3}
+        items={projects.map((p) => ({
+          key: p.slug,
+          label: p.title,
+          state:
+            p.status === "completed"
+              ? "done"
+              : p.status === "in_progress"
+                ? "active"
+                : "archived",
+        }))}
+        summary={`${projects.length} projects · ${projects.filter((p) => p.status === "in_progress").length} in progress`}
+      >
         <h1 className="font-heading text-zsd-headline-md break-words md:text-zsd-headline-lg">
           {t("nav.projects")}
         </h1>
       </PageHead>
       {projects.length > 0 ? (
-        <ul
-          data-swarm-text
-          className="mt-zsd-xl grid gap-zsd-xl sm:grid-cols-2 lg:grid-cols-3"
-        >
+        <ul className="mt-zsd-xl grid gap-zsd-xl sm:grid-cols-2 lg:grid-cols-3">
           {projects.map((project, i) => (
             <li key={project.id}>
               <ProjectCard project={project} priority={i === 0} />

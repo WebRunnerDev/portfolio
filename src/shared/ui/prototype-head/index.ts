@@ -1,2 +1,2 @@
-export { PageHead, registerPageScene } from "./page-head"
-export type { FullProps, LoadScene } from "./page-head"
+export { PageHead } from "./page-head"
+export type { HeadItem } from "./page-head"

@@ -4,7 +4,7 @@ import { ArrowLeft, Share2 } from "lucide-react"
 import { IMAGE_WIDTHS, imageUrl } from "@contracts/media"
 import { pageUrl } from "@contracts/meta"
 import { useLang, useT } from "@/shared/i18n"
-import { sharedCover, sharedTitle } from "@/shared/lib/view-transition"
+import { sharedCover } from "@/shared/lib/view-transition"
 import {
   FallbackNotice,
   fallbackDir,
@@ -15,7 +15,6 @@ import { Markdown } from "@/shared/ui/markdown"
 
 import { PostDate } from "./post-date"
 import { PostTags } from "./post-tags"
-import { PageHead } from "@/shared/ui/prototype-head"
 
 const route = getRouteApi("/$lang/blog/$slug")
 
@@ -61,25 +60,16 @@ export function PostPage() {
           {t("blog.filter.reset")}
         </Link>
         <header className="mt-zsd-lg flex flex-col items-start gap-zsd-md">
-          <PageHead>
-            <div className="flex flex-col items-start gap-zsd-md">
-              <h1
-                lang={textLang}
-                dir={textDir}
-                className="font-heading text-zsd-headline-md break-words md:text-zsd-headline-lg"
-              >
-                <span
-                  {...sharedTitle("post", post.slug)}
-                  className="inline-block"
-                >
-                  {post.title}
-                </span>
-              </h1>
-              <PostDate post={post} />
-              <FallbackNotice fallback={post.fallback} text="post.fallback" />
-              <PostTags tags={post.tags} activeTag={undefined} />
-            </div>
-          </PageHead>
+          <h1
+            lang={textLang}
+            dir={textDir}
+            className="font-heading text-zsd-headline-md break-words md:text-zsd-headline-lg"
+          >
+            {post.title}
+          </h1>
+          <PostDate post={post} />
+          <FallbackNotice fallback={post.fallback} text="post.fallback" />
+          <PostTags tags={post.tags} activeTag={undefined} />
           {coverKey && (
             // Decorative: the title names the page. The card's cover grows
             // into it.
