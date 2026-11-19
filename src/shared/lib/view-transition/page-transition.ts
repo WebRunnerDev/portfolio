@@ -47,6 +47,24 @@ export const sharedCover = (kind: CoverKind, slug: string) => ({
   "data-shared-cover": `${kind}:${slug}`,
 })
 
+// PROTOTYPE (spike/page-head, `?morph=on`): a title on a card or a row and
+// the h1 of its page, the same key as the cover. Spread on the element that
+// hugs the text (inline-block), so its box keeps the text's shape.
+export const sharedTitle = (kind: CoverKind, slug: string) => ({
+  "data-shared-title": `${kind}:${slug}`,
+})
+
+const morphOn = () => {
+  try {
+    return (
+      document.documentElement.dataset.protoMorph === "on" &&
+      location.hostname !== "webrunner.dev"
+    )
+  } catch {
+    return false
+  }
+}
+
 // One rule names the cover of the item being opened or left, on both sides
 // of the transition, so the browser morphs one into the other. It stays until
 // the next page change; a name does nothing outside a transition.
@@ -55,10 +73,17 @@ let rule: HTMLStyleElement | undefined
 function shareCover(key: string | null) {
   const selector = key && `[data-shared-cover="${CSS.escape(key)}"]`
   // Only a cover on the page being left: none means nothing to morph from.
-  const css =
+  const cover =
     selector && document.querySelector(selector)
       ? `${selector}{view-transition-name:card-cover}`
       : ""
+  const titleSelector =
+    key && morphOn() && `[data-shared-title="${CSS.escape(key)}"]`
+  const title =
+    titleSelector && document.querySelector(titleSelector)
+      ? `${titleSelector}{view-transition-name:page-title}`
+      : ""
+  const css = cover + title
   if (!rule) {
     if (!css) return
     rule = document.head.appendChild(document.createElement("style"))

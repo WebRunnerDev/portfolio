@@ -6,6 +6,7 @@ import type { Post } from "@contracts/api/public"
 import { formatDate, useLang, useT } from "@/shared/i18n"
 import { fallbackLang } from "@/shared/ui/fallback-notice"
 import { Reveal } from "@/shared/ui/reveal"
+import { sharedTitle } from "@/shared/lib/view-transition"
 
 import { HomeSection } from "./home-section"
 
@@ -61,7 +62,12 @@ export function PostsSection({ posts }: { posts: Promise<Post[]> }) {
                   lang={fallbackLang(post)}
                   className={`min-w-0 font-heading text-zsd-headline-sm break-words text-zsd-on-surface transition-transform card-active:translate-x-1 rtl:card-active:-translate-x-1 ${MOTION_FAST}`}
                 >
-                  {post.title}
+                  <span
+                    {...sharedTitle("post", post.slug)}
+                    className="inline-block"
+                  >
+                    {post.title}
+                  </span>
                   <ArrowRight
                     aria-hidden
                     strokeWidth={1.5}

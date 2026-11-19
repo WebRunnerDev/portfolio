@@ -1234,3 +1234,79 @@ html:active-view-transition-type(forward, back) {
     animation: none;
   }
 }
+
+/* PROTOTYPE (spike/page-head), never merged to main. `?head=lattice` (and
+ * `band`/`swarm` until the scene draws): the lattice of rhombi under an
+ * inner page's title, two diagonal hairlines per cell, laid from the band's
+ * physical right where the lit cells are and fading toward the left. A lit
+ * cell is a rust tile inside a cell, breathing; under reduced motion it
+ * stands lit. `?morph=on`: the title's morph into the page's h1. */
+html:where([data-proto-head]) {
+  overflow-x: clip;
+}
+.page-lattice {
+  --lattice-line: color-mix(
+    in oklab,
+    var(--color-zsd-outline) 70%,
+    transparent
+  );
+  background-image:
+    linear-gradient(
+      45deg,
+      transparent calc(50% - 0.7px),
+      var(--lattice-line) 50%,
+      transparent calc(50% + 0.7px)
+    ),
+    linear-gradient(
+      -45deg,
+      transparent calc(50% - 0.7px),
+      var(--lattice-line) 50%,
+      transparent calc(50% + 0.7px)
+    );
+  background-size: var(--lattice-cell) var(--lattice-cell);
+  background-position: right top;
+  mask-image: linear-gradient(to left, #000 0, #000 25%, transparent 92%);
+}
+.page-lattice-lit {
+  --lit-side: calc(var(--lattice-cell) * 0.5);
+  position: absolute;
+  inset-block-start: calc(
+    var(--lattice-cell) * (1 + var(--row) * 0.5) - var(--lit-side) / 2
+  );
+  right: calc(
+    var(--lattice-cell) * (var(--col) + 0.5 - var(--row) * 0.5) -
+      var(--lit-side) / 2
+  );
+  width: var(--lit-side);
+  height: var(--lit-side);
+  rotate: 45deg;
+  background: var(--color-zsd-primary);
+  animation: lattice-lit 3.6s var(--zsd-x-zsd-motion-easing-layout) infinite
+    var(--delay);
+}
+@keyframes lattice-lit {
+  0%,
+  100% {
+    opacity: 0.2;
+    scale: 0.7;
+  }
+  45% {
+    opacity: 1;
+    scale: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-lattice-lit {
+    animation: none;
+  }
+}
+::view-transition-group(page-title) {
+  animation-duration: var(--zsd-x-zsd-motion-duration-slow);
+  animation-timing-function: var(--zsd-x-zsd-motion-easing-layout);
+}
+::view-transition-old(page-title),
+::view-transition-new(page-title) {
+  height: 100%;
+  animation-duration: var(--zsd-x-zsd-motion-duration-slow);
+  animation-timing-function: var(--zsd-x-zsd-motion-easing-layout);
+}

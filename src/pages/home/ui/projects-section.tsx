@@ -9,6 +9,7 @@ import { useLang, useT } from "@/shared/i18n"
 import { CARD_TITLE_SHIFT } from "@/shared/ui/card"
 import { fallbackLang } from "@/shared/ui/fallback-notice"
 import { Reveal } from "@/shared/ui/reveal"
+import { sharedTitle } from "@/shared/lib/view-transition"
 
 import { HomeSection } from "./home-section"
 
@@ -76,7 +77,12 @@ export function ProjectsSection({
                       className={`card-link min-w-0 after:absolute after:inset-0 ${FOCUS_RING}`}
                     >
                       <span className={CARD_TITLE_SHIFT}>
-                        {project.title}
+                        <span
+                          {...sharedTitle("project", project.slug)}
+                          className="inline-block"
+                        >
+                          {project.title}
+                        </span>
                         <ArrowRight
                           aria-hidden
                           strokeWidth={1.5}
