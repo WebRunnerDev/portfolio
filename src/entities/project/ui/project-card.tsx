@@ -98,6 +98,7 @@ export function ProjectCard({
   return (
     <article
       data-testid="project-card"
+      data-item={project.slug}
       className={cn("group/card relative h-full", linked && "focus-chamfer-md")}
     >
       {/* DESIGN.md › Shapes: the outer layer draws the chamfered border. */}

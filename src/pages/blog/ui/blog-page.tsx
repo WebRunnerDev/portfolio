@@ -2,7 +2,8 @@ import { getRouteApi, Link } from "@tanstack/react-router"
 import { X } from "lucide-react"
 
 import type { Post } from "@contracts/api/public"
-import { useLang, useT } from "@/shared/i18n"
+import { useLang, useT, useTPlural } from "@/shared/i18n"
+import { ItemStrip } from "@/shared/ui/item-strip"
 
 import { PostCard } from "./post-card"
 
@@ -28,7 +29,10 @@ function tagName(posts: Post[], slug: string) {
 export function BlogPage() {
   const t = useT()
   const lang = useLang()
+  const tp = useTPlural()
   const posts = route.useLoaderData()
+  // Oldest first, along the thread; the list below is newest first.
+  const since = posts.at(-1)?.publishedAt.slice(0, 4)
   const { tag } = route.useSearch()
   const name = tag && tagName(posts, tag)
 
@@ -50,6 +54,20 @@ export function BlogPage() {
       <h1 className="font-heading text-zsd-headline-md break-words md:text-zsd-headline-lg">
         {t("nav.blog")}
       </h1>
+      <ItemStrip
+        items={posts.toReversed().map((post) => ({
+          key: post.slug,
+          label: post.title,
+          state: "plain",
+          note: post.publishedAt.slice(0, 7).replace("-", "."),
+        }))}
+        summary={[
+          tp("strip.posts", posts.length),
+          since && t("strip.since").replace("{year}", since),
+        ]
+          .filter(Boolean)
+          .join(" · ")}
+      />
       {name && posts.length > 0 && (
         <div
           data-testid="blog-filter"
