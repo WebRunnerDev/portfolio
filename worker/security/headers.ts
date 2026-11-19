@@ -17,7 +17,6 @@ export const SECURITY_HEADERS: Readonly<Record<string, string>> = {
   "Permissions-Policy": [
     "accelerometer=()",
     "autoplay=(self)",
-    "browsing-topics=()",
     "camera=()",
     "display-capture=()",
     "encrypted-media=()",
