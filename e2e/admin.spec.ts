@@ -447,6 +447,10 @@ test("admin reorders an album's photos and picks its cover", async ({
   }).toPass()
   await page.keyboard.press("Space")
   await expect(titles).toHaveText(["Photo 2", "Photo 1", "Photo 3"])
+  // The rows show the new order at once; the handles wait for its save and
+  // the photos' reload (`aria-busy`), and a press before that drags nothing.
+  const busy = section.locator('[aria-busy="true"]')
+  await expect(busy).toHaveCount(0)
   expect(orders.at(-1)).toEqual([2, 1, 3])
 
   // Mouse: Photo 3 dragged to the top.
@@ -466,6 +470,7 @@ test("admin reorders an album's photos and picks its cover", async ({
   }).toPass()
   await page.mouse.up()
   await expect(titles).toHaveText(["Photo 3", "Photo 2", "Photo 1"])
+  await expect(busy).toHaveCount(0)
   expect(orders.at(-1)).toEqual([3, 2, 1])
 
   // The cover: one of the album's photos; none chosen means the first.
