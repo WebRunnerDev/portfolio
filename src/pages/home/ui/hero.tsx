@@ -5,7 +5,7 @@ import type { Profile } from "@contracts/api/public"
 import { useLang, useT } from "@/shared/i18n"
 import { useLogoFlight } from "@/shared/lib/logo-flight"
 import { STAGGER } from "@/shared/lib/motion"
-import type { MotionTier } from "@/shared/lib/motion-tier"
+import { useMotionTier, type MotionTier } from "@/shared/lib/motion-tier"
 import { fallbackLang } from "@/shared/ui/fallback-notice"
 
 import { HeroBrand } from "./hero-brand"
@@ -68,6 +68,26 @@ function HeroReadout() {
   )
 }
 
+// `?motion`: why this device gets the tier it does (MotionTierProvider), in
+// a line over the bottom of the hero, out of the flow. For a visitor whose
+// device shows no scene to read out or screenshot; nobody else sees it.
+function MotionDiagnosis() {
+  const { diagnosis } = useMotionTier()
+  const [shown] = useState(() =>
+    new URLSearchParams(window.location.search).has("motion")
+  )
+  if (!shown) return null
+  return (
+    <p
+      dir="ltr"
+      data-motion-diagnosis
+      className="absolute inset-x-0 bottom-zsd-sm px-zsd-lg font-zsd-label-mono text-zsd-label-mono text-zsd-on-surface-muted md:px-zsd-xxl"
+    >
+      {diagnosis}
+    </p>
+  )
+}
+
 // The real name and the headline from the Profile, once it loads; nothing
 // while there is none. Its two lines are held from the start, so nothing
 // below moves when it arrives.
@@ -113,6 +133,7 @@ export function Hero({
         <HeroEffect tier={tier} covered={covered} />
       </div>
       {tier === "full" && <HeroReadout />}
+      <MotionDiagnosis />
       <div className="mx-auto flex w-full max-w-(--zsd-x-zsd-layout-content-max) flex-col justify-center px-zsd-lg py-zsd-section max-sm:pb-(--hero-logo-band) md:px-zsd-xxl">
         <HeroBrand tiles={tilesRef} />
         <p

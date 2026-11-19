@@ -135,6 +135,52 @@ test("the scene fades in over lite after its first frame, nothing shifts", async
   expect(shifts).toBe(0)
 })
 
+// A new Lang lays the scene again on a canvas of its own: it starts, and
+// fades in on its first frame like the first one. The canvas is opaque: shown
+// before it draws, it is black over the page.
+test("a new Lang lays the scene again and it draws", async ({ page }) => {
+  await strongDevice(page)
+  await page.goto("/en")
+  await page.waitForTimeout(PAST_PROBE_MS)
+  await page.mouse.move(200, 200)
+  await expect(scene(page)).toHaveAttribute("data-ready", "true", {
+    timeout: 10_000,
+  })
+  await page.evaluate(`
+    window.canvases = []
+    new MutationObserver(() => {
+      const now = [...document.querySelectorAll("[data-effect=full]")]
+        .map(({ dataset }) => (dataset.ready === "true" ? "drawn" : "blank"))
+        .join(", ")
+      if (window.canvases.at(-1) !== now) window.canvases.push(now)
+    }).observe(document, {
+      subtree: true,
+      childList: true,
+      attributeFilter: ["data-effect", "data-ready"],
+    })
+  `)
+  const old = await scene(page).elementHandle()
+
+  // Below `lg` the Lang is in the menu, as on a phone.
+  await page.getByRole("banner").getByRole("button", { name: "Menu" }).click()
+  await page
+    .getByRole("dialog", { name: "Menu" })
+    .getByRole("link", { name: /Русский/ })
+    .click()
+  await expect(page).toHaveURL(/\/ru$/)
+
+  await expect
+    .poll(() => old!.evaluate((canvas) => canvas.isConnected))
+    .toBe(false)
+  await expect(scene(page)).toHaveAttribute("data-ready", "true", {
+    timeout: 10_000,
+  })
+  await expect(scene(page)).toHaveAttribute("data-playing", "true")
+  const canvases = (await page.evaluate("window.canvases")) as string[]
+  expect(canvases).toContain("blank")
+  expect(canvases.at(-1)).toBe("drawn")
+})
+
 // Issue #186: while the scene runs the footer holds the square its blocks
 // gather into, above the label below `lg`.
 test("the scene opens the footer's square for the logo", async ({ page }) => {
@@ -169,7 +215,7 @@ test("a full chunk that fails to load leaves lite for the visit", async ({
     }
   })
   await page.route(FULL_CHUNK, (route) => route.abort())
-  await page.goto("/en")
+  await page.goto("/en?motion")
   await page.waitForTimeout(PAST_PROBE_MS)
   const failed = page.waitForEvent("requestfailed", (request) =>
     FULL_CHUNK.test(request.url())
@@ -181,7 +227,31 @@ test("a full chunk that fails to load leaves lite for the visit", async ({
     "data-effect",
     "lite"
   )
+  // `?motion` says why.
+  await expect(page.locator("[data-motion-diagnosis]")).toHaveText(
+    /^lite · probe \d+ fps \(40 needed\) · input · fell back: full chunk didn't load$/
+  )
   expect(errors).toEqual([])
+})
+
+// `?motion`: a visitor whose device shows no scene can read out why. Without
+// it, nobody sees the line.
+test("?motion says why the tier is what it is", async ({ page }) => {
+  await strongDevice(page)
+  await page.goto("/en")
+  await expect(hero(page)).toHaveAttribute("data-tier", "lite")
+  await expect(page.locator("[data-motion-diagnosis]")).toHaveCount(0)
+
+  await page.goto("/en?motion")
+  const line = page.locator("[data-motion-diagnosis]")
+  await expect(line).toHaveText(/^lite · probe running · no input yet$/)
+  await expect(line).toHaveText(
+    /^lite · probe \d+ fps \(40 needed\) · no input yet$/
+  )
+  // The first move in a new document has no movement, which isn't input.
+  await page.mouse.move(100, 100)
+  await page.mouse.move(200, 200)
+  await expect(line).toHaveText(/^full · probe \d+ fps \(40 needed\) · input$/)
 })
 
 // ADR-0012: the chunk, its shaders and its lattice land around the first

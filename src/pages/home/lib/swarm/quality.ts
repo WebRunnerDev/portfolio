@@ -149,11 +149,17 @@ export const SETTLE_MS = 3000
 // Watches the frame rate of a scene at `level` (ADR-0013 › Понижение на
 // ходу): in windows of PROBE_MS, below `minFps` of the level's cap it steps
 // down a level (`onLower`), then waits SETTLE_MS before measuring again;
-// below a lite level it gives up (`onFail`) and measures no more. Feed it
-// the timestamps of the frames drawn.
+// below a lite level it gives up (`onFail`, with the rate and the level it
+// had) and measures no more. Feed it the timestamps of the frames drawn.
 export function stepDown(
   level: Level,
-  { onLower, onFail }: { onLower: (level: Level) => void; onFail: () => void }
+  {
+    onLower,
+    onFail,
+  }: {
+    onLower: (level: Level) => void
+    onFail: (fps: number, level: Level) => void
+  }
 ) {
   let current = level
   let at = 0
@@ -166,7 +172,7 @@ export function stepDown(
       const next = LOWER[current]
       if (!next) {
         done = true
-        onFail()
+        onFail(fps, current)
         return
       }
       current = next

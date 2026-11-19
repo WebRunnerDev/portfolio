@@ -20,7 +20,8 @@ const initialTier = (): MotionTier =>
 // visit (ADR-0006, ADR-0012). Turning reduced motion on or off detects it
 // again. `full` waits for the input gate as well as the FPS probe, so the
 // full layer stays out of the load and of Lighthouse's measure; `fallBack`
-// drops it to `lite` for the rest of the visit.
+// drops it to `lite` for the rest of the visit. `diagnosis` says why, for
+// `?motion` on the home page.
 export function MotionTierProvider({
   children,
 }: {
@@ -29,6 +30,9 @@ export function MotionTierProvider({
   const [probed, setProbed] = React.useState(initialTier)
   const [input, setInput] = React.useState(hadFirstInteraction)
   const failed = React.useRef(false)
+  // For the diagnosis only: the probe's rate and why `full` fell back.
+  const [fps, setFps] = React.useState<number | null>(null)
+  const [reason, setReason] = React.useState<string | null>(null)
 
   React.useEffect(() => onFirstInteraction(() => setInput(true)), [])
 
@@ -46,7 +50,10 @@ export function MotionTierProvider({
       setProbed("lite")
       probe = new AbortController()
       probeFps(undefined, probe.signal).then(
-        (fps) => fps >= MIN_FULL_FPS && setProbed("full"),
+        (fps) => {
+          setFps(Math.round(fps))
+          if (fps >= MIN_FULL_FPS) setProbed("full")
+        },
         () => {}
       )
     }
@@ -59,13 +66,29 @@ export function MotionTierProvider({
     }
   }, [])
 
-  const fallBack = React.useCallback(() => {
+  const fallBack = React.useCallback((why: string) => {
     failed.current = true
+    setReason(why)
     setProbed((tier) => (tier === "full" ? "lite" : tier))
   }, [])
 
   const tier = probed === "full" && !input ? "lite" : probed
-  const value = React.useMemo(() => ({ tier, fallBack }), [tier, fallBack])
+  const diagnosis = [
+    tier,
+    probed === "static"
+      ? "reduced motion"
+      : fps === null
+        ? "probe running"
+        : `probe ${fps} fps (${MIN_FULL_FPS} needed)`,
+    input ? "input" : "no input yet",
+    reason && `fell back: ${reason}`,
+  ]
+    .filter(Boolean)
+    .join(" · ")
+  const value = React.useMemo(
+    () => ({ tier, fallBack, diagnosis }),
+    [tier, fallBack, diagnosis]
+  )
 
   return (
     <MotionTierContext.Provider value={value}>

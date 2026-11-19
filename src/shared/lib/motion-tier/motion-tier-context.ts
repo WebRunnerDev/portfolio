@@ -7,9 +7,13 @@ export type MotionTierState = {
   // before.
   tier: MotionTier
   // `full` doesn't hold on this device after all (the frame rate fell while
-  // it ran, the context was lost, its chunk failed): `lite` for the rest of
-  // the visit, on every page.
-  fallBack: () => void
+  // it ran, the context was lost, its chunk failed; `reason` in words):
+  // `lite` for the rest of the visit, on every page.
+  fallBack: (reason: string) => void
+  // Why the tier is what it is, in one line: the probe's rate, the input
+  // gate, the reason `full` fell back. The home page shows it on `?motion`,
+  // so a visitor whose device gets no scene can tell us why.
+  diagnosis: string
 }
 
 // The provider lives in app/providers; pages read the tier through

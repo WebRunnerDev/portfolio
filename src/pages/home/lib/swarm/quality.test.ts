@@ -173,6 +173,8 @@ describe("stepDown", () => {
     // Then a window at desktop-lite, still slow: lite.
     run(watch, 50, now, now + 2100)
     expect(onFail).toHaveBeenCalledTimes(1)
+    // What the diagnosis shows (`?motion`): the rate and the level.
+    expect(onFail).toHaveBeenCalledWith(expect.closeTo(20, 0), "desktop-lite")
     expect(steps).toEqual(["desktop-lite"])
   })
 

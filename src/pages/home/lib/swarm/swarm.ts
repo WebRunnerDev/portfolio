@@ -247,8 +247,9 @@ export type SwarmEvents = {
   onFrame: (now: number) => void
   // After the first frame is drawn: the canvas may fade in.
   onReady: () => void
-  // The shaders didn't link or the context was lost: the scene is done.
-  onFail: () => void
+  // The shaders didn't link or the context was lost (`reason`, in words):
+  // the scene is done.
+  onFail: (reason: string) => void
 }
 
 const toRect = (box: Box, left: number, top: number): Rect => ({
@@ -532,11 +533,11 @@ export function swarm(
     return getComputedStyle(canvas).getPropertyValue(token)
   }
 
-  const fail = () => {
+  const fail = (reason: string) => {
     if (failed) return
     failed = true
     pause()
-    onFail()
+    onFail(reason)
   }
 
   // The page now, each part in CSS pixels from its top left. The hero: its
@@ -715,7 +716,7 @@ export function swarm(
       return false
     }
     if (programs.some((p) => !gl.getProgramParameter(p, gl.LINK_STATUS))) {
-      fail()
+      fail("shaders didn't link")
       return false
     }
     linked = true
@@ -1423,7 +1424,7 @@ export function swarm(
     if (event.pointerId === press.id) press.id = -1
   }
   // Not preventing the default leaves the context lost for good.
-  const lost = () => fail()
+  const lost = () => fail("WebGL context lost")
   const resized = new ResizeObserver(resize)
   // The theme is a class on <html> (index.html, app/providers).
   const themed = new MutationObserver(() => {
