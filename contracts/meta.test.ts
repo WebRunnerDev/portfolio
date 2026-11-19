@@ -8,11 +8,15 @@ import {
   blogFeed,
   blogPosting,
   cvMeta,
+  homePerson,
   jsonLd,
   notFoundMeta,
   pageMeta,
   parsePagePath,
+  personMeta,
   postMeta,
+  printCvMeta,
+  profilePage,
   projectMeta,
 } from "./meta"
 import { MESSAGES } from "./messages"
@@ -63,6 +67,12 @@ describe("cvMeta", () => {
       title: "Жасулан Абдигалиев: Резюме · WebRunner",
       description:
         "Веб-разработчик. Опыт, технологии, образование и сертификаты.",
+      person: {
+        name: "Жасулан Абдигалиев",
+        jobTitle: "Веб-разработчик",
+        photoKey: null,
+        sameAs: [],
+      },
     })
   })
 
@@ -262,6 +272,65 @@ describe("blogPosting", () => {
   it("is null for a page that is not a Post", () => {
     expect(
       blogPosting("https://webrunner.dev", "ru", "cv", pageMeta("ru", "cv")!)
+    ).toBeNull()
+  })
+})
+
+describe("Person", () => {
+  const profile = {
+    name: "Aibyn",
+    headline: "Web developer",
+    photoKey: "profile/me.jpg",
+    githubUrl: "https://github.com/WebRunnerDev",
+    linkedinUrl: null,
+    telegramUrl: "https://t.me/webrunner",
+  }
+  const owner = {
+    "@type": "Person",
+    "@id": "https://webrunner.dev/#person",
+    name: "Aibyn",
+    jobTitle: "Web developer",
+    url: "https://webrunner.dev/de",
+    image:
+      "https://webrunner.dev/cdn-cgi/image/width=1200,fit=scale-down,format=auto/media/profile/me.jpg",
+    sameAs: ["https://github.com/WebRunnerDev", "https://t.me/webrunner"],
+  }
+
+  it("is the owner on the home page", () => {
+    expect(
+      homePerson("https://webrunner.dev", "de", personMeta(profile))
+    ).toEqual({ "@context": "https://schema.org", ...owner })
+  })
+
+  it("is the CV's ProfilePage, the same entity", () => {
+    expect(
+      profilePage("https://webrunner.dev", "de", "cv", cvMeta("de", profile))
+    ).toEqual({
+      "@context": "https://schema.org",
+      "@type": "ProfilePage",
+      url: "https://webrunner.dev/de/cv",
+      mainEntity: owner,
+    })
+  })
+
+  it("leaves out a photo and links the Profile doesn't have", () => {
+    const bare = homePerson(
+      "https://webrunner.dev",
+      "en",
+      personMeta({ name: "Aibyn", headline: "Web developer" })
+    )
+    expect(bare).not.toHaveProperty("image")
+    expect(bare).not.toHaveProperty("sameAs")
+  })
+
+  it("is on the CV only, and not on the Print CV", () => {
+    const origin = "https://webrunner.dev"
+    expect(profilePage(origin, "en", "cv", cvMeta("en", null))).toBeNull()
+    expect(
+      profilePage(origin, "en", "cv/print", printCvMeta("en", profile))
+    ).toBeNull()
+    expect(
+      profilePage(origin, "en", "blog", pageMeta("en", "blog")!)
     ).toBeNull()
   })
 })

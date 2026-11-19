@@ -5,6 +5,7 @@ import { blogFeed, feedPath, pageUrl } from "@contracts/meta"
 import { PUBLIC_CACHE_CONTROL } from "../api/public"
 import { readFeedPosts } from "../api/routes/public/posts"
 import { isPreview } from "../meta/serve-page"
+import { xml } from "../xml"
 
 // GET /{lang}/rss.xml: RSS 2.0 of the Blog on a Lang (worker/README.md › RSS).
 
@@ -17,21 +18,6 @@ export const FEED_SIZE = 20
 export function rssLang(pathname: string): Lang | undefined {
   const lang = PATH.exec(pathname)?.[1]
   return isLang(lang) ? lang : undefined
-}
-
-// Text for XML: markup escaped, and the control characters XML 1.0 has no
-// place for dropped, so no text from D1 breaks the feed.
-function xml(value: string) {
-  return (
-    value
-      // eslint-disable-next-line no-control-regex -- dropping them is the point
-      .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "")
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&apos;")
-  )
 }
 
 function element(name: string, text: string, attrs = "") {

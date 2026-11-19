@@ -4,17 +4,17 @@ Cloudflare Worker (ADR-0001): serves the SPA through Workers Static Assets, owns
 
 Code shared with the frontend (Lang list, UI dictionaries, page meta, API schemas and types) lives in `contracts/`, imported as `@contracts/*` (mapped in `tsconfig.worker.json`); never import from `src/`.
 
-- Hashed build output (`/assets/*`) is served without invoking the Worker; everything else runs it first (`run_worker_first`) and goes to `ASSETS` unless a rule below takes it. Unknown paths fall back to `index.html` (`not_found_handling: "single-page-application"`).
-- Pages under a Lang (`/{lang}/…`) get Meta Injection (below). `/api/*` goes to the API below, `/media/*` to the MEDIA bucket (Media below), `/{lang}/cv.pdf` to the CV PDF (CV PDF below), `/{lang}/rss.xml` to the Blog's feed (RSS below). `GET /api/health` → `{"status":"ok"}`.
+- Hashed build output (`/assets/*`) is served without invoking the Worker; everything else runs it first (`run_worker_first`) and goes to `ASSETS` unless a rule below takes it. Unknown paths fall back to `index.html` (`not_found_handling: "single-page-application"`); outside a Lang and `/admin*` the Worker turns that into a redirect or a 404 (Pages without a Lang below).
+- Pages under a Lang (`/{lang}/…`) get Meta Injection (below). `/api/*` goes to the API below, `/media/*` to the MEDIA bucket (Media below), `/{lang}/cv.pdf` to the CV PDF (CV PDF below), `/{lang}/rss.xml` to the Blog's feed (RSS below), `/sitemap.xml` to the sitemap (Sitemap below). `GET /api/health` → `{"status":"ok"}`.
 - `/api/public/:lang/*` reads published content on a Lang (Public API below).
 - `/api/*` is rate limited per IP (Rate limits below); pages, assets and `/media/*` are not.
 - `/api/*` gives no CORS headers (the SPA is on the same origin, ADR-0001) and refuses writes from other origins (Origin and body limits below).
 - `/api/admin/*` needs a Cloudflare Access sign-in (Admin access below). `GET /api/admin/me` → `{"email":"…"}` of the signed-in owner; the rest is CRUD of the content (Admin API below).
-- Every HTML answer (pages under a Lang, `/`, `/admin`, the SPA fallback) gets the security headers and a Report-Only CSP with a nonce (Security headers below).
+- Every HTML answer (pages under a Lang, the 404 of a path without one, `/admin`) gets the security headers and a Report-Only CSP with a nonce (Security headers below).
 
 ## Meta Injection
 
-ADR-0001: crawlers don't run JS, so `worker/meta/serve-page.ts` rewrites `index.html` with [HTMLRewriter](https://developers.cloudflare.com/workers/runtime-apis/html-rewriter/) for every path whose first segment is a Lang. Other paths (`/`, `/admin`, files in `public/`) pass through untouched.
+ADR-0001: crawlers don't run JS, so `worker/meta/serve-page.ts` rewrites `index.html` with [HTMLRewriter](https://developers.cloudflare.com/workers/runtime-apis/html-rewriter/) for every path whose first segment is a Lang. Files in `public/` and `/admin` pass through untouched; any other path is a page without a Lang (below).
 
 - **Tags:** `<html lang dir>`, `<title>`, description, `og:type`, `og:site_name`, `og:title`, `og:description`, `og:image` (`/og-default.png` unless the page has its own), `og:url`, `og:locale` (+ `og:locale:alternate`), `twitter:card`, `canonical` and hreflang on all 6 Langs + `x-default` (EN), unless the page lists its own `langs`. URLs use the request's origin; a trailing slash is dropped.
 - **Values:** `contracts/meta.ts`, from the UI dictionaries (`nav.*` for titles, `meta.*` for descriptions). `LangHead` (`src/shared/i18n`) renders the same title, description, canonical and hreflang on the client and removes the injected tags (`data-meta`), which would go stale on the first navigation.
@@ -28,7 +28,45 @@ ADR-0001: crawlers don't run JS, so `worker/meta/serve-page.ts` rewrites `index.
 - **Album** (`gallery/:slug`, `albumMeta`): the title of the Album on the Lang (EN when it has none), described as a photo album (`meta.album`), its cover (the chosen photo, else the first) through Cloudflare Images at 1200px as `og:image` (`/og-default.png` without photos). An unknown slug is a 404. When D1 fails, the Gallery section meta with 200.
 - **Post** (`blog/:slug`, `postMeta`): the title of the Post on the Lang (EN when it has none), its excerpt as the description (`meta.blog` without one), its cover through Cloudflare Images at 1200px as `og:image`. `og:type=article` with `article:published_time` and `article:modified_time` (`updated_at`). On the Fallback the text is EN, but `og:locale` and canonical stay the page's own. hreflang and `og:locale:alternate` only on the Langs the Post has a Translation on (`x-default` only with EN): a Fallback page would duplicate the EN one. A draft or an unknown slug is a 404; when D1 fails, the Blog section meta with 200.
 - **RSS:** the Blog and every Post's page get `<link rel="alternate" type="application/rss+xml">` to the Lang's feed (`blogFeed` in `contracts/meta.ts`), titled as the Blog; `LangHead` renders the same.
-- **JSON-LD:** a Post's page gets `<script type="application/ld+json">` with a `BlogPosting` (`blogPosting` in `contracts/meta.ts`): headline, description, image, `datePublished`, `dateModified`, `author` as a `Person` (the Profile's name, linked to the CV; left out without a Profile), `inLanguage` (EN on the Fallback), `url`. `jsonLd` escapes `<` as `\u003c`, so the text can't close the element. A data block is never run, so CSP has nothing to report; `securePage` gives it the nonce like every `<script>` anyway. `LangHead` renders the same one, since Google reads the rendered page. Check with the [Rich Results Test](https://search.google.com/test/rich-results).
+- **JSON-LD `ProfilePage`:** the CV (`cvMeta` with a Profile) gets a `ProfilePage` whose `mainEntity` is the owner as a `Person` (`profilePage`, `person` in `contracts/meta.ts`): name, `jobTitle` (the headline), `url` (the home page on the Lang), `image` (the Profile's photo through Cloudflare Images at 1200px), `sameAs` (GitHub, LinkedIn, Telegram links the Profile has), `@id` `<origin>/#person`. Not on the Print CV. `LangHead` renders the same.
+- **JSON-LD `Person` on the home page:** the same `Person`, rendered on the client only (`HomePerson` in `pages/home`) once the Profile arrives. The Worker doesn't inject it, so the home page's HTML waits for no D1 read (the home page is the tightest page in the budget); Google reads the rendered page.
+- **JSON-LD `BlogPosting`:** a Post's page gets `<script type="application/ld+json">` with a `BlogPosting` (`blogPosting` in `contracts/meta.ts`): headline, description, image, `datePublished`, `dateModified`, `author` as a `Person` (the Profile's name, linked to the CV; left out without a Profile), `inLanguage` (EN on the Fallback), `url`. `jsonLd` escapes `<` as `\u003c`, so the text can't close the element. A data block is never run, so CSP has nothing to report; `securePage` gives it the nonce like every `<script>` anyway. `LangHead` renders the same one, since Google reads the rendered page. Check with the [Rich Results Test](https://search.google.com/test/rich-results).
+
+## Pages without a Lang
+
+A path outside `/{lang}/…` and `/admin*` that no file in `public/` has (`ASSETS` answers with the SPA's `index.html`): `serveWithoutLang` in `worker/meta/serve-page.ts`. GET and HEAD only.
+
+- **Lang:** the visitor's, as the client's `/` picks it (`pickLang`): the `lang` cookie, then `Accept-Language`, then EN. Every answer has `Vary: Cookie, Accept-Language`.
+- **Redirect:** 302 to the same path on that Lang when it is a page, with the query: `/` → `/ru`, `/cv` → `/ru/cv`, `/fr/design` → `/ru/design` (first the Lang in front, then in place of something that looks like a language code). `Location` is relative.
+- **404:** otherwise, the SPA with the Not Found meta on that Lang and `noindex`, as a Lang's 404 (`/nope`, `/administrator`). The client's router then puts the visitor on `/{lang}/nope`.
+- **`/admin*`:** the SPA as before, plus `X-Robots-Tag: noindex`. Access stops crawlers before the Worker anyway (ADR-0004).
+- **The client** does the same in its `$lang` route (`pickLang`) for links inside the app; `routes/index.tsx` keeps its own redirect from `/` for a navigation inside the app.
+
+## Robots
+
+`public/robots.txt`, a static file. Everything but `/admin` and `/api/` is open to search engines and to AI search and user-triggered fetchers (OAI-SearchBot, ChatGPT-User, Claude-SearchBot, Claude-User, PerplexityBot, Perplexity-User), which go by `User-agent: *`. Training crawlers and tokens get `Disallow: /`: GPTBot, ClaudeBot, Google-Extended, Applebot-Extended, meta-externalagent, CCBot (the owner's choice, docs/plan.md › SEO). The names come from the vendors' pages: [OpenAI](https://developers.openai.com/api/docs/bots), [Anthropic](https://support.claude.com/en/articles/8896518-does-anthropic-crawl-data-from-the-web-and-how-can-site-owners-block-the-crawler), [Google](https://developers.google.com/crawling/docs/crawlers-fetchers/google-common-crawlers), [Apple](https://support.apple.com/en-us/119829), [Meta](https://developers.facebook.com/documentation/sharing/webmasters/web-crawlers), [Common Crawl](https://commoncrawl.org/ccbot), [Perplexity](https://docs.perplexity.ai/docs/resources/perplexity-crawlers). `Sitemap:` is the production URL; Previews are `noindex` by header.
+
+Cloudflare's managed robots.txt (AI Crawl Control) stays off: it would prepend its own rules to the file.
+
+## Sitemap
+
+`GET /sitemap.xml` (`worker/sitemap/serve.ts`): every page to find, one `<url>` per page and Lang, each with `xhtml:link rel="alternate" hreflang` to the same page on every Lang it has (+ `x-default` on EN, `alternates` in `contracts/meta.ts`).
+
+- **Sections:** the home page, CV, Projects, Gallery, Blog on all 6 Langs, without `lastmod`. Pages with `noindex` (the design page, the Print CV) aren't there.
+- **Project** (`projects/:slug`): on each Lang whose Translation (its own, else EN's) has a Case Study; `lastmod` = `updated_at`.
+- **Album** (`gallery/:slug`): on each Lang it has a Translation on, or all of them with an EN one; `lastmod` = its newest photo, else its own `created_at`.
+- **Post** (`blog/:slug`): published only, on the Langs it is translated on, no Fallback (as its hreflang); `lastmod` = `updated_at`.
+- **Headers:** `Content-Type: application/xml; charset=utf-8`, `Cache-Control: public, max-age=60`, `nosniff`; `X-Robots-Tag: noindex` on previews. URLs use the request's origin. `HEAD` without a body, other methods 405. D1 failing → 503.
+
+## Search Console and Bing (for the owner)
+
+Not code: done once in the dashboards, with the owner's accounts.
+
+1. [Google Search Console](https://search.google.com/search-console) → Add property → **Domain** `webrunner.dev`. Copy the TXT record.
+2. Cloudflare dashboard → `webrunner.dev` → DNS → Add record: type TXT, name `@`, content the `google-site-verification=…` value. Back in Search Console → Verify.
+3. Search Console → Sitemaps → submit `https://webrunner.dev/sitemap.xml`. It should read as Success with every URL found; Pages → check there is no "Soft 404".
+4. [Bing Webmaster Tools](https://www.bing.com/webmasters) → Import from Google Search Console (takes the property and the sitemap), or add the site and verify with Bing's own TXT record the same way as in step 2.
+5. Check the JSON-LD of `/en/cv`, `/en` and a post with the [Rich Results Test](https://search.google.com/test/rich-results).
 
 ## Security headers
 
