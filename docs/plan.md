@@ -135,7 +135,7 @@ webrunner.dev ── Worker ─┬─ static assets (SPA)
 7. Full: Cast Lattice в hero на WebGL2 вместо Kinetic Grid; static-картинка перегенерирована.
 8. Full: скролл-хореография сцены и передача ромбов CSS-слою из п. 3.
 9. Курсор-ромб рядом с нативным курсором.
-10. База: шапка страниц с решёткой; морфинг заголовка в View Transition.
+10. База: шапка списочных страниц — ряд записей (#212, выбор владельца из прототипов `spike/page-head`); морфинг заголовка не берём.
 11. По желанию: веер обложек галереи, строки проектов, магнитная кнопка, зерно; full — решётка в «◆» футера, занавес при переходе.
 12. Главная на Swarm (прототип D7, [ADR-0013](adr/0013-swarm-quality-levels.md), #182): сеть из пыли на всю главную вместо Cast Lattice, четыре уровня качества внутри `full`, понижение по FPS на ходу. Тикеты #183–#188.
 
@@ -144,16 +144,16 @@ webrunner.dev ── Worker ─┬─ static assets (SPA)
 ### SEO
 Отдельный milestone, не привязан к этапу. Задачи 1–5 и 7 — сразу после «Безопасности», раньше этапа 3: сейчас поисковик получает HTML приложения с кодом 200 на любой путь. Sitemap пополняется по мере этапов 3–5 (проекты, альбомы, посты).
 
-**Сейчас (проверено на проде):** `/robots.txt` и `/sitemap.xml` отдают `index.html` с кодом 200; любой несуществующий путь — тоже 200 (soft 404); `/` уводит на `/{lang}` только через JS, поэтому у `/` нет мета-тегов и превью ссылки.
+**Было (проверено на проде 2026-11-19):** `/sitemap.xml` отдавал `index.html` с кодом 200; путь вне Lang — тоже 200 (soft 404); `/` уводил на `/{lang}` только через JS. 404 под Lang, `noindex` на превью, `BlogPosting` и `robots.txt` с `/admin` и `/api/` уже были. Остальное — в #210, подробности — `worker/README.md` › Pages without a Lang, Robots, Sitemap.
 
 **Задачи**
-1. Редирект с `/` в Worker: 302 на `/{lang}` по cookie, затем `Accept-Language`, иначе `en`; `Vary: Cookie, Accept-Language`. Клиентский редирект остаётся запасным.
-2. Настоящий 404: Worker отвечает статусом 404 на путь вне маршрутов и на неизвестный slug (по данным, которые он уже читает для Meta Injection); SPA рендерит ту же страницу «не найдено».
-3. `robots.txt`: всё разрешено, кроме `/admin` и `/api/`; строка `Sitemap:`. Решить, что делать с AI-краулерами (настройки Cloudflare «AI Crawl Control» / managed robots.txt дописывают свои строки).
-4. `sitemap.xml` из Worker по D1: страницы всех Lang с `xhtml:link hreflang`, проекты с case study; `lastmod` из дат записей. Этапы 4–5 добавляют альбомы и посты.
-5. `X-Robots-Tag: noindex` на `/admin*` и на всех ответах с `*.workers.dev` (Preview), чтобы превью PR не попали в индекс.
-6. JSON-LD: `Person` на главной и CV (этап 3), `BlogPosting` на постах (этап 5).
-7. Google Search Console и Bing Webmaster Tools: подтверждение через DNS TXT в Cloudflare, отправка sitemap; записать в `docs/`.
+1. ✅ (#210) Редирект с `/` в Worker: 302 на `/{lang}` по cookie, затем `Accept-Language`, иначе `en`; `Vary: Cookie, Accept-Language`. Клиентский редирект остаётся запасным.
+2. ✅ (#210) Настоящий 404: Worker отвечает статусом 404 на путь вне маршрутов и на неизвестный slug (по данным, которые он уже читает для Meta Injection); SPA рендерит ту же страницу «не найдено». Путь без Lang, который на Lang посетителя — страница (`/cv`), получает 302 туда.
+3. ✅ (#210) `robots.txt`: всё разрешено, кроме `/admin` и `/api/`; строка `Sitemap:`. AI-краулеры — решение владельца (2026-11-19): поиск да, обучение нет. Поисковые и пользовательские агенты идут по `User-agent: *`, краулеры обучения (GPTBot, ClaudeBot, Google-Extended, Applebot-Extended, meta-externalagent, CCBot) — `Disallow: /`. Managed robots.txt Cloudflare выключен.
+4. ✅ (#210) `sitemap.xml` из Worker по D1: страницы всех Lang с `xhtml:link hreflang`, проекты с case study; `lastmod` из дат записей. Этапы 4–5 добавляют альбомы и посты.
+5. ✅ `X-Robots-Tag: noindex` на `/admin*` (#210) и на всех ответах с `*.workers.dev` (Preview), чтобы превью PR не попали в индекс.
+6. ✅ JSON-LD: `Person` на главной (только на клиенте, без чтения D1 в Worker) и `ProfilePage` с ним же на CV (#210), `BlogPosting` на постах (этап 5).
+7. Google Search Console и Bing Webmaster Tools: подтверждение через DNS TXT в Cloudflare, отправка sitemap. Шаги — `worker/README.md` › Search Console and Bing; делает владелец.
 
 **Готово, когда:** `/` отдаёт 302 без JS и превью ссылки `webrunner.dev` строится; неизвестный путь и slug — 404; `robots.txt` и `sitemap.xml` валидны, sitemap принят в Search Console без ошибок; Preview и `/admin` отдают `noindex`; Lighthouse SEO ≥ 90.
 
@@ -164,4 +164,4 @@ webrunner.dev ── Worker ─┬─ static assets (SPA)
 - Лицензии на музыку (пока Pixabay Music).
 - Какие пет-проекты показывать (сейчас: PlotOps, AITU AMS).
 - Сайты-референсы.
-- Пускать ли AI-краулеров (SEO, `robots.txt`).
+- ~~Пускать ли AI-краулеров~~ — решено 2026-11-19: поиск да, обучение нет (SEO, п. 3).

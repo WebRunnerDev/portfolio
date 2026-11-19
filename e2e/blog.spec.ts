@@ -430,3 +430,21 @@ test("a post loads on every Lang", async ({ page }) => {
     await expect(page.locator("html")).toHaveAttribute("lang", lang)
   }
 })
+
+// #212: the strip of the page's items, oldest first with its month.
+test("the strip runs from the oldest post with its month", async ({ page }) => {
+  await mockPublicApi(page)
+  await page.goto("/en/blog")
+  const strip = page.getByTestId("item-strip")
+  await expect(strip.locator(".item-strip-note")).toHaveText([
+    "2026.01",
+    "2026.09",
+    "2026.10",
+  ])
+  await expect(strip).toContainText("3 posts · since 2026")
+  await page.locator(".item-strip-tile").nth(2).hover()
+  await expect(page.getByTestId("post-card").nth(0)).toHaveAttribute(
+    "data-hot",
+    ""
+  )
+})

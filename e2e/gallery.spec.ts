@@ -478,3 +478,12 @@ test("under reduced motion the Lightbox doesn't animate", async ({ page }) => {
   await expect(image).toHaveCSS("animation-name", "none")
   await expect(image).toHaveCSS("transition-property", "none")
 })
+
+// #212: the strip of the page's items, each with its photo count.
+test("the strip counts the albums and their photos", async ({ page }) => {
+  await mockPublicApi(page)
+  await page.goto("/en/gallery")
+  const strip = page.getByTestId("item-strip")
+  await expect(strip.locator(".item-strip-note")).toHaveText(["3", "21", "0"])
+  await expect(strip).toContainText("3 albums · 24 photos")
+})

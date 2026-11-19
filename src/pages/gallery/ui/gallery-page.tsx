@@ -1,7 +1,8 @@
 import { getRouteApi } from "@tanstack/react-router"
 
 import { AlbumCard } from "./album-card"
-import { useT } from "@/shared/i18n"
+import { useT, useTPlural } from "@/shared/i18n"
+import { ItemStrip } from "@/shared/ui/item-strip"
 
 const route = getRouteApi("/$lang/gallery/")
 
@@ -9,13 +10,24 @@ const route = getRouteApi("/$lang/gallery/")
 // (DESIGN.md › Responsive behavior). An empty list says what appears there.
 export function GalleryPage() {
   const t = useT()
+  const tp = useTPlural()
   const albums = route.useLoaderData()
+  const photos = albums.reduce((sum, album) => sum + album.photoCount, 0)
 
   return (
     <div className="mx-auto w-full max-w-(--zsd-x-zsd-layout-content-max) px-zsd-lg py-zsd-section md:px-zsd-xxl lg:py-zsd-section-lg">
       <h1 className="font-heading text-zsd-headline-md break-words md:text-zsd-headline-lg">
         {t("nav.gallery")}
       </h1>
+      <ItemStrip
+        items={albums.map((album) => ({
+          key: album.slug,
+          label: album.title,
+          state: "plain",
+          note: String(album.photoCount),
+        }))}
+        summary={`${tp("home.gallery.albums", albums.length)} · ${tp("album.photos", photos)}`}
+      />
       {albums.length > 0 ? (
         <ul className="mt-zsd-xl grid gap-zsd-xl sm:grid-cols-2 lg:grid-cols-3">
           {albums.map((album, i) => (

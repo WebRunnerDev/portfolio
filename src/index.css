@@ -1062,14 +1062,22 @@ html:active-view-transition-type(forward, back) {
   }
 }
 
+/* The full stop is where the Swarm lands the chapter's block of the logo
+ * (its `data-swarm-anchor`, ADR-0013, #203): the tile stands off the figure
+ * by the block's room, at every tier, so the figure holds still when `lite`
+ * gives way to `full`; while the scene runs the block is the stop and the
+ * tile gives way to it. */
 @utility chapter-stop {
   display: inline-block;
   width: 0.2em;
   height: 0.2em;
-  margin-inline-start: 0.12em;
+  margin-inline-start: 0.34em;
   margin-bottom: 0.05em;
   background: var(--zsd-colors-primary);
   transform: rotate(45deg);
+  :root:has([data-swarm-scene][data-ready="true"]) & {
+    background: transparent;
+  }
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -1225,4 +1233,173 @@ html:active-view-transition-type(forward, back) {
   @media (prefers-reduced-motion: reduce) {
     animation: none;
   }
+}
+
+/* DESIGN.md › Item strip, docs/design-brief.md › Арт-дирекция этапа 7 ›
+ * База, 5: the strip of a list page's items (`ItemStrip` in
+ * @/shared/ui/item-strip). Rhombi a step apart on a hairline from the start
+ * edge; the thread runs on to the content box's end and fades. Pointed at,
+ * the thread up to the item lights `primary` from the start, and so do the
+ * item's rhombus and its card's border (`data-hot`). A project in progress is
+ * a `primary` outline breathing like `badge-active`, a completed one solid
+ * `outline`, an archived one an `outline-muted` hairline; a post or an album
+ * solid. In: the thread draws, the rhombi turn in one by one; under reduced
+ * motion all stand. */
+/* The strip is a container: with many items the step shrinks to fit the
+ * content box, and so do the rhombi when it gets tight; from 9 items
+ * on (15 from `md`) the notes under the rhombi give way; the line over the
+ * strip still names the one pointed at. */
+.item-strip {
+  container-type: inline-size;
+}
+.item-strip-row {
+  /* The room each item has in the content box. */
+  --room: calc((100cqw - var(--pad)) / var(--count));
+  --tile: min(1.125rem, var(--room) * 0.7);
+  --step: min(3.5rem, var(--room));
+  --pad: 0px;
+  position: relative;
+  padding-inline-start: var(--pad);
+  display: flex;
+  gap: calc(var(--step) - var(--tile));
+  padding-block-end: 1.75rem;
+  &::before,
+  &::after {
+    content: "";
+    position: absolute;
+    inset-inline-start: 0;
+    top: calc(var(--tile) / 2);
+    height: 1px;
+    transform-origin: left;
+  }
+  &:dir(rtl)::before,
+  &:dir(rtl)::after {
+    transform-origin: right;
+  }
+  &::before {
+    inset-inline-end: 0;
+    background: linear-gradient(
+      to right,
+      var(--zsd-colors-outline) calc(var(--pad) + var(--count) * var(--step)),
+      transparent
+    );
+  }
+  &:dir(rtl)::before {
+    background: linear-gradient(
+      to left,
+      var(--zsd-colors-outline) calc(var(--pad) + var(--count) * var(--step)),
+      transparent
+    );
+  }
+  &::after {
+    width: calc(var(--pad) + var(--at) * var(--step) + var(--tile) / 2);
+    background: var(--zsd-colors-primary);
+    transform: scaleX(0);
+    transition: transform var(--zsd-x-zsd-motion-duration-base)
+      var(--zsd-x-zsd-motion-easing-enter);
+  }
+  &[data-lit="true"]::after {
+    transform: none;
+  }
+  @media (width >= 48rem) {
+    --tile: min(1.375rem, var(--room) * 0.7);
+    --step: min(4.5rem, var(--room));
+  }
+}
+.item-strip-row:has(.item-strip-cell:nth-child(9)) .item-strip-note {
+  display: none;
+}
+@media (width >= 48rem) {
+  .item-strip-row:has(.item-strip-cell:nth-child(9)) .item-strip-note {
+    display: block;
+  }
+  .item-strip-row:has(.item-strip-cell:nth-child(15)) .item-strip-note {
+    display: none;
+  }
+}
+/* A note under a rhombus is wider than it: the row steps in by the
+ * difference, so the first note keeps inside the content box. */
+.item-strip-row:has(.item-strip-note) {
+  --pad: 1.25rem;
+}
+.item-strip-cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: var(--tile);
+}
+.item-strip-tile {
+  position: relative;
+  width: var(--tile);
+  height: var(--tile);
+  cursor: pointer;
+  rotate: 45deg;
+  scale: 0.72;
+  background: var(--zsd-colors-surface);
+  box-shadow: inset 0 0 0 1px var(--zsd-colors-outline);
+  transition:
+    scale var(--zsd-x-zsd-motion-duration-fast)
+      var(--zsd-x-zsd-motion-easing-hover),
+    background-color var(--zsd-x-zsd-motion-duration-fast)
+      var(--zsd-x-zsd-motion-easing-hover);
+  &[data-state="done"],
+  &[data-state="plain"] {
+    background: var(--zsd-colors-outline);
+  }
+  &[data-state="archived"] {
+    box-shadow: inset 0 0 0 1px var(--zsd-colors-outline-muted);
+  }
+  &[data-state="active"] {
+    box-shadow: inset 0 0 0 1px var(--zsd-colors-primary);
+    &::after {
+      content: "";
+      position: absolute;
+      inset: 30%;
+      background: var(--zsd-colors-primary);
+      animation: status-breathe
+        calc(2 * var(--zsd-x-zsd-motion-choreography-max))
+        var(--zsd-x-zsd-motion-easing-layout) infinite alternate;
+    }
+  }
+  &[data-hot="true"] {
+    scale: 1;
+    background: var(--zsd-colors-primary);
+    box-shadow: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+    &::after {
+      animation: none;
+    }
+  }
+}
+.item-strip-note {
+  position: absolute;
+  top: calc(var(--tile) + 0.5rem);
+  white-space: nowrap;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .item-strip-row::before {
+    animation: chapter-line var(--zsd-x-zsd-motion-duration-reveal)
+      var(--zsd-x-zsd-motion-easing-enter) backwards;
+  }
+  .item-strip-tile {
+    animation: item-strip-in var(--zsd-x-zsd-motion-duration-slow)
+      var(--zsd-x-zsd-motion-easing-layout) backwards;
+    animation-delay: calc(
+      var(--zsd-x-zsd-motion-duration-base) + var(--i) *
+        var(--zsd-x-zsd-motion-stagger-item)
+    );
+  }
+}
+@keyframes item-strip-in {
+  from {
+    rotate: -45deg;
+    scale: 0;
+  }
+}
+/* The card of the item pointed at in the strip: its border, as on hover. */
+[data-item][data-hot] > div:first-child {
+  background: var(--zsd-colors-primary);
 }

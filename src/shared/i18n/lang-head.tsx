@@ -9,6 +9,7 @@ import {
   pageMeta,
   pageUrl,
   parsePagePath,
+  profilePage,
   type PageMeta,
 } from "@contracts/meta"
 
@@ -31,8 +32,7 @@ function useLoaderMeta(): PageMeta | undefined {
 }
 
 // `<html lang>`, title, description, canonical, hreflang, the Blog's RSS feed
-// and a Post's JSON-LD
-// of the current page, from the same contracts/meta.ts the Worker injects them
+// and the JSON-LD of a Post or the CV of the current page, from the same contracts/meta.ts the Worker injects them
 // with (ADR-0001). React hoists the tags into <head>, the JSON-LD stays in
 // place. A path no page has gets only hreflang: NotFoundPage renders its own
 // title.
@@ -42,7 +42,10 @@ export function LangHead() {
   const { origin } = window.location
   const path = parsePagePath(pathname)?.path ?? ""
   const meta = useLoaderMeta() ?? pageMeta(lang, path)
-  const posting = meta && blogPosting(origin, lang, path, meta)
+  const data =
+    meta &&
+    (blogPosting(origin, lang, path, meta) ??
+      profilePage(origin, lang, path, meta))
   const feed = meta && blogFeed(lang, path)
 
   useEffect(() => {
@@ -77,10 +80,10 @@ export function LangHead() {
           href={new URL(feed.path, origin).href}
         />
       )}
-      {posting && (
+      {data && (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: jsonLd(posting) }}
+          dangerouslySetInnerHTML={{ __html: jsonLd(data) }}
         />
       )}
     </>

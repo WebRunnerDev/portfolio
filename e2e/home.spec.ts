@@ -178,6 +178,21 @@ async function mockPublicApi(page: Page, data: Data = FULL) {
 const section = (page: Page, id: string) => page.getByTestId(`home-${id}`)
 const SECTIONS = ["cv", "projects", "gallery", "posts"]
 
+test("the home page carries the owner as JSON-LD once the Profile arrives", async ({
+  page,
+}) => {
+  await mockPublicApi(page)
+  await page.goto("/de")
+  const ld = page.locator('script[type="application/ld+json"]')
+  await expect(ld).toHaveCount(1)
+  expect(JSON.parse((await ld.textContent())!)).toMatchObject({
+    "@type": "Person",
+    name: PROFILE.name,
+    jobTitle: PROFILE.headline,
+    url: expect.stringMatching(/\/de$/),
+  })
+})
+
 test("the sections follow the hero in order, each with its data", async ({
   page,
 }) => {
@@ -328,10 +343,14 @@ test("a section with nothing to show isn't rendered", async ({ page }) => {
 
 // The Swarm (ADR-0013, issue #186) brings each chapter shown a block of the
 // logo onto its rail and gathers the logo in the footer's square: squares
-// that draw nothing, read by the scene. A hidden chapter has no rail. The
-// footer's square takes room only while the scene runs, so not at `lite`.
+// that draw nothing, read by the scene. A chapter's rail is its figure's
+// full stop (#203), in the figure's decoration. A hidden chapter has no
+// rail. The footer's square takes room only while the scene runs, so not
+// at `lite`.
 const rails = (page: Page) =>
-  page.locator('[data-swarm-anchor="chapter"][aria-hidden="true"]')
+  page.locator(
+    '[aria-hidden="true"] .chapter-stop [data-swarm-anchor="chapter"]'
+  )
 const footerSquare = (page: Page) =>
   page.locator('footer [data-swarm-anchor="footer"]')
 
@@ -342,10 +361,23 @@ test("each chapter shown has a rail; the footer's square waits for the scene", a
   await page.goto("/en")
   for (const id of SECTIONS) {
     const rail = section(page, id).locator('[data-swarm-anchor="chapter"]')
-    await expect(rail).toHaveAttribute("aria-hidden", "true")
+    await expect(rail).toHaveCount(1)
+    await expect(
+      numeral(page, id).locator('[data-swarm-anchor="chapter"]')
+    ).toHaveCount(1)
+    // On the stop: centred on its tile, once it has turned into place.
+    await figureInPlace(page, id)
     const box = (await rail.boundingBox())!
+    const tile = (await rail.locator("..").boundingBox())!
     expect(box.width).toBeGreaterThan(0)
     expect(box.width).toBeCloseTo(box.height)
+    expect(box.x + box.width / 2).toBeCloseTo(tile.x + tile.width / 2, 0)
+    expect(box.y + box.height / 2).toBeCloseTo(tile.y + tile.height / 2, 0)
+    // At `lite` the rust tile is the stop.
+    await expect(rail.locator("..")).not.toHaveCSS(
+      "background-color",
+      "rgba(0, 0, 0, 0)"
+    )
   }
   await expect(page.locator("section[data-tier]")).toHaveAttribute(
     "data-tier",
@@ -483,6 +515,20 @@ const stop = (page: Page, id: string) =>
   numeral(page, id).locator(".chapter-stop")
 const TURNED = /^matrix\(0\.707/
 
+// A chapter's figure risen and its stop turned into place: its rule in
+// view, its Reveal in and their animations over.
+async function figureInPlace(page: Page, id: string) {
+  await expect(rule(page, id)).toBeAttached()
+  await placeRule(page, id, 0.3)
+  await expect(rule(page, id)).toHaveClass(/reveal-in/)
+  await numeral(page, id).evaluate(async (element) => {
+    for (const animation of element.getAnimations({ subtree: true })) {
+      await animation.finished
+    }
+  })
+  await expect(stop(page, id)).toHaveCSS("transform", TURNED)
+}
+
 for (const [width, size] of [
   [360, "72px"],
   [1024, "72px"],
@@ -497,11 +543,10 @@ for (const [width, size] of [
     await expect(
       section(page, "cv").getByRole("heading", { level: 2 })
     ).toHaveCSS("font-size", "40px")
-    // It goes with the title: in its sticky box from `lg`, above it below
-    // (a box for the Swarm's rail at the end of its line).
+    // It goes with the title: in its sticky box from `lg`, above it below.
     await expect(numeral(page, "cv").locator("..")).toHaveCSS(
       "position",
-      width >= 1024 ? "sticky" : "relative"
+      width >= 1024 ? "sticky" : "static"
     )
   })
 }
@@ -611,4 +656,138 @@ test("the chapters don't scroll the page sideways at 320px in any Lang", async (
     await expect(section(page, "posts")).toBeAttached()
     await expectNoPageOverflow(page, `/${lang}`)
   }
+})
+
+// The Swarm on the home page with content (ADR-0013): a level pinned, as
+// software WebGL draws it, at a size it holds; the scene past the input
+// gate. Its canvas lives under <body>, out of the page's tree (ADR-0014).
+const SWARM = "/en?swarm=mobile-lite"
+const liveScene = (page: Page) =>
+  page.locator("[data-effect=full][data-swarm-scene]")
+
+async function withScene(page: Page) {
+  // Every View Transition the page starts (e2e has no DOM types).
+  await page.addInitScript(`
+    Object.defineProperty(navigator, "hardwareConcurrency", { get: () => 8 })
+    Object.defineProperty(navigator, "deviceMemory", { get: () => 8 })
+    window.transitions = 0
+    const start = document.startViewTransition?.bind(document)
+    if (start) {
+      document.startViewTransition = (...args) => {
+        window.transitions++
+        return start(...args)
+      }
+    }
+  `)
+  await page.setViewportSize({ width: 640, height: 480 })
+  await mockPublicApi(page)
+}
+
+const consoleErrors = (page: Page) => {
+  const errors: string[] = []
+  page.on("console", (message) => {
+    if (
+      message.type() === "error" &&
+      !message.text().startsWith("Failed to load resource")
+    ) {
+      errors.push(message.text())
+    }
+  })
+  page.on("pageerror", (error) => errors.push(error.message))
+  return errors
+}
+
+// Issue #203: the block is the figure's full stop while the scene runs; the
+// rust tile gives way to it, and nothing moves for it.
+test("while the scene runs a chapter's block is its figure's stop", async ({
+  page,
+}) => {
+  await withScene(page)
+  await page.goto(SWARM)
+  const tile = stop(page, "cv")
+  await figureInPlace(page, "cv")
+  const before = (await figure(page, "cv").boundingBox())!
+  const at = (await tile.boundingBox())!
+  await page.mouse.move(200, 200)
+  await expect(liveScene(page)).toHaveAttribute("data-ready", "true", {
+    timeout: 10_000,
+  })
+  await expect(tile).toHaveCSS("background-color", "rgba(0, 0, 0, 0)")
+  expect(await figure(page, "cv").boundingBox()).toEqual(before)
+  expect(await tile.boundingBox()).toEqual(at)
+})
+
+// Issue #204: leaving the home page while the scene runs, its dust blows off
+// over the next page without a View Transition, then the canvas goes.
+test("leaving the home page, the dust blows off over the next page", async ({
+  page,
+}) => {
+  const errors = consoleErrors(page)
+  await withScene(page)
+  await page.goto(SWARM)
+  await page.mouse.move(200, 200)
+  await expect(liveScene(page)).toHaveAttribute("data-ready", "true", {
+    timeout: 10_000,
+  })
+  await page.evaluate("window.transitions = 0")
+  await section(page, "projects")
+    .getByRole("link", { name: "All projects" })
+    .click()
+  await expect(page).toHaveURL("/en/projects")
+  // The next page reads at once; the scene's canvas is no longer the home
+  // page's, and it goes.
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible()
+  await expect(liveScene(page)).toHaveCount(0)
+  await expect(page.locator("canvas")).toHaveCount(0, { timeout: 3_000 })
+  expect(await page.evaluate("window.transitions")).toBe(0)
+  // Nothing is held for the footer's logo any more.
+  await expect(page.locator('footer [data-swarm-anchor="footer"]')).toHaveCSS(
+    "display",
+    "none"
+  )
+  expect(errors).toEqual([])
+})
+
+test("Back to the home page while the dust leaves lays a new scene", async ({
+  page,
+}) => {
+  const errors = consoleErrors(page)
+  await withScene(page)
+  await page.goto(SWARM)
+  await page.mouse.move(200, 200)
+  await expect(liveScene(page)).toHaveAttribute("data-ready", "true", {
+    timeout: 10_000,
+  })
+  await section(page, "projects")
+    .getByRole("link", { name: "All projects" })
+    .click()
+  await expect(page).toHaveURL("/en/projects")
+  await page.goBack()
+  await expect(page).toHaveURL(SWARM)
+  await page.mouse.move(220, 220)
+  // The old canvas has gone, the home page's own draws.
+  await expect(liveScene(page)).toHaveAttribute("data-ready", "true", {
+    timeout: 10_000,
+  })
+  await expect(page.locator("canvas")).toHaveCount(1, { timeout: 3_000 })
+  expect(errors).toEqual([])
+})
+
+test("leaving the home page before the scene runs is a View Transition", async ({
+  page,
+}) => {
+  await withScene(page)
+  await page.goto(SWARM)
+  await expect(page.locator("section[data-tier]")).toHaveAttribute(
+    "data-tier",
+    "lite"
+  )
+  // The click is the first input: the scene can't have drawn by then.
+  await page.evaluate("window.transitions = 0")
+  await section(page, "projects")
+    .getByRole("link", { name: "All projects" })
+    .click()
+  await expect(page).toHaveURL("/en/projects")
+  // The router starts it once the new page renders, after the URL.
+  await expect.poll(() => page.evaluate("window.transitions")).toBe(1)
 })

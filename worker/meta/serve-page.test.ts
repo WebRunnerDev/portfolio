@@ -111,6 +111,22 @@ describe("servePage", () => {
       expect(de.attr(/<title data-meta>([^<]*)</)).toBe(
         "Zhasulan Abdigaliyev: Lebenslauf · WebRunner"
       )
+      // The owner as JSON-LD, on the CV only.
+      const ld = de.attr(
+        /<script data-meta type="application\/ld\+json">([^<]*)<\/script>/
+      )
+      expect(JSON.parse(ld!)).toMatchObject({
+        "@type": "ProfilePage",
+        url: "https://webrunner.dev/de/cv",
+        mainEntity: {
+          "@type": "Person",
+          "@id": "https://webrunner.dev/#person",
+          name: "Zhasulan Abdigaliyev",
+          jobTitle: "Frontend developer",
+        },
+      })
+      const print = await page("https://webrunner.dev/de/cv/print")
+      expect(print.html).not.toContain("application/ld+json")
     } finally {
       await env.DB.batch([
         env.DB.prepare(`DELETE FROM profile_translation`),

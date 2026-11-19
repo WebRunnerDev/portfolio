@@ -21,6 +21,41 @@ export type PageMeta = {
   langs?: readonly Lang[]
   // A Post: `og:type=article` and JSON-LD `BlogPosting` (`blogPosting`).
   article?: ArticleMeta
+  // The CV: JSON-LD `ProfilePage` about the owner (`profilePage`).
+  person?: PersonMeta
+}
+
+// The owner as schema.org `Person`, from the Profile on the page's Lang.
+export type PersonMeta = {
+  name: string
+  jobTitle: string
+  // A key in the MEDIA bucket.
+  photoKey: string | null
+  // The owner's profiles elsewhere (GitHub, LinkedIn, Telegram).
+  sameAs: string[]
+}
+
+// The parts of a Profile (`contracts/api/public.ts`) a page's meta reads.
+export type ProfileMeta = {
+  name: string
+  headline: string
+  photoKey?: string | null
+  githubUrl?: string | null
+  linkedinUrl?: string | null
+  telegramUrl?: string | null
+}
+
+export function personMeta(profile: ProfileMeta): PersonMeta {
+  return {
+    name: profile.name,
+    jobTitle: profile.headline,
+    photoKey: profile.photoKey ?? null,
+    sameAs: [
+      profile.githubUrl,
+      profile.linkedinUrl,
+      profile.telegramUrl,
+    ].filter((url): url is string => !!url),
+  }
 }
 
 export type ArticleMeta = {
@@ -82,16 +117,15 @@ export function pageMeta(lang: Lang, path: string): PageMeta | null {
 }
 
 // The CV is titled with the owner's name and headline from the Profile on
-// that Lang; without a Profile it keeps the section meta.
-export function cvMeta(
-  lang: Lang,
-  profile: { name: string; headline: string } | null
-): PageMeta {
+// that Lang and carries the owner as a `Person`; without a Profile it keeps
+// the section meta.
+export function cvMeta(lang: Lang, profile: ProfileMeta | null): PageMeta {
   const meta = pageMeta(lang, "cv")!
   if (!profile) return meta
   return {
     title: withBrand(`${profile.name}: ${t(lang, "nav.cv")}`),
     description: `${profile.headline}. ${meta.description}`,
+    person: personMeta(profile),
   }
 }
 
@@ -170,11 +204,8 @@ export function postMeta(
 }
 
 // The Print CV (`cv/print`) is the source of the CV PDF, not a page to find.
-export function printCvMeta(
-  lang: Lang,
-  profile: { name: string; headline: string } | null
-): PageMeta {
-  return { ...cvMeta(lang, profile), noindex: true }
+export function printCvMeta(lang: Lang, profile: ProfileMeta | null): PageMeta {
+  return { ...cvMeta(lang, profile), person: undefined, noindex: true }
 }
 
 export function notFoundMeta(lang: Lang): PageMeta {
@@ -261,6 +292,53 @@ export function blogPosting(
     inLanguage: article.lang,
     url,
     mainEntityOfPage: url,
+  }
+}
+
+// schema.org `Person` of the owner, the same on the home page and the CV
+// (one `@id`), so search sees one entity. Its `url` is the home page.
+export function person(
+  origin: string,
+  lang: Lang,
+  meta: PersonMeta
+): Record<string, unknown> {
+  return {
+    "@type": "Person",
+    "@id": `${origin}/#person`,
+    name: meta.name,
+    jobTitle: meta.jobTitle,
+    url: pageUrl(origin, lang, ""),
+    ...(meta.photoKey && {
+      image: new URL(imageUrl(meta.photoKey, OG_IMAGE_WIDTH), origin).href,
+    }),
+    ...(meta.sameAs.length > 0 && { sameAs: meta.sameAs }),
+  }
+}
+
+// The home page's JSON-LD: the owner as a `Person`. Rendered on the client
+// only, once the Profile arrives (worker/README.md › JSON-LD).
+export function homePerson(
+  origin: string,
+  lang: Lang,
+  meta: PersonMeta
+): Record<string, unknown> {
+  return { "@context": "https://schema.org", ...person(origin, lang, meta) }
+}
+
+// schema.org `ProfilePage` of the CV, about the owner; null for any other
+// page. The Worker injects it, LangHead renders it again.
+export function profilePage(
+  origin: string,
+  lang: Lang,
+  path: string,
+  meta: PageMeta
+): Record<string, unknown> | null {
+  if (!meta.person) return null
+  return {
+    "@context": "https://schema.org",
+    "@type": "ProfilePage",
+    url: pageUrl(origin, lang, path),
+    mainEntity: person(origin, lang, meta.person),
   }
 }
 

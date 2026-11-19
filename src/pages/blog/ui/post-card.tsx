@@ -71,6 +71,7 @@ export function PostCard({
   return (
     <article
       data-testid="post-card"
+      data-item={post.slug}
       className="group/card focus-chamfer-md relative h-full"
     >
       {/* DESIGN.md › Shapes: the outer layer draws the chamfered border. */}
