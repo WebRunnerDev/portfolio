@@ -8,6 +8,8 @@ import { markdownTree } from "../contracts/markdown/parse"
 // against an in-memory /api/public/* (the D1 behind `vite preview` is empty).
 // Only PlotOps has a Case Study; on RU, PlotOps and AITU AMS only have their
 // EN Translation.
+const LANGS = ["en", "ru", "kk", "es", "de", "ar"]
+
 const react = { id: 1, name: "React", category: "frontend", icon: null }
 const hono = { id: 2, name: "Hono", category: "backend_cloud", icon: null }
 
@@ -111,6 +113,7 @@ async function mockPublicApi(page: Page, { empty = false } = {}) {
             ...found,
             ...(lang === "ru" && slug === "plotops" && fallbackPlotOps),
             caseStudy: found.hasCaseStudy ? caseStudy : null,
+            langs: found.hasCaseStudy ? LANGS : [],
           },
         })
       : route.fulfill({ status: 404, json: { error: "not_found" } })
@@ -501,6 +504,16 @@ test("opening a card goes forward and shares its cover; Back goes back", async (
     page.getByRole("main").locator('img[data-shared-cover="project:plotops"]')
   ).toHaveCSS("view-transition-name", "card-cover")
 
+  // Back only once the forward change has settled: the router types a
+  // transition from its resolved location, and Back before that is a change
+  // from /en/projects to itself, with no direction.
+  await expect
+    .poll(() =>
+      page.evaluate(
+        'document.documentElement.matches(":active-view-transition")'
+      )
+    )
+    .toBe(false)
   await page.goBack()
   await expect(page).toHaveURL(/\/en\/projects$/)
   await expect.poll(transitions).toEqual([

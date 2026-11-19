@@ -4,6 +4,7 @@ import { markdownTree } from "@contracts/markdown/parse"
 import type { Lang } from "@contracts/lang"
 import { apiError, methodNotAllowed } from "../../errors"
 import {
+  pageLangs,
   parseJson,
   technologiesOf,
   translationOf,
@@ -57,19 +58,32 @@ export type ProjectRecord = Omit<ProjectDetail, "caseStudy"> & {
   caseStudy: string | null
 }
 
-// The Project at `slug` on a Lang, with its Case Study; null for an unknown
-// slug. Meta Injection of its page reads it too.
+// The Project at `slug` on a Lang, with its Case Study and the Langs its page
+// is on (the sitemap's rule: a Case Study on the Translation each one
+// shows); null for an unknown slug. Meta Injection of its page reads it too.
 export async function readProject(
   db: D1Database,
   lang: Lang,
   slug: string
 ): Promise<ProjectRecord | null> {
   const row = await db
-    .prepare(`${SELECT_PROJECT} WHERE p.slug = ?2`)
+    .prepare(
+      `SELECT found.*, (
+        SELECT json_group_array(json_object(
+          'lang', lang, 'caseStudy', case_study IS NOT NULL
+        ))
+        FROM project_translation WHERE project_id = found.id
+      ) AS translations
+      FROM (${SELECT_PROJECT} WHERE p.slug = ?2) AS found`
+    )
     .bind(lang, slug)
-    .first<ProjectRow>()
+    .first<ProjectRow & { translations: string }>()
   if (!row) return null
-  return { ...toProject(row), caseStudy: row.case_study }
+  const langs = pageLangs(
+    parseJson<{ lang: Lang; caseStudy: number }[]>(row.translations),
+    (t) => t.caseStudy === 1
+  )
+  return { ...toProject(row), caseStudy: row.case_study, langs }
 }
 
 // The list leaves out the case study; the client filters `featured` / `inCv`.

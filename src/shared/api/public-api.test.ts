@@ -53,7 +53,7 @@ describe("public API client", () => {
   })
 
   it("encodes the slug", async () => {
-    const fetch = answer(200, { ...project, caseStudy: null })
+    const fetch = answer(200, { ...project, caseStudy: null, langs: [] })
     await getProject("en", "a b/c")
     expect(fetch.mock.calls[0][0]).toBe("/api/public/en/projects/a%20b%2Fc")
   })

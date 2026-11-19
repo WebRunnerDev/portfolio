@@ -140,11 +140,13 @@ export const ProjectSchema = v.object({
 
 export type Project = v.InferOutput<typeof ProjectSchema>
 
-// GET /api/public/:lang/projects/:slug
+// GET /api/public/:lang/projects/:slug. `langs`: the Langs its page is on
+// (a Case Study on the Translation it shows), for hreflang.
 export const ProjectDetailSchema = v.object({
   ...ProjectSchema.entries,
   // Markdown, rendered (contracts/markdown).
   caseStudy: v.nullable(MarkdownTreeSchema),
+  langs: v.array(v.picklist(LANGS)),
 })
 
 export type ProjectDetail = v.InferOutput<typeof ProjectDetailSchema>

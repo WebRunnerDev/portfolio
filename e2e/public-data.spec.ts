@@ -96,6 +96,9 @@ async function mockPublicApi(
               caseStudy: found.hasCaseStudy
                 ? [{ tag: "h2", children: ["Case"] }]
                 : null,
+              langs: found.hasCaseStudy
+                ? ["en", "ru", "kk", "es", "de", "ar"]
+                : [],
             },
           })
         : route.fulfill({ status: 404, json: { error: "not_found" } })
