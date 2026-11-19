@@ -18,8 +18,9 @@ export const TechnologySchema = v.object({
   name: v.string(),
   category: v.picklist([
     "frontend",
-    "backend_cloud",
     "qa_testing",
+    "ai",
+    "backend_cloud",
     "tools_design",
   ]),
   icon: v.nullable(v.string()),

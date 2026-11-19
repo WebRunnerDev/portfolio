@@ -269,7 +269,7 @@
 }
 
 @utility print-sheet {
-  --print-zoom: 0.85;
+  --print-zoom: 0.77;
   page: cv;
   zoom: var(--print-zoom);
   width: 100%;

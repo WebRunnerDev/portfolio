@@ -1,7 +1,7 @@
 import type { ReactNode } from "react"
 import { MapPin } from "lucide-react"
 
-import type { CvForm, Profile } from "@contracts/api/public"
+import type { Profile } from "@contracts/api/public"
 import { imageUrl } from "@contracts/media"
 import { useT } from "@/shared/i18n"
 import { FallbackNotice, fallbackLang } from "@/shared/ui/fallback-notice"
@@ -11,49 +11,39 @@ export const CV_LINK =
 
 const PHOTO_SIZE = 160
 
-// On paper a link is only its text, so the Print CV spells the URL out.
-const bareUrl = (url: string) =>
-  url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "")
-
-function contacts(profile: Profile, form: CvForm) {
-  const label = (name: string, url: string) =>
-    form === "print" ? bareUrl(url) : name
+function contacts(profile: Profile) {
   return [
     profile.email && {
       label: profile.email,
       href: `mailto:${profile.email}`,
     },
     profile.telegramUrl && {
-      label: label("Telegram", profile.telegramUrl),
+      label: "Telegram",
       href: profile.telegramUrl,
     },
     profile.linkedinUrl && {
-      label: label("LinkedIn", profile.linkedinUrl),
+      label: "LinkedIn",
       href: profile.linkedinUrl,
     },
     profile.githubUrl && {
-      label: label("GitHub", profile.githubUrl),
+      label: "GitHub",
       href: profile.githubUrl,
     },
   ].filter((link) => !!link)
 }
 
-// The CV header of both forms (CONTEXT.md › CV): name, headline and the
-// Profile's contacts, never a phone. The Web CV adds the photo and the
-// Fallback notice; the Print CV is denser and spells the links out.
-// `actions` holds the CV PDF download (Web CV only).
+// The Web CV header (CONTEXT.md › CV): photo, Fallback notice, name, headline
+// and the Profile's contacts, never a phone. `actions` holds the CV PDF
+// download. The Print CV has its own (print-cv-header.tsx).
 export function CvHeader({
   profile,
-  form = "web",
   actions,
 }: {
   profile: Profile
-  form?: CvForm
   actions?: ReactNode
 }) {
   const t = useT()
-  const links = contacts(profile, form)
-  const web = form === "web"
+  const links = contacts(profile)
 
   const place = profile.location && (
     <p
@@ -67,7 +57,7 @@ export function CvHeader({
   const contactList = links.length > 0 && (
     <ul
       aria-label={t("cv.contacts")}
-      className={`flex flex-wrap items-center gap-x-zsd-lg ${web ? "text-zsd-body-md" : "text-zsd-body-sm"}`}
+      className={"flex flex-wrap items-center gap-x-zsd-lg text-zsd-body-md"}
     >
       {links.map((link) => (
         <li key={link.href}>
@@ -76,7 +66,7 @@ export function CvHeader({
             {...(link.href.startsWith("mailto:")
               ? {}
               : { target: "_blank", rel: "noreferrer" })}
-            className={`break-all ${web ? "inline-flex min-h-zsd-control-height items-center" : ""} ${CV_LINK}`}
+            className={`inline-flex min-h-zsd-control-height items-center break-all ${CV_LINK}`}
           >
             {link.label}
           </a>
@@ -86,14 +76,8 @@ export function CvHeader({
   )
 
   return (
-    <header
-      className={
-        web
-          ? "flex flex-col gap-zsd-xl md:flex-row md:items-start"
-          : "flex flex-col"
-      }
-    >
-      {web && profile.photoKey && (
+    <header className="flex flex-col gap-zsd-xl md:flex-row md:items-start">
+      {profile.photoKey && (
         <img
           src={imageUrl(profile.photoKey, PHOTO_SIZE)}
           srcSet={`${imageUrl(profile.photoKey, PHOTO_SIZE * 2)} 2x`}
@@ -104,32 +88,22 @@ export function CvHeader({
           className="size-32 shrink-0 border border-zsd-outline-muted object-cover md:size-40"
         />
       )}
-      <div
-        className={`flex min-w-0 flex-1 flex-col ${web ? "gap-zsd-md" : "gap-zsd-xs"}`}
-      >
-        {web && <FallbackNotice fallback={profile.fallback} />}
+      <div className={"flex min-w-0 flex-1 flex-col gap-zsd-md"}>
+        <FallbackNotice fallback={profile.fallback} />
         <div lang={fallbackLang(profile)}>
           <h1
-            className={`font-heading break-words text-zsd-on-surface ${web ? "text-zsd-headline-md md:text-zsd-headline-lg" : "text-zsd-headline-md"}`}
+            className={
+              "font-heading text-zsd-headline-md break-words text-zsd-on-surface md:text-zsd-headline-lg"
+            }
           >
             {profile.name}
           </h1>
-          <p
-            className={`text-zsd-on-surface-muted ${web ? "mt-zsd-sm text-zsd-body-lg" : "text-zsd-body-md/snug"}`}
-          >
+          <p className={"mt-zsd-sm text-zsd-body-lg text-zsd-on-surface-muted"}>
             {profile.headline}
           </p>
-          {web && place && <div className="mt-zsd-xs">{place}</div>}
+          {place && <div className="mt-zsd-xs">{place}</div>}
         </div>
-        {web
-          ? contactList
-          : (place || contactList) && (
-              // Paper has room for one line: the place, then the contacts.
-              <div className="flex flex-wrap items-center gap-x-zsd-lg">
-                {place}
-                {contactList}
-              </div>
-            )}
+        {contactList}
       </div>
       {actions && <div className="shrink-0">{actions}</div>}
     </header>
