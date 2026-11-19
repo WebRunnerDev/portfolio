@@ -15,13 +15,13 @@ const route = getRouteApi("/$lang/")
 
 type HomeFullProps = {
   lang: string
-  onFail: () => void
+  onFail: (reason: string) => void
   onShown: () => void
 }
 
 // What a full chunk that didn't load renders: nothing, and `full` fails.
 function FullFailed({ onFail }: HomeFullProps) {
-  useEffect(onFail, [onFail])
+  useEffect(() => onFail("full chunk didn't load"), [onFail])
   return null
 }
 

@@ -61,20 +61,26 @@ export function HomeFull({
   onShown,
 }: {
   lang: string
-  onFail: () => void
+  onFail: (reason: string) => void
   onShown: () => void
 }) {
   // What usePlaying watches in the canvas's stead: over the viewport too.
   const { ref, playing } = usePlaying<HTMLSpanElement>()
   const canvas = React.useRef<HTMLCanvasElement | null>(null)
   const scene = React.useRef<Swarm | null>(null)
-  const [ready, setReady] = React.useState(false)
+  // The canvas whose scene drew its first frame. A new `lang` lays the scene
+  // on a canvas of its own: opaque, it stays hidden until it draws too, or
+  // it is black over the page.
+  const [drawn, setDrawn] = React.useState<HTMLCanvasElement | null>(null)
   const [pinned] = React.useState(() => pinnedLevel(window.location.search))
   const [level, setLevel] = React.useState(
     () => pinned ?? (visitLevel ??= pickLevel(thisDevice()))
   )
   const fail = React.useEffectEvent(onFail)
   const shown = React.useEffectEvent(onShown)
+  // A scene laid again while the page is in view plays at once: `playing`
+  // doesn't change then, so its effect below doesn't run.
+  const inView = React.useEffectEvent(() => playing)
   const leaving = React.useRef(false)
 
   // Leaving the page: a layout effect's cleanup runs before the scene's
@@ -116,17 +122,17 @@ export function HomeFull({
             setLevel(next)
             scene.current?.lower(lowered(built, next))
           },
-          onFail: () => fail(),
+          onFail: (fps, at) => fail(`${Math.round(fps)} fps at ${at}`),
         })
     const made = swarm(
       element,
       {
         onFrame: watch,
         onReady: () => {
-          setReady(true)
+          setDrawn(element)
           shown()
         },
-        onFail: () => fail(),
+        onFail: (reason) => fail(reason),
       },
       built
     )
@@ -134,9 +140,10 @@ export function HomeFull({
     if (!made) {
       element.remove()
       canvas.current = null
-      fail()
+      fail("no WebGL2")
       return
     }
+    if (inView()) made.play()
     return () => {
       scene.current = null
       canvas.current = null
@@ -151,7 +158,7 @@ export function HomeFull({
     const element = canvas.current
     if (!element) return
     element.dataset.playing = String(playing)
-    element.dataset.ready = String(ready)
+    element.dataset.ready = String(drawn === element)
     element.dataset.quality = level
   })
 

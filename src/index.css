@@ -1179,10 +1179,12 @@ html:active-view-transition-type(forward, back) {
 }
 
 /* The hero at the `lite` Motion Tier: the logo tiles spread from the logo
- * and gather back, a wave from left to right; the rust copy on top lights up
- * while they are out. The spread is each tile's placement (`LogoTiles`): the keyframes start
- * from none and end on it, back and forth. `--hero-play` pauses them off
- * screen and on a hidden tab. Never mirrored. */
+ * and gather back once, a wave from left to right; the rust copy on top
+ * lights up while they are out. Then the logo stands: a wave that never
+ * ends reads as the Loader, which is the same tiles lighting up. The spread
+ * is each tile's placement (`LogoTiles`): the keyframes start from none and
+ * end on it, there and back, and the tiles stay gathered. `--hero-play`
+ * pauses them off screen and on a hidden tab. Never mirrored. */
 @keyframes hero-breathe {
   from {
     transform: none;
@@ -1214,7 +1216,7 @@ html:active-view-transition-type(forward, back) {
 
 @utility hero-breathe {
   animation: hero-breathe calc(2 * var(--zsd-x-zsd-motion-choreography-max))
-    var(--zsd-x-zsd-motion-easing-layout) infinite alternate backwards;
+    var(--zsd-x-zsd-motion-easing-layout) 2 alternate both;
   animation-play-state: var(--hero-play, running);
   @media (prefers-reduced-motion: reduce) {
     animation: none;
@@ -1226,9 +1228,9 @@ html:active-view-transition-type(forward, back) {
   animation-name: hero-breathe, hero-glow;
   animation-duration: calc(2 * var(--zsd-x-zsd-motion-choreography-max));
   animation-timing-function: var(--zsd-x-zsd-motion-easing-layout);
-  animation-iteration-count: infinite;
+  animation-iteration-count: 2;
   animation-direction: alternate;
-  animation-fill-mode: backwards;
+  animation-fill-mode: both;
   animation-play-state: var(--hero-play, running);
   @media (prefers-reduced-motion: reduce) {
     animation: none;
