@@ -1,21 +1,45 @@
 import { getRouteApi } from "@tanstack/react-router"
 
 import { ProjectCard } from "@/entities/project"
-import { useT } from "@/shared/i18n"
+import { useT, useTPlural } from "@/shared/i18n"
+import { ItemStrip, type StripItem } from "@/shared/ui/item-strip"
 
 const route = getRouteApi("/$lang/projects/")
+
+const STATE = {
+  completed: "done",
+  in_progress: "active",
+  archived: "archived",
+} as const
 
 // The Projects in D1's order: one column, two from `sm`, three from `lg`
 // (DESIGN.md › Responsive behavior). An empty list says what appears there.
 export function ProjectsPage() {
   const t = useT()
+  const tp = useTPlural()
   const projects = route.useLoaderData()
+  const active = projects.filter((p) => p.status === "in_progress").length
+  const strip: StripItem[] = projects.map((project) => ({
+    key: project.slug,
+    label: project.title,
+    state: STATE[project.status],
+    detail: t(`project.status.${project.status}`),
+  }))
 
   return (
     <div className="mx-auto w-full max-w-(--zsd-x-zsd-layout-content-max) px-zsd-lg py-zsd-section md:px-zsd-xxl lg:py-zsd-section-lg">
       <h1 className="font-heading text-zsd-headline-md break-words md:text-zsd-headline-lg">
         {t("nav.projects")}
       </h1>
+      <ItemStrip
+        items={strip}
+        summary={[
+          tp("strip.projects", projects.length),
+          active > 0 && tp("strip.inProgress", active),
+        ]
+          .filter(Boolean)
+          .join(" · ")}
+      />
       {projects.length > 0 ? (
         <ul className="mt-zsd-xl grid gap-zsd-xl sm:grid-cols-2 lg:grid-cols-3">
           {projects.map((project, i) => (

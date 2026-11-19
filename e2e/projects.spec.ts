@@ -508,3 +508,77 @@ test("opening a card goes forward and shares its cover; Back goes back", async (
     { types: ["back"], cover: "project:plotops" },
   ])
 })
+
+// #212: the strip of the page's items in its head. A rhombus per Project
+// with its status; pointed at, its card lights, and the other way round.
+const strip = (page: Page) => page.getByTestId("item-strip")
+const tiles = (page: Page) => page.locator(".item-strip-tile")
+
+test("the strip has a rhombus per Project, its status, and a summary", async ({
+  page,
+}) => {
+  await mockPublicApi(page)
+  await page.goto("/en/projects")
+  await expect(cards(page)).toHaveCount(3)
+  await expect(tiles(page)).toHaveCount(3)
+  await expect(tiles(page).nth(0)).toHaveAttribute("data-state", "active")
+  await expect(tiles(page).nth(1)).toHaveAttribute("data-state", "done")
+  await expect(tiles(page).nth(2)).toHaveAttribute("data-state", "archived")
+  await expect(strip(page)).toContainText("3 projects · 1 in progress")
+  await expect(strip(page)).toHaveAttribute("aria-hidden", "true")
+})
+
+test("a rhombus pointed at lights its card, and a card its rhombus", async ({
+  page,
+}) => {
+  await mockPublicApi(page)
+  await page.goto("/en/projects")
+  await tiles(page).nth(1).hover()
+  await expect(cards(page).nth(1)).toHaveAttribute("data-hot", "")
+  await expect(strip(page)).toContainText("02 · AITU AMS · Completed")
+  await expect(page.locator(".item-strip-row")).toHaveAttribute(
+    "data-lit",
+    "true"
+  )
+
+  await cards(page).nth(2).hover()
+  await expect(tiles(page).nth(2)).toHaveAttribute("data-hot", "true")
+  await expect(cards(page).nth(1)).not.toHaveAttribute("data-hot")
+  await page.mouse.move(0, 0)
+  await expect(strip(page)).toContainText("3 projects · 1 in progress")
+})
+
+test("a click on a rhombus brings its card into view", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 640 })
+  await mockPublicApi(page)
+  await page.goto("/en/projects")
+  await expect(cards(page).nth(2)).not.toBeInViewport()
+  await tiles(page).nth(2).click()
+  await expect(cards(page).nth(2)).toBeInViewport()
+})
+
+test("the strip counts in Russian, runs from the right on /ar, and stands under reduced motion", async ({
+  page,
+}) => {
+  await mockPublicApi(page)
+  await page.goto("/ru/projects")
+  await expect(strip(page)).toContainText("3 проекта · 1 в работе")
+
+  await page.emulateMedia({ reducedMotion: "reduce" })
+  await page.goto("/ar/projects")
+  await expect(tiles(page)).toHaveCount(3)
+  const [first, last] = await Promise.all([
+    tiles(page).nth(0).boundingBox(),
+    tiles(page).nth(2).boundingBox(),
+  ])
+  expect(first!.x).toBeGreaterThan(last!.x)
+  await expect(tiles(page).nth(0)).toHaveCSS("opacity", "1")
+  await expectNoPageOverflow(page)
+})
+
+test("no strip without Projects", async ({ page }) => {
+  await mockPublicApi(page, { empty: true })
+  await page.goto("/en/projects")
+  await expect(page.getByTestId("projects-empty")).toBeVisible()
+  await expect(strip(page)).toHaveCount(0)
+})

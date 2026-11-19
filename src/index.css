@@ -1234,3 +1234,145 @@ html:active-view-transition-type(forward, back) {
     animation: none;
   }
 }
+
+/* DESIGN.md › Item strip, docs/design-brief.md › Арт-дирекция этапа 7 ›
+ * База, 5: the strip of a list page's items (`ItemStrip` in
+ * @/shared/ui/item-strip). Rhombi a step apart on a hairline from the start
+ * edge; the thread runs on to the content box's end and fades. Pointed at,
+ * the thread up to the item lights `primary` from the start, and so do the
+ * item's rhombus and its card's border (`data-hot`). A project in progress is
+ * a `primary` outline breathing like `badge-active`, a completed one solid
+ * `outline`, an archived one an `outline-muted` hairline; a post or an album
+ * solid. In: the thread draws, the rhombi turn in one by one; under reduced
+ * motion all stand. */
+.item-strip-row {
+  --tile: 1.125rem;
+  --step: 3.5rem;
+  position: relative;
+  display: flex;
+  gap: calc(var(--step) - var(--tile));
+  padding-block-end: 1.75rem;
+  &::before,
+  &::after {
+    content: "";
+    position: absolute;
+    inset-inline-start: 0;
+    top: calc(var(--tile) / 2);
+    height: 1px;
+    transform-origin: left;
+  }
+  &:dir(rtl)::before,
+  &:dir(rtl)::after {
+    transform-origin: right;
+  }
+  &::before {
+    inset-inline-end: 0;
+    background: linear-gradient(
+      to right,
+      var(--zsd-colors-outline) calc(var(--count) * var(--step)),
+      transparent
+    );
+  }
+  &:dir(rtl)::before {
+    background: linear-gradient(
+      to left,
+      var(--zsd-colors-outline) calc(var(--count) * var(--step)),
+      transparent
+    );
+  }
+  &::after {
+    width: calc(var(--at) * var(--step) + var(--tile) / 2);
+    background: var(--zsd-colors-primary);
+    transform: scaleX(0);
+    transition: transform var(--zsd-x-zsd-motion-duration-base)
+      var(--zsd-x-zsd-motion-easing-enter);
+  }
+  &[data-lit="true"]::after {
+    transform: none;
+  }
+  @media (width >= 48rem) {
+    --tile: 1.375rem;
+    --step: 4.5rem;
+  }
+}
+.item-strip-cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: var(--tile);
+}
+.item-strip-tile {
+  position: relative;
+  width: var(--tile);
+  height: var(--tile);
+  cursor: pointer;
+  rotate: 45deg;
+  scale: 0.72;
+  background: var(--zsd-colors-surface);
+  box-shadow: inset 0 0 0 1px var(--zsd-colors-outline);
+  transition:
+    scale var(--zsd-x-zsd-motion-duration-fast)
+      var(--zsd-x-zsd-motion-easing-hover),
+    background-color var(--zsd-x-zsd-motion-duration-fast)
+      var(--zsd-x-zsd-motion-easing-hover);
+  &[data-state="done"],
+  &[data-state="plain"] {
+    background: var(--zsd-colors-outline);
+  }
+  &[data-state="archived"] {
+    box-shadow: inset 0 0 0 1px var(--zsd-colors-outline-muted);
+  }
+  &[data-state="active"] {
+    box-shadow: inset 0 0 0 1px var(--zsd-colors-primary);
+    &::after {
+      content: "";
+      position: absolute;
+      inset: 30%;
+      background: var(--zsd-colors-primary);
+      animation: status-breathe
+        calc(2 * var(--zsd-x-zsd-motion-choreography-max))
+        var(--zsd-x-zsd-motion-easing-layout) infinite alternate;
+    }
+  }
+  &[data-hot="true"] {
+    scale: 1;
+    background: var(--zsd-colors-primary);
+    box-shadow: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+    &::after {
+      animation: none;
+    }
+  }
+}
+.item-strip-note {
+  position: absolute;
+  top: calc(var(--tile) + 0.5rem);
+  white-space: nowrap;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .item-strip-row::before {
+    animation: chapter-line var(--zsd-x-zsd-motion-duration-reveal)
+      var(--zsd-x-zsd-motion-easing-enter) backwards;
+  }
+  .item-strip-tile {
+    animation: item-strip-in var(--zsd-x-zsd-motion-duration-slow)
+      var(--zsd-x-zsd-motion-easing-layout) backwards;
+    animation-delay: calc(
+      var(--zsd-x-zsd-motion-duration-base) + var(--i) *
+        var(--zsd-x-zsd-motion-stagger-item)
+    );
+  }
+}
+@keyframes item-strip-in {
+  from {
+    rotate: -45deg;
+    scale: 0;
+  }
+}
+/* The card of the item pointed at in the strip: its border, as on hover. */
+[data-item][data-hot] > div:first-child {
+  background: var(--zsd-colors-primary);
+}
