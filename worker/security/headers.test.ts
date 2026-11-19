@@ -51,7 +51,7 @@ const nonces = (html: string) =>
   ].map(([tag]) => /nonce="([^"]*)"/i.exec(tag)?.[1])
 
 describe("HTML answers", () => {
-  it.each(["/en/cv", "/ar/nope", "/", "/admin", "/admin/posts/1"])(
+  it.each(["/en/cv", "/ar/nope", "/nope", "/admin", "/admin/posts/1"])(
     "%s carries the security headers and a Report-Only CSP",
     async (path) => {
       const response = await visit(path, NAVIGATION)
@@ -95,7 +95,7 @@ describe("HTML answers", () => {
     expect(html).toContain('<html lang="en" dir="ltr">')
   })
 
-  it.each(["/", "/admin", "/en"])(
+  it.each(["/nope", "/admin", "/en"])(
     "%s keeps no route preload that isn't its own",
     async (path) => {
       const html = await (await visit(path, NAVIGATION)).text()
@@ -104,7 +104,7 @@ describe("HTML answers", () => {
     }
   )
 
-  it.each(["/", "/admin", "/en"])(
+  it.each(["/nope", "/admin", "/en"])(
     "%s keeps no Lang preload that isn't its Lang's",
     async (path) => {
       const html = await (await visit(path, NAVIGATION)).text()
