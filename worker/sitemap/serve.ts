@@ -1,6 +1,6 @@
 import { DEFAULT_LANG, LANGS, type Lang } from "@contracts/lang"
 import { PAGE_PATHS, alternates, pageMeta, pageUrl } from "@contracts/meta"
-import { PUBLIC_CACHE_CONTROL, parseJson } from "../api/public"
+import { PUBLIC_CACHE_CONTROL, pageLangs, parseJson } from "../api/public"
 import { isPreview } from "../meta/serve-page"
 import { xml } from "../xml"
 
@@ -22,19 +22,6 @@ export type SitemapPage = {
 const SECTIONS: SitemapPage[] = PAGE_PATHS.filter(
   (path) => !pageMeta(DEFAULT_LANG, path)?.noindex
 ).map((path) => ({ path, langs: LANGS }))
-
-// The Langs a record's page answers on: a Translation of its own, else EN
-// (CONTEXT.md › Fallback). `has` says whether that Translation makes a page.
-function pageLangs<T extends { lang: Lang }>(
-  translations: readonly T[],
-  has: (translation: T) => boolean = () => true
-): Lang[] {
-  const on = (lang: Lang) => translations.find((t) => t.lang === lang)
-  return LANGS.filter((lang) => {
-    const translation = on(lang) ?? on(DEFAULT_LANG)
-    return translation !== undefined && has(translation)
-  })
-}
 
 const slugPath = (section: string, slug: string) =>
   `${section}/${encodeURIComponent(slug)}`

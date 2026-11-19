@@ -189,6 +189,38 @@ describe("servePage", () => {
     }
   })
 
+  it("lists hreflang only on the Langs a Project's page is on", async () => {
+    await env.DB.batch([
+      env.DB.prepare(`INSERT INTO project (id, slug) VALUES (1, 'half')`),
+      // RU has its own Translation without a Case Study: no page there.
+      env.DB.prepare(
+        `INSERT INTO project_translation
+          (project_id, lang, title, description, case_study)
+        VALUES (1, 'en', 'Half', 'Half done', '# Case'),
+          (1, 'ru', 'Половина', 'Наполовину', NULL)`
+      ),
+    ])
+    try {
+      const kk = await page("https://webrunner.dev/kk/projects/half")
+      expect(kk.response.status).toBe(200)
+      expect(kk.all(/rel="alternate" hreflang="([^"]+)"/g)).toEqual([
+        "en",
+        "kk",
+        "es",
+        "de",
+        "ar",
+        "x-default",
+      ])
+      const ru = await page("https://webrunner.dev/ru/projects/half")
+      expect(ru.response.status).toBe(404)
+    } finally {
+      await env.DB.batch([
+        env.DB.prepare(`DELETE FROM project_translation`),
+        env.DB.prepare(`DELETE FROM project`),
+      ])
+    }
+  })
+
   it("keeps a Project's page when D1 fails", async () => {
     const broken = {
       ...testEnv,

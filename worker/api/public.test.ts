@@ -322,6 +322,8 @@ describe("projects", () => {
     expect(alpha).toMatchObject({
       fallback: false,
       caseStudy: [{ tag: "h2", children: ["Альфа"] }],
+      // Its own Case Study on EN and RU, EN's on the Fallback: every Lang.
+      langs: ["en", "ru", "kk", "es", "de", "ar"],
     })
   })
 

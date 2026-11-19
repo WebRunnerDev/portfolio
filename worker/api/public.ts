@@ -1,6 +1,6 @@
 import { Hono } from "hono"
 import { createMiddleware } from "hono/factory"
-import { isLang, type Lang } from "@contracts/lang"
+import { DEFAULT_LANG, LANGS, isLang, type Lang } from "@contracts/lang"
 import type { ApiEnv } from "./app"
 import { apiError } from "./errors"
 
@@ -57,4 +57,17 @@ export function technologiesOf(table: string, owner: string) {
 // JSON columns (bullet lists, `technologiesOf`) come out of D1 as text.
 export function parseJson<T>(text: string): T {
   return JSON.parse(text) as T
+}
+
+// The Langs a record's page answers on: a Translation of its own, else EN
+// (CONTEXT.md › Fallback). `has` says whether that Translation makes a page.
+export function pageLangs<T extends { lang: Lang }>(
+  translations: readonly T[],
+  has: (translation: T) => boolean = () => true
+): Lang[] {
+  const on = (lang: Lang) => translations.find((t) => t.lang === lang)
+  return LANGS.filter((lang) => {
+    const translation = on(lang) ?? on(DEFAULT_LANG)
+    return translation !== undefined && has(translation)
+  })
 }

@@ -143,12 +143,15 @@ export function projectMeta(
     coverKey: string | null
     // Markdown on the Worker, its tree on the page: only its presence counts.
     caseStudy: unknown
+    // hreflang only on the Langs the page is on (a Case Study there).
+    langs: readonly Lang[]
   } | null
 ): PageMeta | null {
   if (project?.caseStudy == null) return null
   return {
     title: withBrand(project.title),
     description: project.description,
+    langs: project.langs,
     ...(project.coverKey && {
       image: imageUrl(project.coverKey, OG_IMAGE_WIDTH),
     }),

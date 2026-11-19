@@ -87,12 +87,14 @@ describe("projectMeta", () => {
     description: "Field operations",
     coverKey: "projects/plot ops.png",
     caseStudy: "# Case",
+    langs: ["en", "ru"] as const,
   }
 
   it("titles the page with the Project and its cover as OG image", () => {
     expect(projectMeta(project)).toEqual({
       title: "PlotOps · WebRunner",
       description: "Field operations",
+      langs: ["en", "ru"],
       image:
         "/cdn-cgi/image/width=1200,fit=scale-down,format=auto/media/projects/plot%20ops.png",
     })
