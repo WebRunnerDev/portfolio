@@ -3,8 +3,9 @@ import type { MessageKey } from "@/shared/i18n"
 
 export const TECH_CATEGORIES: Record<Technology["category"], MessageKey> = {
   frontend: "cv.tech.frontend",
-  backend_cloud: "cv.tech.backend_cloud",
   qa_testing: "cv.tech.qa_testing",
+  ai: "cv.tech.ai",
+  backend_cloud: "cv.tech.backend_cloud",
   tools_design: "cv.tech.tools_design",
 }
 

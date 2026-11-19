@@ -1,11 +1,13 @@
+import type { ReactNode } from "react"
 import { getRouteApi } from "@tanstack/react-router"
 
 import type { CvSection } from "@contracts/api/public"
 import { useT } from "@/shared/i18n"
+import { fallbackLang } from "@/shared/ui/fallback-notice"
 
 import type { CvData } from "../api/load-cv"
 import { usePrintReady } from "../lib/use-print-ready"
-import { CvHeader } from "./cv-header"
+import { PrintCvHeader } from "./print-cv-header"
 import { SECTION_HEADINGS } from "./cv-sections"
 import {
   PrintCertificationList,
@@ -13,6 +15,7 @@ import {
   PrintExperienceList,
   PrintLanguageList,
   PrintProjectList,
+  PrintSummary,
   PrintTechnologyGroups,
 } from "./print-cv-sections"
 
@@ -41,8 +44,35 @@ function SectionBody({
   }
 }
 
+function Section({
+  id,
+  heading,
+  children,
+}: {
+  id: string
+  heading: string
+  children: ReactNode
+}) {
+  return (
+    <section
+      aria-labelledby={id}
+      data-testid="cv-section"
+      className="flex flex-col gap-zsd-xs"
+    >
+      <h2
+        id={id}
+        className="break-after-avoid border-b border-zsd-on-surface font-heading text-zsd-body-lg/tight font-semibold text-zsd-on-surface"
+      >
+        {heading}
+      </h2>
+      {children}
+    </section>
+  )
+}
+
 // The Print CV (CONTEXT.md › CV), the source of the CV PDF (ADR-0003): the
-// CV header without the photo, then the CV Sections shown in the PDF, on one
+// centred header, the Summary (the Profile's `about`), then the CV Sections
+// shown in the PDF, on one
 // A4 page (`print-sheet` in index.css). No site layout, always light.
 export function PrintCvPage() {
   const t = useT()
@@ -51,31 +81,31 @@ export function PrintCvPage() {
   usePrintReady()
 
   return (
-    <main className="mx-auto flex print-sheet flex-col gap-zsd-sm bg-zsd-surface text-zsd-body-sm/tight text-zsd-on-surface-muted">
+    <main className="mx-auto flex print-sheet flex-col gap-zsd-sm bg-zsd-surface text-zsd-body-sm/snug text-zsd-on-surface">
       {profile ? (
-        <CvHeader profile={profile} form="print" />
+        <PrintCvHeader profile={profile} />
       ) : (
         <h1 className="font-heading text-zsd-headline-md text-zsd-on-surface">
           {t("nav.cv")}
         </h1>
       )}
+      {profile?.about && (
+        <Section id="cv-summary" heading={t("cv.summary")}>
+          <div lang={fallbackLang(profile)}>
+            <PrintSummary text={profile.about} />
+          </div>
+        </Section>
+      )}
       {data.sections
         .filter(({ type }) => data[type].length > 0)
         .map(({ type }) => (
-          <section
+          <Section
             key={type}
-            aria-labelledby={`cv-${type}`}
-            data-testid="cv-section"
-            className="flex flex-col gap-zsd-xs"
+            id={`cv-${type}`}
+            heading={t(SECTION_HEADINGS[type])}
           >
-            <h2
-              id={`cv-${type}`}
-              className="break-after-avoid border-b border-zsd-outline-muted font-heading text-zsd-body-lg/tight text-zsd-on-surface"
-            >
-              {t(SECTION_HEADINGS[type])}
-            </h2>
             <SectionBody type={type} data={data} />
-          </section>
+          </Section>
         ))}
     </main>
   )

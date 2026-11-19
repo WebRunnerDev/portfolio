@@ -281,9 +281,9 @@ describe("languages", () => {
 })
 
 describe("technologies", () => {
-  it("lists the directory by category", async () => {
+  it("lists the directory by category in the CV's order", async () => {
     const list = await get("/en/technologies", v.array(TechnologySchema))
-    expect(list.map((t) => t.name)).toEqual(["Hono", "React"])
+    expect(list.map((t) => t.name)).toEqual(["React", "Hono"])
   })
 })
 

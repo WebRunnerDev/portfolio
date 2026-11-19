@@ -170,12 +170,14 @@ export const languages = new Hono<PublicEnv>()
   })
   .all("/", methodNotAllowed("GET, HEAD"))
 
-// The whole directory, grouped by category, then in order.
+// The whole directory, grouped by category in the CV's order, then in order.
 export const technologies = new Hono<PublicEnv>()
   .get("/", async (c) => {
     const { results } = await c.env.DB.prepare(
       `SELECT id, name, category, icon FROM technology
-      ORDER BY category, position, name`
+      ORDER BY CASE category
+        WHEN 'frontend' THEN 0 WHEN 'qa_testing' THEN 1 WHEN 'ai' THEN 2
+        WHEN 'backend_cloud' THEN 3 ELSE 4 END, position, name`
     ).all<Technology>()
     return c.json(results satisfies Technology[])
   })

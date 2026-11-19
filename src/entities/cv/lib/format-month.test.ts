@@ -8,6 +8,10 @@ describe("formatMonth", () => {
     expect(formatMonth("2023-12", "de")).toBe("Dez. 2023")
   })
 
+  it("names the month in Kazakh, which Chromium lacks", () => {
+    expect(formatMonth("2025-11", "kk")).toBe("қар. 2025")
+  })
+
   it("keeps Western digits on ar", () => {
     expect(formatMonth("2024-01", "ar")).toMatch(/2024/)
   })
