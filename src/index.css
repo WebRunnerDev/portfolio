@@ -1248,7 +1248,9 @@ html:active-view-transition-type(forward, back) {
 .item-strip-row {
   --tile: 1.125rem;
   --step: 3.5rem;
+  --pad: 0px;
   position: relative;
+  padding-inline-start: var(--pad);
   display: flex;
   gap: calc(var(--step) - var(--tile));
   padding-block-end: 1.75rem;
@@ -1269,19 +1271,19 @@ html:active-view-transition-type(forward, back) {
     inset-inline-end: 0;
     background: linear-gradient(
       to right,
-      var(--zsd-colors-outline) calc(var(--count) * var(--step)),
+      var(--zsd-colors-outline) calc(var(--pad) + var(--count) * var(--step)),
       transparent
     );
   }
   &:dir(rtl)::before {
     background: linear-gradient(
       to left,
-      var(--zsd-colors-outline) calc(var(--count) * var(--step)),
+      var(--zsd-colors-outline) calc(var(--pad) + var(--count) * var(--step)),
       transparent
     );
   }
   &::after {
-    width: calc(var(--at) * var(--step) + var(--tile) / 2);
+    width: calc(var(--pad) + var(--at) * var(--step) + var(--tile) / 2);
     background: var(--zsd-colors-primary);
     transform: scaleX(0);
     transition: transform var(--zsd-x-zsd-motion-duration-base)
@@ -1294,6 +1296,11 @@ html:active-view-transition-type(forward, back) {
     --tile: 1.375rem;
     --step: 4.5rem;
   }
+}
+/* A note under a rhombus is wider than it: the row steps in by the
+ * difference, so the first note keeps inside the content box. */
+.item-strip-row:has(.item-strip-note) {
+  --pad: 1.25rem;
 }
 .item-strip-cell {
   position: relative;
