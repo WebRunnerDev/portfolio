@@ -1062,14 +1062,22 @@ html:active-view-transition-type(forward, back) {
   }
 }
 
+/* The full stop is where the Swarm lands the chapter's block of the logo
+ * (its `data-swarm-anchor`, ADR-0013, #203): the tile stands off the figure
+ * by the block's room, at every tier, so the figure holds still when `lite`
+ * gives way to `full`; while the scene runs the block is the stop and the
+ * tile gives way to it. */
 @utility chapter-stop {
   display: inline-block;
   width: 0.2em;
   height: 0.2em;
-  margin-inline-start: 0.12em;
+  margin-inline-start: 0.34em;
   margin-bottom: 0.05em;
   background: var(--zsd-colors-primary);
   transform: rotate(45deg);
+  :root:has([data-swarm-scene][data-ready="true"]) & {
+    background: transparent;
+  }
 }
 
 @media (prefers-reduced-motion: no-preference) {

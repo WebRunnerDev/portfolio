@@ -78,14 +78,21 @@ export function HomeSection({
           <div
             id={`home-${id}-title`}
             className={cn(
-              "relative",
               !wide &&
                 "lg:sticky lg:top-[calc(var(--zsd-x-zsd-layout-header-height)+var(--zsd-spacing-xl))] lg:self-start"
             )}
           >
             <span aria-hidden="true" className="mb-zsd-md chapter-numeral">
               <span data-swarm-text className="chapter-figure">
-                <span className="chapter-stop" />
+                {/* The block of the logo the Swarm brings to the chapter
+                    lands here, as the figure's full stop (#203): 0.42em,
+                    centred on the 0.2em tile. */}
+                <span className="relative chapter-stop">
+                  <span
+                    data-swarm-anchor="chapter"
+                    className="absolute -inset-[0.11em]"
+                  />
+                </span>
               </span>
             </span>
             <div data-swarm-text>
@@ -96,15 +103,6 @@ export function HomeSection({
                 className="font-heading text-zsd-headline-lg break-words hyphens-auto text-zsd-on-surface [&:lang(ar)]:tracking-normal"
               />
             </div>
-            <span
-              aria-hidden="true"
-              data-swarm-anchor="chapter"
-              className={cn(
-                "pointer-events-none absolute inset-e-0 top-0 size-16 lg:size-28",
-                !wide &&
-                  "lg:static lg:mt-zsd-xxl lg:block lg:aspect-square lg:size-auto lg:w-[min(100%,8rem)]"
-              )}
-            />
           </div>
           <div
             data-swarm-text

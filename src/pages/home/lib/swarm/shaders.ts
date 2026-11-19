@@ -69,6 +69,9 @@ uniform highp sampler2D uNodes;
 uniform float uTime, uScale, uSizeK, uDpr, uPush;
 uniform vec2 uRes, uPointer;
 uniform vec3 uKey, uSteel, uRim, uFlash;
+// Leaving the home page (ADR-0014): the dust blown off from its facets,
+// uLeave 0 to 1, as far as a share of the view's height uViewH.
+uniform float uLeave, uViewH;
 out vec3 vColor;
 mat3 turn(float ax, float ay) {
   float cx = cos(ax), sx = sin(ax), cy = cos(ay), sy = sin(ay);
@@ -122,6 +125,13 @@ void main() {
     flash = heat * 0.9;
     size = 0.085;
   }
+  if (uLeave > 0.0) {
+    vec3 dir = normalize(vec3((aSeed.yz - 0.5) * 2.0, aSeed.w - 0.35)
+      + n * 0.7);
+    float e = uLeave * uLeave;
+    p += dir * e * uViewH * (0.12 + 0.4 * aSeed.x);
+    flash += uLeave * (1.0 - uLeave) * 3.0 * (0.4 + aSeed.y);
+  }
   vec4 clip = uViewProj * vec4(p, 1.0);
   if (uPush > 0.003) {
     vec2 d = (clip.xy / clip.w * 0.5 + 0.5) * uRes - uPointer;
@@ -140,7 +150,8 @@ void main() {
   }
   gl_Position = clip;
   size *= scale * (0.75 + 0.5 * aSeed.z);
-  gl_PointSize = max(size * uScale / clip.w, uDpr);
+  gl_PointSize = max(size * uScale / clip.w, uDpr)
+    * (1.0 - smoothstep(0.55, 1.0, uLeave));
   float lambert = max(dot(n, uKey), 0.0);
   float rim = pow(1.0 - abs(n.z), 3.0);
   vec3 color = uSteel * (0.1 + 0.72 * lambert) * lit
@@ -226,7 +237,8 @@ vec3 heatRamp(float t) {
 export const THREAD_FRAGMENT = /* glsl */ `#version 300 es
 precision highp float;
 uniform vec4 uMask[${MASKS}];
-uniform float uMaskK, uDpr, uTone, uDark, uLineAlpha;
+// uFade: the threads going out as the home page is left (ADR-0014).
+uniform float uMaskK, uDpr, uTone, uDark, uLineAlpha, uFade;
 uniform vec3 uLine, uPrimary;
 in float vSide, vHeat, vAlpha, vDepth, vU, vLength;
 in vec2 vHead;
@@ -235,7 +247,7 @@ ${TONE}
 ${HEAT}
 void main() {
   float cover = (1.0 - smoothstep(0.45, 1.6, abs(vSide))) * vAlpha;
-  cover *= clamp(1.0 - (vDepth - 27.0) / 26.0, 0.22, 1.0);
+  cover *= clamp(1.0 - (vDepth - 27.0) / 26.0, 0.22, 1.0) * uFade;
   float masked = 1.0;
   for (int i = 0; i < ${MASKS}; i++) {
     vec4 r = uMask[i];

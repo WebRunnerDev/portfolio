@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest"
 
-import { coverKey, pageTransitionTypes, transitionDirection } from "."
+import {
+  coverKey,
+  leavesHome,
+  pageTransitionTypes,
+  transitionDirection,
+} from "."
 
 describe("transitionDirection", () => {
   it("goes forward into the hierarchy and back out of it", () => {
@@ -51,5 +56,27 @@ describe("pageTransitionTypes", () => {
         pathChanged: true,
       })
     ).toEqual([])
+  })
+})
+
+describe("leavesHome", () => {
+  const change = (from: string | undefined, to: string, pathChanged = true) =>
+    leavesHome({
+      fromLocation: from === undefined ? undefined : { pathname: from },
+      toLocation: { pathname: to },
+      pathChanged,
+    })
+
+  it("is the home page to another page", () => {
+    expect(change("/en", "/en/projects/plotops")).toBe(true)
+    expect(change("/ar/", "/ar/cv")).toBe(true)
+  })
+
+  it("isn't another Lang's home page, the way in or the first load", () => {
+    expect(change("/en", "/ru")).toBe(false)
+    expect(change("/en/blog", "/en")).toBe(false)
+    expect(change("/en/blog", "/en/gallery")).toBe(false)
+    expect(change(undefined, "/en/blog")).toBe(false)
+    expect(change("/en", "/en", false)).toBe(false)
   })
 })
