@@ -438,6 +438,14 @@ On the home page they fly from the hero into the header logo as the hero scrolls
 The header's name waits until the logo lands and comes out from under it, so the logo never passes over the name. The menu's tiles leave from the logo where it shows, in flight or in the hero.
 A small `outline` tile follows a fine pointer beside the native cursor and turns `primary` over a link or button. Do not show it with reduced motion or a coarse pointer.
 
+### Item strip
+
+Put an item strip under the title of a list page: Projects, Gallery, Blog. It has one `tile` per item, a step apart on an `outline` hairline from the start edge.
+A tile shows the item's data. A completed project is solid `outline`, an active one a `primary` outline with a breathing tile as in `badge-active`, an archived one an `outline-muted` hairline. A post or an album is solid, with its month or photo count under it in `label-mono`.
+Over the strip, a `label-mono` line gives the summary, or the number, title and status of the item pointed at.
+Pointing at a tile lights the thread up to it, the tile and its card's border in `primary`. Pointing at a card lights its tile. A click scrolls to the card.
+The strip is decoration: hide it from assistive technology, because the cards are the links. With no items, do not show it.
+
 ### Alert
 
 Use `alert-error` when a task fails. State what failed and give a recovery action.
