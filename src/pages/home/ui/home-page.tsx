@@ -1,8 +1,16 @@
-import { lazy, Suspense, useEffect, useState, type ComponentType } from "react"
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useState,
+  type ComponentType,
+} from "react"
 import { getRouteApi } from "@tanstack/react-router"
 
-import { useLang } from "@/shared/i18n"
+import { translate, useLang } from "@/shared/i18n"
 import { useMotionTier } from "@/shared/lib/motion-tier"
+import { notify } from "@/shared/ui/toast"
 
 import { CvSection } from "./cv-section"
 import { GallerySection } from "./gallery-section"
@@ -15,7 +23,7 @@ const route = getRouteApi("/$lang/")
 
 type HomeFullProps = {
   lang: string
-  onFail: (reason: string) => void
+  onFail: (reason: string, lag?: boolean) => void
   onShown: () => void
 }
 
@@ -41,12 +49,21 @@ const HomeFull = lazy<ComponentType<HomeFullProps>>(() =>
 // for its own data below the fold, so none holds up the hero or another; one
 // with nothing to show isn't rendered. The counter numbers the sections
 // shown, after the hero's 01. At `full` the Swarm runs behind the whole
-// page; the hero's `lite` gives way once the scene has drawn.
+// page; the hero's `lite` gives way once the scene has drawn. A scene that
+// lagged below its lightest level says so in a toast as it falls back: the
+// visitor saw it go and should know why.
 export function HomePage() {
   const { profile, cv, projects, posts, albums } = route.useLoaderData()
   const { tier, fallBack } = useMotionTier()
   const lang = useLang()
   const [shown, setShown] = useState(false)
+  const fail = useCallback(
+    (reason: string, lag = false) => {
+      fallBack(reason)
+      if (lag) notify(translate(lang, "motion.lite"))
+    },
+    [fallBack, lang]
+  )
 
   return (
     <>
@@ -56,11 +73,7 @@ export function HomePage() {
       </Suspense>
       {tier === "full" && (
         <Suspense>
-          <HomeFull
-            lang={lang}
-            onFail={fallBack}
-            onShown={() => setShown(true)}
-          />
+          <HomeFull lang={lang} onFail={fail} onShown={() => setShown(true)} />
         </Suspense>
       )}
       <div className="pb-zsd-section [counter-reset:home-section_1] empty:hidden lg:pb-zsd-section-lg">

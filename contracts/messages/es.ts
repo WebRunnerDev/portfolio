@@ -45,6 +45,8 @@ export const es: Messages = {
   "load.failed":
     "No se pudieron cargar los datos. Revisa la conexión e inténtalo de nuevo.",
   "load.retry": "Reintentar",
+  "motion.lite":
+    "La animación iba lenta en este dispositivo, así que el sitio cambió a su versión sencilla.",
   "player.label": "Música",
   "player.play": "Reproducir",
   "player.pause": "Pausa",
