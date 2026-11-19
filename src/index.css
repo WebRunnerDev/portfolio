@@ -1245,9 +1245,18 @@ html:active-view-transition-type(forward, back) {
  * `outline`, an archived one an `outline-muted` hairline; a post or an album
  * solid. In: the thread draws, the rhombi turn in one by one; under reduced
  * motion all stand. */
+/* The strip is a container: with many items the step shrinks to fit the
+ * content box, and so do the rhombi when it gets tight; from 9 items
+ * on (15 from `md`) the notes under the rhombi give way; the line over the
+ * strip still names the one pointed at. */
+.item-strip {
+  container-type: inline-size;
+}
 .item-strip-row {
-  --tile: 1.125rem;
-  --step: 3.5rem;
+  /* The room each item has in the content box. */
+  --room: calc((100cqw - var(--pad)) / var(--count));
+  --tile: min(1.125rem, var(--room) * 0.7);
+  --step: min(3.5rem, var(--room));
   --pad: 0px;
   position: relative;
   padding-inline-start: var(--pad);
@@ -1293,8 +1302,19 @@ html:active-view-transition-type(forward, back) {
     transform: none;
   }
   @media (width >= 48rem) {
-    --tile: 1.375rem;
-    --step: 4.5rem;
+    --tile: min(1.375rem, var(--room) * 0.7);
+    --step: min(4.5rem, var(--room));
+  }
+}
+.item-strip-row:has(.item-strip-cell:nth-child(9)) .item-strip-note {
+  display: none;
+}
+@media (width >= 48rem) {
+  .item-strip-row:has(.item-strip-cell:nth-child(9)) .item-strip-note {
+    display: block;
+  }
+  .item-strip-row:has(.item-strip-cell:nth-child(15)) .item-strip-note {
+    display: none;
   }
 }
 /* A note under a rhombus is wider than it: the row steps in by the

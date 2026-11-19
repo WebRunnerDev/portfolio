@@ -582,3 +582,27 @@ test("no strip without Projects", async ({ page }) => {
   await expect(page.getByTestId("projects-empty")).toBeVisible()
   await expect(strip(page)).toHaveCount(0)
 })
+
+test("a long strip fits 360px: the step shrinks to the content box", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 360, height: 740 })
+  const [first] = projects("en")
+  const many = Array.from({ length: 20 }, (_, i) => ({
+    ...first,
+    id: i + 1,
+    slug: `p${i}`,
+    title: `Project ${i}`,
+    hasCaseStudy: false,
+  }))
+  await page.route("**/cdn-cgi/image/**", (route) =>
+    route.fulfill({ status: 404 })
+  )
+  await page.route("**/api/public/**", (route) => route.fulfill({ json: many }))
+  await page.goto("/en/projects")
+  await expect(tiles(page)).toHaveCount(20)
+  const row = await page.locator(".item-strip-row").boundingBox()
+  const last = await tiles(page).nth(19).boundingBox()
+  expect(last!.x + last!.width).toBeLessThanOrEqual(row!.x + row!.width + 1)
+  await expectNoPageOverflow(page)
+})
