@@ -47,7 +47,8 @@ function bodyCanvas() {
 // crawl lights the hero's web, then the dust gathers into the hero's logo.
 // While it runs it watches the frame rate and steps down a level when it
 // drops; below a lite level, without WebGL2, when the shaders don't link
-// or when the context is lost it falls back to `lite` through `onFail`. A
+// or when the context is lost it falls back to `lite` through `onFail`
+// (`lag` when the frame rate was why). A
 // level pinned in the URL (`?swarm=`, e2e and acceptance) holds and
 // doesn't step down. A new `lang` lays the scene again: the web steps out
 // of the hero's text, which is new. Leaving the home page while the scene
@@ -61,7 +62,7 @@ export function HomeFull({
   onShown,
 }: {
   lang: string
-  onFail: (reason: string) => void
+  onFail: (reason: string, lag?: boolean) => void
   onShown: () => void
 }) {
   // What usePlaying watches in the canvas's stead: over the viewport too.
@@ -122,7 +123,7 @@ export function HomeFull({
             setLevel(next)
             scene.current?.lower(lowered(built, next))
           },
-          onFail: (fps, at) => fail(`${Math.round(fps)} fps at ${at}`),
+          onFail: (fps, at) => fail(`${Math.round(fps)} fps at ${at}`, true),
         })
     const made = swarm(
       element,

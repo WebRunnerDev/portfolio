@@ -42,6 +42,8 @@ export const en = {
   "load.pending": "Loading…",
   "load.failed": "Couldn't load the data. Check the connection and try again.",
   "load.retry": "Try again",
+  "motion.lite":
+    "The animation lagged on this device, so the site switched to its simple version.",
   "player.label": "Music",
   "player.play": "Play",
   "player.pause": "Pause",

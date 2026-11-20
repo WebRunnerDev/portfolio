@@ -2,6 +2,7 @@ import { Outlet, createRootRoute, useMatches } from "@tanstack/react-router"
 
 import { MotionTierProvider, ThemeProvider } from "@/app/providers"
 import { useSettleScroll } from "@/shared/lib/scroll-restoration"
+import { Toasts } from "@/shared/ui/toast"
 
 // The theme a matched route forces through `staticData.theme`, if any.
 function useForcedTheme() {
@@ -23,6 +24,7 @@ export const Route = createRootRoute({
         <MotionTierProvider>
           <Outlet />
         </MotionTierProvider>
+        <Toasts />
       </ThemeProvider>
     )
   },

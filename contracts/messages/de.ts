@@ -44,6 +44,8 @@ export const de: Messages = {
   "load.failed":
     "Die Daten konnten nicht geladen werden. Bitte die Verbindung prüfen und erneut versuchen.",
   "load.retry": "Erneut versuchen",
+  "motion.lite":
+    "Die Animation ruckelte auf diesem Gerät, daher zeigt die Website jetzt die einfache Version.",
   "player.label": "Musik",
   "player.play": "Abspielen",
   "player.pause": "Pause",

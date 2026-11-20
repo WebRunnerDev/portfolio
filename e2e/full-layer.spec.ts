@@ -305,3 +305,27 @@ test("reduced motion never loads the full layer", async ({ page }) => {
   expect(requests).toEqual([])
   await expect(hero(page)).toHaveAttribute("data-tier", "static")
 })
+
+// A scene that lags below its lightest level falls back to `lite` and says
+// so in a toast; the toaster's chunk (sonner) loads only then.
+test("a scene that lags falls back to lite with a toast", async ({ page }) => {
+  await device(page, 2)
+  const toaster: string[] = []
+  page.on("request", (request) => {
+    if (/toaster/.test(request.url())) toaster.push(request.url())
+  })
+  await page.goto("/en")
+  await page.waitForTimeout(PAST_PROBE_MS)
+  await page.mouse.move(200, 200)
+  await expect(scene(page)).toHaveAttribute("data-ready", "true")
+  expect(toaster).toEqual([])
+
+  // The main thread 40 times slower: the scene drops under its 40 fps.
+  const cdp = await page.context().newCDPSession(page)
+  await cdp.send("Emulation.setCPUThrottlingRate", { rate: 40 })
+  const toast = page.locator("[data-sonner-toast]")
+  await expect(toast).toHaveText(/simple version/, { timeout: 20_000 })
+  await cdp.send("Emulation.setCPUThrottlingRate", { rate: 1 })
+  await expect(hero(page)).toHaveAttribute("data-tier", "lite")
+  expect(toaster).toHaveLength(1)
+})
