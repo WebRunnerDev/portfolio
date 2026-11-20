@@ -1,11 +1,6 @@
 import { expect, test, type Page } from "@playwright/test"
 
-import {
-  expectTakeOff,
-  headerLogo,
-  heroTiles,
-  scrollPastHero,
-} from "./logo-flight"
+import { headerLogo, heroBrand, scrollPastBrand } from "./brand-handoff"
 
 // Issue #115: the header stays in view (the only way to the menu); on the
 // home page its controls rise in after the brand, transform and opacity only.
@@ -21,7 +16,7 @@ type Animated = {
 }
 const TIMING_KEYS = ["offset", "computedOffset", "easing", "composite"]
 
-// On the document's timeline: the logo flight runs on the hero's scroll.
+// On the document's timeline: the scroll progress line runs on the scroll.
 const headerAnimations = (page: Page) =>
   page.getByRole("banner").evaluate(
     (element, timingKeys) =>
@@ -85,70 +80,68 @@ test.describe("with reduced motion", () => {
     expect(await headerAnimations(page)).toEqual([])
   })
 
-  test("the logo tiles stand in the header at once", async ({ page }) => {
+  // The `static` hero's still frame shows the logo: the header's waits too.
+  test("the lockup swaps for the brand without moving", async ({ page }) => {
     await page.goto("/en")
+    await expect(page.locator("section[data-tier]")).toHaveAttribute(
+      "data-tier",
+      "static"
+    )
+    await expect(headerLogo(page)).toHaveCSS("opacity", "0")
+    await scrollPastBrand(page)
     await expect(headerLogo(page)).toHaveCSS("opacity", "1")
     await expect(headerLogo(page)).toHaveCSS("transform", "none")
+    await expect(headerLogo(page)).toHaveCSS("transition-duration", "0s")
   })
 })
 
-// Issue #158, DESIGN.md › Tile: on the home page the hero's logo tiles fly
-// into the header logo as the hero scrolls away.
-test("the home page header logo fills once the hero has gone", async ({
+const headerName = (page: Page) =>
+  page.getByRole("banner").getByTestId("brand").locator(":scope > span").last()
+
+// DESIGN.md › Tile: on the home page the hero shows one logo, its effect's.
+// The header's lockup waits for the hero's brand to go under the header,
+// then the logo grows into its slot and the name comes out from under it.
+test("the home page header lockup fills once the brand has gone", async ({
   page,
 }) => {
   await page.goto("/en")
-  await expect(heroTiles(page)).toHaveCSS("opacity", "1")
+  // The brand is the word alone: no logo beside it.
+  await expect(heroBrand(page).locator("svg")).toHaveCount(0)
   await expect(headerLogo(page)).toHaveCSS("opacity", "0")
-  // The slot keeps its place: the name doesn't move when the tiles land.
-  const name = page
-    .getByRole("banner")
-    .getByTestId("brand")
-    .locator(":scope > span")
-    .last()
+  const name = headerName(page)
+  const slot = (await headerLogo(page).locator("..").boundingBox())!
   const before = (await name.boundingBox())!
   // The hero's brand says the name: the header's waits under its mask.
   await expect(name.locator("span")).toHaveCSS("opacity", "0")
 
-  await scrollPastHero(page)
-  await expect(headerLogo(page)).toHaveCSS("opacity", "1")
-  await expect(headerLogo(page)).toHaveCSS(
-    "transform",
-    "matrix(1, 0, 0, 1, 0, 0)"
-  )
-  await expect(heroTiles(page)).toHaveCSS("opacity", "0")
-  expect(await name.boundingBox()).toEqual(before)
-  await expect(name.locator("span")).toHaveCSS("opacity", "1")
-  await expect(name.locator("span")).toHaveCSS(
-    "transform",
-    "matrix(1, 0, 0, 1, 0, 0)"
-  )
-
-  // And back into the hero.
-  await page.evaluate("scrollTo(0, 0)")
-  await expect(headerLogo(page)).toHaveCSS("opacity", "0")
-  await expect(heroTiles(page)).toHaveCSS("opacity", "1")
-})
-
-// The logo never stops over the name: the name comes out from under it only
-// as it lands, and a keyboard focus on the home link shows it at once.
-test("the header's name waits for the logo to land", async ({ page }) => {
-  await page.goto("/en")
-  await expect(heroTiles(page)).toHaveCSS("opacity", "1")
-  const name = page
-    .getByRole("banner")
-    .getByTestId("brand")
-    .locator(":scope > span")
-    .last()
-    .locator("span")
-  // Halfway through the hero's exit the logo is over the header's start.
+  // Halfway under the header the brand still says it.
   await page.evaluate(`
     document.body.style.paddingBottom = "200vh"
-    scrollTo(0, document.querySelector("section[data-tier]").getBoundingClientRect().height / 2)
+    const h1 = document.querySelector("h1").getBoundingClientRect()
+    scrollTo(0, h1.top + h1.height / 2 - parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop))
   `)
-  await expect(headerLogo(page)).toHaveCSS("opacity", "1")
-  await expect(name).toHaveCSS("opacity", "0")
+  await expect(headerLogo(page)).toHaveCSS("opacity", "0")
 
+  await scrollPastBrand(page)
+  await expect(headerLogo(page)).toHaveCSS("opacity", "1")
+  await expect(headerLogo(page)).toHaveCSS("transform", "none")
+  // In its slot, and the name doesn't move.
+  expect(await headerLogo(page).boundingBox()).toEqual(slot)
+  expect(await name.boundingBox()).toEqual(before)
+  await expect(name.locator("span")).toHaveCSS("opacity", "1")
+  await expect(name.locator("span")).toHaveCSS("transform", "none")
+
+  // Back as soon as the brand shows again, without a fade.
+  await page.evaluate("scrollTo(0, 0)")
+  await expect(headerLogo(page)).toHaveCSS("opacity", "0")
+  await expect(name.locator("span")).toHaveCSS("opacity", "0")
+})
+
+// A keyboard focus on the home link shows the name at once.
+test("a keyboard focus shows the header's name", async ({ page }) => {
+  await page.goto("/en")
+  const name = headerName(page).locator("span")
+  await expect(name).toHaveCSS("opacity", "0")
   const home = page
     .getByRole("banner")
     .getByRole("link", { name: "WebRunner, Home" })
@@ -162,14 +155,6 @@ test("the header's name waits for the logo to land", async ({ page }) => {
   await expect(home).toBeFocused()
   await expect(name).toHaveCSS("opacity", "1")
   await expect(name).toHaveCSS("transform", "none")
-})
-
-test("the header logo takes off from over the hero's tiles", async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 320, height: 640 })
-  await page.goto("/en")
-  await expectTakeOff(page)
 })
 
 // Issue #167: a rust hairline over the header's bottom border shows how far

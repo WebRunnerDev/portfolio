@@ -1,6 +1,5 @@
 import { useLayoutEffect, useRef, type RefObject } from "react"
 
-import { shownLogo } from "@/shared/lib/logo-flight"
 import { LogoTiles } from "@/shared/ui/logo"
 
 import {
@@ -35,12 +34,11 @@ function play(
 // header and the menu). They rest spread over the screen, faint, through
 // `placements` (from `lg`, over the panel, small enough that they stay in
 // it; the clip reaches up over the header, so they leave the logo in view).
-// On open they leave the logo where it shows and on close fold back into it:
-// the header logo's place, in the menu bar (`slot`), or on the home page the
-// header logo on its way from the hero or the hero's tiles
-// (@/shared/lib/logo-flight), so they never come out of an empty slot. The
-// whole set scales and moves on the compositor (Web Animations, transform
-// and opacity only); each tile moves inside it. Under reduced motion they
+// On open they leave the header logo's place, in the menu bar (`slot`), and
+// on close fold back into it, on the home page too while the logo there
+// waits for the hero's brand (@/shared/lib/brand-handoff): it is where the
+// logo lives. The whole set scales and moves on the compositor (Web
+// Animations, transform and opacity only); each tile moves inside it. Under reduced motion they
 // just stand spread. The set takes its place in the reading direction; the
 // tiles are never mirrored.
 export function MenuTiles({
@@ -58,8 +56,8 @@ export function MenuTiles({
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) return
 
     // The set's own box (offset*: untransformed, from its frame), mapped
-    // onto the logo.
-    const box = shownLogo() ?? slot.current.getBoundingClientRect()
+    // onto the logo's slot.
+    const box = slot.current.getBoundingClientRect()
     const frame = (el.offsetParent ?? document.body).getBoundingClientRect()
     const left = frame.left + el.offsetLeft
     const top = frame.top + el.offsetTop

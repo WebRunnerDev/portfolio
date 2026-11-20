@@ -73,9 +73,9 @@ test("reduced motion gets the static tier, an image in place", async ({
     )
     .toMatch(/swarm-light-portrait/)
   await expect(image).toHaveJSProperty("naturalWidth", 585)
-  // Nothing moves: the brand's words and the logo tiles are in place.
-  const parts = hero(page).locator(".hero-rise, .hero-gather")
-  await expect(parts).toHaveCount(9)
+  // Nothing moves: the brand's words are in place.
+  const parts = hero(page).locator(".hero-rise")
+  await expect(parts).toHaveCount(2)
   for (const part of await parts.all()) {
     await expect(part).toHaveCSS("transform", "none")
   }
@@ -324,8 +324,6 @@ test("in RTL the effect and the brand don't mirror, the text does", async ({
   const ltrEffect = (await effect(page).boundingBox())!
   const ltrBrand = page.getByRole("heading", { level: 1 })
   const ltrText = (await ltrBrand.locator("[dir=ltr]").boundingBox())!
-  const ltrTiles = (await ltrBrand.locator("svg").boundingBox())!
-  expect(ltrTiles.x).toBeGreaterThan(ltrText.x)
 
   await page.goto("/ar")
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl")
@@ -333,10 +331,9 @@ test("in RTL the effect and the brand don't mirror, the text does", async ({
   expect(rtlEffect.x).toBeCloseTo(ltrEffect.x, 0)
   const brand = page.getByRole("heading", { level: 1 })
   await expect(brand.locator("[dir=ltr]")).toHaveCSS("direction", "ltr")
-  // The tiles sit at the brand's end in the reading direction: its left.
+  // The brand stands at the start in the reading direction: the right.
   const text = (await brand.locator("[dir=ltr]").boundingBox())!
-  const tiles = (await brand.locator("svg").boundingBox())!
-  expect(tiles.x).toBeLessThan(text.x)
+  expect(text.x).toBeGreaterThan(ltrText.x)
   // The actions start at the right.
   const cv = (await hero(page).getByRole("link").first().boundingBox())!
   const projects = (await hero(page).getByRole("link").nth(1).boundingBox())!

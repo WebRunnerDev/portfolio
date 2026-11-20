@@ -26,7 +26,7 @@ async function open(page: Page, path: string) {
   await page.goto(path)
   await expect(page.locator("main h1").first()).toBeVisible()
   // Entrances (ADR-0005) run before axe reads the colours. Those on the
-  // document's timeline only: one driven by the scroll (the logo flight)
+  // document's timeline only: one driven by the scroll (a scroll timeline)
   // finishes only at the end of its range.
   await page.evaluate(
     `Promise.allSettled(document.getAnimations()

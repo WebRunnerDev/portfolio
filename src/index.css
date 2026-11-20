@@ -335,10 +335,9 @@
   animation-timing-function: var(--zsd-x-zsd-motion-easing-enter);
 }
 
-/* The header shows the new page's at once. Its two snapshots aren't one
- * size: on the home page the header logo waits over the hero (logo flight),
- * and the snapshot takes it in, so a crossfade would stretch the controls
- * of one over the other's box. */
+/* The header shows the new page's at once: on the home page its lockup may
+ * wait empty for the hero's brand (brand handoff), and a crossfade would
+ * fade the logo out and in over the page's slide. */
 ::view-transition-group(site-header),
 ::view-transition-new(site-header) {
   animation: none;
@@ -708,8 +707,7 @@ html:active-view-transition-type(forward, back) {
  * in `hero-rise` is for LCP: Chrome skips text hidden under its mask at the
  * first paint, but counts it whole once its opacity rises from 0.
  * `hero-rise`: a word of the brand moves up from under its mask after
- * `--hero-delay`; `hero-in`: the subtitle and the actions rise into place;
- * `hero-gather`: a logo tile flies from its placement into the logo.
+ * `--hero-delay`; `hero-in`: the subtitle and the actions rise into place.
  * Instant under reduced motion. */
 @keyframes hero-rise {
   from {
@@ -722,15 +720,6 @@ html:active-view-transition-type(forward, back) {
   from {
     opacity: 0;
     transform: translateY(8px);
-  }
-}
-
-@keyframes hero-gather {
-  from {
-    opacity: 0;
-  }
-  to {
-    transform: none;
   }
 }
 
@@ -750,125 +739,45 @@ html:active-view-transition-type(forward, back) {
   }
 }
 
-/* The delay comes from the tile's placement (`LogoTiles`). */
-@utility hero-gather {
-  animation: hero-gather var(--zsd-x-zsd-motion-duration-slow)
-    var(--zsd-x-zsd-motion-easing-layout) both;
-  @media (prefers-reduced-motion: reduce) {
-    animation: none;
-    transform: none !important;
-  }
-}
-
-/* DESIGN.md › Tile, docs/design-brief.md › Хедер: the logo flight
- * (`useLogoFlight` in @/shared/lib/logo-flight). The hero
- * (`logo-flight-hero`, not at `static`) lends its view timeline to the page;
- * over its `exit` the header logo (`logo-flight-to`) flies from over the
- * hero's tiles (`logo-flight-from`) into its slot on the tile curve. Step
- * curves swap the two as the flight starts, so one set of tiles is on screen.
- * Without `timeline-scope`, an IntersectionObserver flips the two end states
- * (`data-logo-flight`) and a transition carries the tiles between them.
- * Pages without the hero, and reduced motion, keep the header logo as is. */
-@keyframes logo-flight-move {
-  from {
-    transform: translate(
-        calc(var(--logo-flight-x, 0) * 1px),
-        calc(var(--logo-flight-y, 0) * 1px)
-      )
-      scale(var(--logo-flight-scale, 1));
-  }
-}
-
-@keyframes logo-flight-show {
-  from {
+/* DESIGN.md › Tile, docs/design-brief.md › Хедер: the brand handoff
+ * (`useBrandHandoff` in @/shared/lib/brand-handoff). On the home page the
+ * header's logo (`brand-handoff-to`) and name (`brand-handoff-name`) stay
+ * empty while the hero's brand (`brand-handoff-from`) shows below the
+ * header, the hero's effect showing the logo. Once the brand has gone under
+ * it (`data-brand-handoff="header"`), the logo grows into its slot and the
+ * name comes out from under it after. Showing is a transition; hiding is
+ * instant, so two logos never show at once, nor does the lockup fade out on
+ * the way into the home page. Without a script yet, the lockup waits. Under
+ * reduced motion it swaps without moving. A keyboard focus shows the name at
+ * once. */
+:root:has(.brand-handoff-from):not([data-brand-handoff="header"]) {
+  .brand-handoff-to {
     opacity: 0;
+    transform: scale(0.5);
   }
-}
-
-@keyframes logo-flight-hide {
-  to {
-    opacity: 0;
-  }
-}
-
-/* The header's name waits under its mask, at the logo's side, and comes out
- * as the logo lands: no point of the flight puts the logo over it. The
- * hero's brand says the name meanwhile. A keyboard focus shows it at once. */
-@keyframes logo-flight-name {
-  from {
+  .brand-handoff-name {
     opacity: 0;
     transform: translateX(-100%);
   }
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  :root:has(.logo-flight-hero) .logo-flight-to {
-    transform-origin: 0 0;
-  }
-
-  @supports (timeline-scope: --logo-flight) {
-    :root:has(.logo-flight-hero) {
-      timeline-scope: --logo-flight;
-    }
-    .logo-flight-hero {
-      view-timeline: --logo-flight block;
-    }
-    /* The timeline sees the viewport below the header (`scroll-padding-top`):
-     * at the top of the page the hero's `exit` is at 0%, so the swap waits
-     * 1px for the first scroll. */
-    :root:has(.logo-flight-hero) .logo-flight-to {
-      animation:
-        logo-flight-move var(--zsd-x-zsd-motion-easing-layout) both,
-        logo-flight-show steps(1, jump-start) both;
-      animation-timeline: --logo-flight;
-      animation-range:
-        exit,
-        exit 1px exit 100%;
-    }
-    .logo-flight-hero .logo-flight-from {
-      animation: logo-flight-hide steps(1, jump-start) both;
-      animation-timeline: --logo-flight;
-      animation-range: exit 1px exit 100%;
-    }
-    :root:has(.logo-flight-hero) .logo-flight-name {
-      animation: logo-flight-name var(--zsd-x-zsd-motion-easing-enter) both;
-      animation-timeline: --logo-flight;
-      animation-range: exit 85% exit 100%;
-    }
-  }
-
-  @supports not (timeline-scope: --logo-flight) {
-    :root:has(.logo-flight-hero) .logo-flight-to {
-      transition-property: transform, opacity;
-      transition-duration: var(--zsd-x-zsd-motion-duration-slow);
-      transition-timing-function: var(--zsd-x-zsd-motion-easing-layout);
-    }
-    :root:has(.logo-flight-hero):not([data-logo-flight="header"])
-      .logo-flight-to {
-      opacity: 0;
-      transform: translate(
-          calc(var(--logo-flight-x, 0) * 1px),
-          calc(var(--logo-flight-y, 0) * 1px)
-        )
-        scale(var(--logo-flight-scale, 1));
-    }
-    :root:has(.logo-flight-hero) .logo-flight-name {
+  :root:has(.brand-handoff-from)[data-brand-handoff="header"] {
+    .brand-handoff-to,
+    .brand-handoff-name {
       transition-property: transform, opacity;
       transition-duration: var(--zsd-x-zsd-motion-duration-slow);
       transition-timing-function: var(--zsd-x-zsd-motion-easing-enter);
     }
-    :root:has(.logo-flight-hero):not([data-logo-flight="header"])
-      .logo-flight-name {
-      opacity: 0;
-      transform: translateX(-100%);
+    .brand-handoff-name {
+      transition-delay: calc(var(--zsd-x-zsd-motion-duration-slow) / 2);
     }
   }
+}
 
-  :root:has(.logo-flight-hero) :focus-visible .logo-flight-name {
-    animation: none;
-    opacity: 1;
-    transform: none;
-  }
+:root:has(.brand-handoff-from) :focus-visible .brand-handoff-name {
+  opacity: 1;
+  transform: none;
 }
 
 /* docs/design-brief.md › Арт-дирекция этапа 7 › База, п. 4: how far the page
@@ -1132,7 +1041,7 @@ html:active-view-transition-type(forward, back) {
  * the footer (`SiteFooter` in @/widgets/footer) the home page's Swarm
  * gathers its logo into. It takes room only while the scene runs (its
  * canvas, `data-swarm-scene`): elsewhere nothing gathers there. An
- * attribute, not an import, as the logo flight. */
+ * attribute, not an import, as the brand handoff. */
 [data-swarm-anchor="footer"] {
   display: none;
 }

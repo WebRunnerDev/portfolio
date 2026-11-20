@@ -3,7 +3,6 @@ import { Link } from "@tanstack/react-router"
 
 import type { Profile } from "@contracts/api/public"
 import { useLang, useT } from "@/shared/i18n"
-import { useLogoFlight } from "@/shared/lib/logo-flight"
 import { STAGGER } from "@/shared/lib/motion"
 import { useMotionTier, type MotionTier } from "@/shared/lib/motion-tier"
 import { fallbackLang } from "@/shared/ui/fallback-notice"
@@ -107,7 +106,6 @@ function HeroSubtitle({ profile }: { profile: Promise<HeroProfile | null> }) {
 // Motion Tier.
 // One viewport tall less the header. The effect spans the whole hero up to
 // the viewport's edges and is never mirrored; the text follows the Direction.
-// Its logo tiles fly into the header's as it scrolls away, but at `static`.
 // `covered`: the full layer's scene has drawn, and `lite` gives way to it.
 export function Hero({
   tier,
@@ -120,14 +118,12 @@ export function Hero({
 }) {
   const lang = useLang()
   const t = useT()
-  const { heroRef, tilesRef } = useLogoFlight(tier !== "static")
 
   return (
     <section
-      ref={heroRef}
       data-tier={tier}
       data-swarm-web="hero"
-      className={`${tier === "static" ? "" : "logo-flight-hero"} relative isolate flex min-h-(--hero-height) overflow-hidden hero-logo-band`}
+      className="relative isolate flex min-h-(--hero-height) overflow-hidden hero-logo-band"
     >
       <div aria-hidden="true" dir="ltr" className="absolute inset-0 -z-10">
         <HeroEffect tier={tier} covered={covered} />
@@ -135,7 +131,7 @@ export function Hero({
       {tier === "full" && <HeroReadout />}
       <MotionDiagnosis />
       <div className="mx-auto flex w-full max-w-(--zsd-x-zsd-layout-content-max) flex-col justify-center px-zsd-lg py-zsd-section max-sm:pb-(--hero-logo-band) md:px-zsd-xxl">
-        <HeroBrand tiles={tilesRef} />
+        <HeroBrand />
         <p
           data-swarm-text
           style={delay(SUBTITLE_START)}

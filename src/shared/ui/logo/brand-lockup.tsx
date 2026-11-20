@@ -7,7 +7,7 @@ import { Logo } from "./logo"
 // Logo, then the Brand name. The lockup is never mirrored (ADR-0007).
 // `logo` replaces the logo, e.g. by a slot its tiles fly into (the menu).
 // The name sits in a mask, so it can come out from under the logo
-// (`nameClassName` moves it, e.g. `logo-flight-name` in the header).
+// (`nameClassName` moves it, e.g. `brand-handoff-name` in the header).
 export function BrandLockup({
   logo = <Logo className="size-6 shrink-0" />,
   className,

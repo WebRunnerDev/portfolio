@@ -150,9 +150,9 @@ test("on /ar/ the layout mirrors, the tiles don't", async ({ page }) => {
   expect((await close.boundingBox())!.x).toBeLessThan(200)
 })
 
-// On the home page the header logo may be on its way from the hero: the
-// tiles leave from where it is, not out of its empty slot.
-test("the tiles leave the logo where it shows", async ({ page }) => {
+// On the home page the header logo waits for the hero's brand: the tiles
+// still leave its slot, where the logo lives.
+test("the tiles leave the header logo's slot", async ({ page }) => {
   await page.goto("/en")
   const header = page
     .getByRole("banner")
@@ -161,12 +161,7 @@ test("the tiles leave the logo where it shows", async ({ page }) => {
   await page.evaluate("document.fonts.ready")
   await trigger(page).hover()
   await expect(trigger(page)).toHaveAttribute("aria-haspopup", "dialog")
-  await page.evaluate(`
-    document.body.style.paddingBottom = "200vh"
-    scrollTo(0, document.querySelector("section[data-tier]").getBoundingClientRect().height / 2)
-  `)
-  await expect(header).toHaveCSS("opacity", "1")
-  const logo = (await header.boundingBox())!
+  const slot = (await header.locator("..").boundingBox())!
   // The set where its opening starts.
   const start = (await trigger(page).evaluate(async (element) => {
     const button = element as unknown as {
@@ -193,7 +188,7 @@ test("the tiles leave the logo where it shows", async ({ page }) => {
     return { x, y, width }
   })) as { x: number; y: number; width: number }
   for (const key of ["x", "y", "width"] as const) {
-    expect(Math.abs(start[key] - logo[key])).toBeLessThanOrEqual(2)
+    expect(Math.abs(start[key] - slot[key])).toBeLessThanOrEqual(2)
   }
 })
 
