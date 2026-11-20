@@ -74,6 +74,7 @@ export const ru: Messages = {
   "cv.tech.ai": "Разработка с AI",
   "cv.tech.tools_design": "Инструменты и дизайн",
   "project.status.in_progress": "В работе",
+  "project.status.maintained": "В поддержке",
   "project.status.completed": "Завершён",
   "project.status.archived": "В архиве",
   "project.demo": "Демо",

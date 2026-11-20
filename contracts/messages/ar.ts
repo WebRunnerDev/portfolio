@@ -74,6 +74,7 @@ export const ar: Messages = {
   "cv.tech.ai": "التطوير بمساعدة الذكاء الاصطناعي",
   "cv.tech.tools_design": "الأدوات والتصميم",
   "project.status.in_progress": "قيد التطوير",
+  "project.status.maintained": "مدعوم",
   "project.status.completed": "مكتمل",
   "project.status.archived": "مؤرشف",
   "project.demo": "عرض تجريبي",

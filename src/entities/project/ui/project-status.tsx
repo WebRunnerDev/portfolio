@@ -1,4 +1,4 @@
-import { Archive, CircleCheck } from "lucide-react"
+import { Activity, Archive, CircleCheck } from "lucide-react"
 import { cn } from "cn"
 
 import type { Project } from "@contracts/api/public"
@@ -9,6 +9,7 @@ const STATUS: Record<
   { label: MessageKey; icon: typeof CircleCheck | null }
 > = {
   in_progress: { label: "project.status.in_progress", icon: null },
+  maintained: { label: "project.status.maintained", icon: Activity },
   completed: { label: "project.status.completed", icon: CircleCheck },
   archived: { label: "project.status.archived", icon: Archive },
 }

@@ -40,7 +40,7 @@ webrunner.dev ── Worker ─┬─ static assets (SPA)
 | `certification` | название, издатель, дата, ссылка на credential |
 | `language_skill` + `_translation` | язык, уровень |
 | `technology` | имя, группа (Front-End / Back-End & Cloud / QA & Testing / Tools & Design), иконка |
-| `project` + `_translation` | slug, статус, обложка, ссылки GitHub/демо, `featured`, `in_cv`, описание, `cv_bullets`, `case_study` (Markdown, опц.) |
+| `project` + `_translation` | slug, статус (`in_progress`, `maintained`, `completed`, `archived`; `maintained` с миграции 0004), обложка, ссылки GitHub/демо, `featured`, `in_cv`, описание, `cv_bullets`, `case_study` (Markdown, опц.) |
 | `project_technology`, `experience_technology` | связи со справочником |
 | `post` + `post_translation` | slug, статус (draft/published), даты, обложка; заголовок, excerpt, body (Markdown), время чтения |
 | `tag`, `post_tag` | теги постов |

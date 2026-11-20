@@ -150,9 +150,11 @@ test("on /ar/ the layout mirrors, the tiles don't", async ({ page }) => {
   expect((await close.boundingBox())!.x).toBeLessThan(200)
 })
 
-// On the home page the header logo waits for the hero's brand: the tiles
-// still leave its slot, where the logo lives.
-test("the tiles leave the header logo's slot", async ({ page }) => {
+// On the home page the header logo waits for the hero's brand: the menu
+// shows it first, so the tiles leave a logo, not an empty slot.
+test("the tiles leave the header logo, shown for the menu", async ({
+  page,
+}) => {
   await page.goto("/en")
   const header = page
     .getByRole("banner")
@@ -190,6 +192,16 @@ test("the tiles leave the header logo's slot", async ({ page }) => {
   for (const key of ["x", "y", "width"] as const) {
     expect(Math.abs(start[key] - slot[key])).toBeLessThanOrEqual(2)
   }
+  // Under it, the header logo grows into its slot and stays while the menu
+  // is open; the tiles wait for it.
+  await expect(header).toHaveCSS("opacity", "1")
+  await expect(header).toHaveCSS("transform", "none")
+  await expect(page.getByTestId("menu-tiles")).toHaveCSS("visibility", "hidden")
+
+  // Closed, the logo waits for the brand again.
+  await page.keyboard.press("Escape")
+  await expect(page.getByTestId("menu-tiles")).toHaveCount(0)
+  await expect(header).toHaveCSS("opacity", "0")
 })
 
 test("the panel hangs from the header and leaves the page in use", async ({

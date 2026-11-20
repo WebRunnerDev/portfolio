@@ -352,7 +352,7 @@ export const ENTITIES: EntityConfig[] = [
         name: "status",
         label: "Status",
         kind: "select",
-        options: ["in_progress", "completed", "archived"],
+        options: ["in_progress", "maintained", "completed", "archived"],
         initial: "in_progress",
       },
       { name: "githubUrl", label: "GitHub URL", kind: "url" },

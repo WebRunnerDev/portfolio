@@ -423,7 +423,7 @@ For an empty list, explain what appears there.
 
 ### Badge
 
-Use `badge` with an `outline-muted` border for technology tags and for a project that is not active.
+Use `badge` with an `outline-muted` border for technology tags and for a project that is not active: completed (a check icon), maintained (a pulse icon: finished, live and looked after) or archived.
 Use `badge-active` with a `primary` border for an active project, always with its status text.
 In place of an icon, it shows a small `tile` that breathes in opacity and scale. With reduced motion, the tile stands lit.
 The two project badges have the same size and padding.
@@ -436,13 +436,13 @@ The logo uses `on-surface` through `currentColor`. Hide decorative tiles from as
 The seven logo tiles move as one element between the header and the menu.
 On the home page the hero shows one logo, its effect's; the hero's brand is the word alone.
 The header's logo and name stay empty while the hero's brand shows below the header. Once the brand has gone under it, the logo grows into its slot and the name comes out from under it; they hide at once when the brand comes back, so two logos never show together. Under reduced motion they swap without moving.
-The menu's tiles leave from the header logo's slot and fold back into it.
+The menu's tiles leave from the header logo and fold back into it. While the logo waits for the brand, opening the menu first grows it into its slot, and the tiles leave once it stands; after the menu has closed, the logo waits again.
 A small `outline` tile follows a fine pointer beside the native cursor and turns `primary` over a link or button. Do not show it with reduced motion or a coarse pointer.
 
 ### Item strip
 
 Put an item strip under the title of a list page: Projects, Gallery, Blog. It has one `tile` per item, a step apart on an `outline` hairline from the start edge.
-A tile shows the item's data. A completed project is solid `outline`, an active one a `primary` outline with a breathing tile as in `badge-active`, an archived one an `outline-muted` hairline. A post or an album is solid, with its month or photo count under it in `label-mono`.
+A tile shows the item's data. A completed project is solid `outline`, a maintained one solid `outline` with a hollow core (still, no rust), an active one a `primary` outline with a breathing tile as in `badge-active`, an archived one an `outline-muted` hairline. A post or an album is solid, with its month or photo count under it in `label-mono`.
 Over the strip, a `label-mono` line gives the summary, or the number, title and status of the item pointed at.
 Pointing at a tile lights the thread up to it, the tile and its card's border in `primary`. Pointing at a card lights its tile. A click scrolls to the card.
 The strip is decoration: hide it from assistive technology, because the cards are the links. With no items, do not show it.

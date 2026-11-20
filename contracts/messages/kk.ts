@@ -74,6 +74,7 @@ export const kk: Messages = {
   "cv.tech.ai": "AI көмегімен әзірлеу",
   "cv.tech.tools_design": "Құралдар және дизайн",
   "project.status.in_progress": "Жұмыста",
+  "project.status.maintained": "Қолдауда",
   "project.status.completed": "Аяқталған",
   "project.status.archived": "Мұрағатта",
   "project.demo": "Демо",

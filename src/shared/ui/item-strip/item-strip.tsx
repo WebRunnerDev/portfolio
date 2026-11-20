@@ -6,7 +6,7 @@ export type StripItem = {
   key: string
   label: string
   // A project's status as a rhombus; a post or an album is `plain`.
-  state: "done" | "active" | "archived" | "plain"
+  state: "done" | "active" | "maintained" | "archived" | "plain"
   // Under the rhombus, in mono: a post's month, an album's photos.
   note?: string
   // In the line over the strip while pointed at, else the `note`: a

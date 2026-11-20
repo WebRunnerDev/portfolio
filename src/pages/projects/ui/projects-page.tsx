@@ -9,6 +9,7 @@ const route = getRouteApi("/$lang/projects/")
 const STATE = {
   completed: "done",
   in_progress: "active",
+  maintained: "maintained",
   archived: "archived",
 } as const
 

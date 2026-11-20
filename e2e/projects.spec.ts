@@ -90,7 +90,11 @@ const fallbackPlotOps = {
   description: "Field operations",
 }
 
-async function mockPublicApi(page: Page, { empty = false } = {}) {
+// `maintained`: AITU AMS is finished and live, still looked after.
+async function mockPublicApi(
+  page: Page,
+  { empty = false, maintained = false } = {}
+) {
   // The Worker sends the Case Study rendered.
   const caseStudy = await markdownTree(CASE_STUDY)
   // Cloudflare Images only runs on the zone.
@@ -101,7 +105,11 @@ async function mockPublicApi(page: Page, { empty = false } = {}) {
     const [, , , lang, entity, slug] = new URL(
       route.request().url()
     ).pathname.split("/")
-    const list = empty ? [] : projects(lang)
+    const list = empty
+      ? []
+      : projects(lang).map((p) =>
+          maintained && p.slug === "ams" ? { ...p, status: "maintained" } : p
+        )
     if (entity !== "projects") {
       return route.fulfill({ status: 404, json: { error: "not_found" } })
     }
@@ -539,6 +547,29 @@ test("the strip has a rhombus per Project, its status, and a summary", async ({
   await expect(tiles(page).nth(2)).toHaveAttribute("data-state", "archived")
   await expect(strip(page)).toContainText("3 projects · 1 in progress")
   await expect(strip(page)).toHaveAttribute("aria-hidden", "true")
+})
+
+// CONTEXT.md › Project: a maintained Project is finished and live. Its
+// badge is neutral with a pulse icon, its rhombus solid with a hollow core;
+// the rust stays with the one in progress, and it isn't counted as such.
+test("a maintained Project reads as such on its badge and rhombus", async ({
+  page,
+}) => {
+  await mockPublicApi(page, { maintained: true })
+  await page.goto("/en/projects")
+  const badge = cards(page).nth(1).getByTestId("project-status")
+  await expect(badge).toHaveText("Maintained")
+  await expect(badge.locator("svg")).toHaveCount(1)
+  await expect(badge).not.toHaveCSS("border-color", "rgb(184, 69, 48)")
+  await expect(tiles(page).nth(1)).toHaveAttribute("data-state", "maintained")
+  await expect(strip(page)).toContainText("3 projects · 1 in progress")
+  await tiles(page).nth(1).hover()
+  await expect(strip(page)).toContainText("02 · AITU AMS · Maintained")
+
+  await page.goto("/ru/projects")
+  await expect(cards(page).nth(1).getByTestId("project-status")).toHaveText(
+    "В поддержке"
+  )
 })
 
 test("a rhombus pointed at lights its card, and a card its rhombus", async ({

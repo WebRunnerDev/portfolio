@@ -75,6 +75,7 @@ export const es: Messages = {
   "cv.tech.ai": "Desarrollo asistido por IA",
   "cv.tech.tools_design": "Herramientas y diseño",
   "project.status.in_progress": "En curso",
+  "project.status.maintained": "En mantenimiento",
   "project.status.completed": "Terminado",
   "project.status.archived": "Archivado",
   "project.demo": "Demo",

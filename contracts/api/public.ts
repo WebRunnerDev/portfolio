@@ -11,6 +11,15 @@ import { MarkdownTreeSchema } from "../markdown/tree"
 
 const Fallback = { fallback: v.boolean() }
 
+// A Project's status (CONTEXT.md › Project): `maintained` is finished and
+// live, still looked after. The same list as the CHECK on `project.status`.
+export const PROJECT_STATUSES = [
+  "in_progress",
+  "maintained",
+  "completed",
+  "archived",
+] as const
+
 const Month = v.pipe(v.string(), v.regex(/^\d{4}-\d{2}$/))
 
 export const TechnologySchema = v.object({
@@ -128,7 +137,7 @@ export const ProjectSchema = v.object({
   slug: v.string(),
   title: v.string(),
   description: v.string(),
-  status: v.picklist(["in_progress", "completed", "archived"]),
+  status: v.picklist(PROJECT_STATUSES),
   coverKey: v.nullable(v.string()),
   githubUrl: v.nullable(v.string()),
   demoUrl: v.nullable(v.string()),
