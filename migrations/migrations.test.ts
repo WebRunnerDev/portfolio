@@ -7,6 +7,7 @@ import { join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 import { getPlatformProxy } from "wrangler"
+import { PROJECT_STATUSES } from "../contracts/api/public.ts"
 import { LANGS } from "../contracts/lang.ts"
 
 // The part of D1Database used here. The real type lives in the Worker's
@@ -133,6 +134,55 @@ describe("D1 migrations", () => {
     expect(withLang).toEqual(
       expect.arrayContaining([...translations, "cv_pdf"])
     )
+  })
+
+  it("checks a Project's status against the contract", async () => {
+    const list = /status IN \(([^)]*)\)/.exec(await tableSql("project"))?.[1]
+    const statuses = list?.split(",").map((s) => s.trim().replace(/'/g, ""))
+    expect(statuses).toEqual([...PROJECT_STATUSES])
+  })
+
+  it("keeps a Project's Translations and links through its rebuild", async () => {
+    // 0004 rebuilt `project`: its indexes are back, and a Project still
+    // takes Translations and Technologies and deletes them with it.
+    const { results } = await db
+      .prepare(
+        "SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'project' AND name LIKE 'project_%'"
+      )
+      .all<{ name: string }>()
+    expect(results.map((r) => r.name).sort()).toEqual([
+      "project_featured_position",
+      "project_in_cv_position",
+      "project_position",
+    ])
+    await db.batch([
+      db.prepare(
+        "INSERT INTO project (id, slug, status) VALUES (7, 'plotops', 'maintained')"
+      ),
+      db.prepare(
+        "INSERT INTO project_translation (project_id, lang, title, description) VALUES (7, 'en', 'PlotOps', 'Tracker')"
+      ),
+      db.prepare(
+        "INSERT INTO technology (id, name, category) VALUES (7, 'D1', 'backend_cloud')"
+      ),
+      db.prepare(
+        "INSERT INTO project_technology (project_id, technology_id) VALUES (7, 7)"
+      ),
+      db.prepare("DELETE FROM project WHERE id = 7"),
+    ])
+    const left = await db
+      .prepare(
+        "SELECT (SELECT count(*) FROM project_translation WHERE project_id = 7) + (SELECT count(*) FROM project_technology WHERE project_id = 7) AS n"
+      )
+      .first<{ n: number }>()
+    expect(left?.n).toBe(0)
+    await expect(
+      db
+        .prepare(
+          "INSERT INTO project (id, slug, status) VALUES (8, 'x', 'paused')"
+        )
+        .run()
+    ).rejects.toThrow(/CHECK constraint failed/)
   })
 
   it("keeps the phone out of the profile", async () => {

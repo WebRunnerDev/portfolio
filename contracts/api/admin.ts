@@ -1,6 +1,7 @@
 import * as v from "valibot"
 import { LANGS, type Lang } from "../lang"
 import { MEDIA_TYPE_NAMES } from "../media"
+import { PROJECT_STATUSES } from "./public"
 
 // GET /api/admin/me — the owner signed in through Cloudflare Access (ADR-0004).
 export const AdminMeResponseSchema = v.object({
@@ -207,10 +208,7 @@ export const LanguageSkillAdmin = translatedEntity(
 export const ProjectAdmin = translatedEntity(
   {
     slug: Slug,
-    status: v.optional(
-      v.picklist(["in_progress", "completed", "archived"]),
-      "in_progress"
-    ),
+    status: v.optional(v.picklist(PROJECT_STATUSES), "in_progress"),
     coverKey: v.optional(v.nullable(Key), null),
     githubUrl: OptionalUrl,
     demoUrl: OptionalUrl,

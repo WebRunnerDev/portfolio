@@ -1277,6 +1277,20 @@ html:active-view-transition-type(forward, back) {
   &[data-state="archived"] {
     box-shadow: inset 0 0 0 1px var(--zsd-colors-outline-muted);
   }
+  /* Finished and live: solid, as done, with a hollow core. Still, no rust:
+   * the rust and the breathing are for the project in progress. */
+  &[data-state="maintained"] {
+    background: var(--zsd-colors-outline);
+    &::after {
+      content: "";
+      position: absolute;
+      inset: 30%;
+      background: var(--zsd-colors-surface);
+    }
+    &[data-hot="true"]::after {
+      background: var(--zsd-colors-primary);
+    }
+  }
   &[data-state="active"] {
     box-shadow: inset 0 0 0 1px var(--zsd-colors-primary);
     &::after {

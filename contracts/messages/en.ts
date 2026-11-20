@@ -72,6 +72,7 @@ export const en = {
   "cv.tech.ai": "AI-Assisted Development",
   "cv.tech.tools_design": "Tools & Design",
   "project.status.in_progress": "In progress",
+  "project.status.maintained": "Maintained",
   "project.status.completed": "Completed",
   "project.status.archived": "Archived",
   "project.demo": "Demo",

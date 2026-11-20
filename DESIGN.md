@@ -423,7 +423,7 @@ For an empty list, explain what appears there.
 
 ### Badge
 
-Use `badge` with an `outline-muted` border for technology tags and for a project that is not active.
+Use `badge` with an `outline-muted` border for technology tags and for a project that is not active: completed (a check icon), maintained (a pulse icon: finished, live and looked after) or archived.
 Use `badge-active` with a `primary` border for an active project, always with its status text.
 In place of an icon, it shows a small `tile` that breathes in opacity and scale. With reduced motion, the tile stands lit.
 The two project badges have the same size and padding.
@@ -442,7 +442,7 @@ A small `outline` tile follows a fine pointer beside the native cursor and turns
 ### Item strip
 
 Put an item strip under the title of a list page: Projects, Gallery, Blog. It has one `tile` per item, a step apart on an `outline` hairline from the start edge.
-A tile shows the item's data. A completed project is solid `outline`, an active one a `primary` outline with a breathing tile as in `badge-active`, an archived one an `outline-muted` hairline. A post or an album is solid, with its month or photo count under it in `label-mono`.
+A tile shows the item's data. A completed project is solid `outline`, a maintained one solid `outline` with a hollow core (still, no rust), an active one a `primary` outline with a breathing tile as in `badge-active`, an archived one an `outline-muted` hairline. A post or an album is solid, with its month or photo count under it in `label-mono`.
 Over the strip, a `label-mono` line gives the summary, or the number, title and status of the item pointed at.
 Pointing at a tile lights the thread up to it, the tile and its card's border in `primary`. Pointing at a card lights its tile. A click scrolls to the card.
 The strip is decoration: hide it from assistive technology, because the cards are the links. With no items, do not show it.

@@ -14,7 +14,7 @@
 | **CV PDF** | PDF, сгенерированный из Print CV через Browser Rendering и сохранённый в R2. | «загруженное резюме» |
 | **CV Section** | Раздел CV (Experience, Projects, Technologies, Education, Certifications, Languages) с порядком и флагами `show_web` / `show_pdf`. | |
 | **Technology** | Запись справочника технологий (имя, группа, иконка). Раздел CV называется **Technologies**. | «skill», «навык» |
-| **Project** | Пет-проект: карточка на странице «Проекты», опционально **Case Study** и попадание в CV (`in_cv`, `cv_bullets`). | |
+| **Project** | Пет-проект: карточка на странице «Проекты», опционально **Case Study** и попадание в CV (`in_cv`, `cv_bullets`). Статус: `in_progress` (в работе), `maintained` (в поддержке: закончен, работает, его поддерживают), `completed` (завершён), `archived` (в архиве). | |
 | **Case Study** | Рассказ о Project в Markdown на его странице `/{lang}/projects/:slug`, свой на каждом Lang. Без него у проекта нет страницы (404). | «кейс» |
 | **Featured** | Флаг проекта для показа на главной. | |
 | **Post** | Запись блога; статус `draft` / `published`; тело — Markdown. | «статья», «article» |

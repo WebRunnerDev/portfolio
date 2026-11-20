@@ -74,6 +74,7 @@ export const de: Messages = {
   "cv.tech.ai": "KI-gestützte Entwicklung",
   "cv.tech.tools_design": "Tools & Design",
   "project.status.in_progress": "In Arbeit",
+  "project.status.maintained": "Gepflegt",
   "project.status.completed": "Abgeschlossen",
   "project.status.archived": "Archiviert",
   "project.demo": "Demo",
