@@ -436,7 +436,7 @@ The logo uses `on-surface` through `currentColor`. Hide decorative tiles from as
 The seven logo tiles move as one element between the header and the menu.
 On the home page the hero shows one logo, its effect's; the hero's brand is the word alone.
 The header's logo and name stay empty while the hero's brand shows below the header. Once the brand has gone under it, the logo grows into its slot and the name comes out from under it; they hide at once when the brand comes back, so two logos never show together. Under reduced motion they swap without moving.
-The menu's tiles leave from the header logo's slot and fold back into it.
+The menu's tiles leave from the header logo and fold back into it. While the logo waits for the brand, opening the menu first grows it into its slot, and the tiles leave once it stands; after the menu has closed, the logo waits again.
 A small `outline` tile follows a fine pointer beside the native cursor and turns `primary` over a link or button. Do not show it with reduced motion or a coarse pointer.
 
 ### Item strip

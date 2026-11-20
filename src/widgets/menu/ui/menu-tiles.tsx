@@ -1,9 +1,12 @@
 import { useLayoutEffect, useRef, type RefObject } from "react"
 
+import { holdBrand, releaseBrand } from "@/shared/lib/brand-handoff"
+import { DURATION } from "@/shared/lib/motion"
 import { LogoTiles } from "@/shared/ui/logo"
 
 import {
   CLOSE,
+  FOLD_END,
   OPEN,
   SPREAD_TILES,
   TILE_EASING,
@@ -35,10 +38,13 @@ function play(
 // `placements` (from `lg`, over the panel, small enough that they stay in
 // it; the clip reaches up over the header, so they leave the logo in view).
 // On open they leave the header logo's place, in the menu bar (`slot`), and
-// on close fold back into it, on the home page too while the logo there
-// waits for the hero's brand (@/shared/lib/brand-handoff): it is where the
-// logo lives. The whole set scales and moves on the compositor (Web
-// Animations, transform and opacity only); each tile moves inside it. Under reduced motion they
+// on close fold back into it. The menu holds the header logo shown while it
+// is open (@/shared/lib/brand-handoff): on the home page, where it waits for
+// the hero's brand, it first grows into its slot and the tiles leave it
+// once it stands, so they never come out of an empty slot. It goes back to
+// waiting once the menu has faded. The whole set scales and moves on the
+// compositor (Web Animations, transform and opacity only); each tile moves
+// inside it. Under reduced motion they
 // just stand spread. The set takes its place in the reading direction; the
 // tiles are never mirrored.
 export function MenuTiles({
@@ -53,7 +59,12 @@ export function MenuTiles({
   useLayoutEffect(() => {
     const el = set.current
     if (!el || !slot.current) return
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return
+    const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches
+    // The menu has gone once the tiles are in the logo and the surface has
+    // faded (`menu-out`).
+    const grow = open ? holdBrand() : 0
+    if (!open) releaseBrand(reduced ? 0 : FOLD_END + DURATION.fast)
+    if (reduced) return
 
     // The set's own box (offset*: untransformed, from its frame), mapped
     // onto the logo's slot.
@@ -69,7 +80,16 @@ export function MenuTiles({
     const tiles = [...el.querySelectorAll("path")]
 
     if (open) {
-      play(el, logo, spread, { duration: OPEN.tiles * 1000, fill: "backwards" })
+      play(el, logo, spread, {
+        duration: OPEN.tiles * 1000,
+        delay: grow * 1000,
+        fill: "backwards",
+      })
+      // Unseen while the header logo grows in under them.
+      if (grow) {
+        const hidden = { visibility: "hidden" }
+        el.animate([hidden, hidden], grow * 1000)
+      }
       tiles.forEach((tile, i) =>
         play(
           tile,
@@ -77,7 +97,7 @@ export function MenuTiles({
           { transform: translate(SPREAD_TILES[i]) },
           {
             duration: OPEN.tiles * 1000,
-            delay: SPREAD_TILES[i].ring * OPEN.tileStagger * 1000,
+            delay: (grow + SPREAD_TILES[i].ring * OPEN.tileStagger) * 1000,
             fill: "backwards",
           }
         )

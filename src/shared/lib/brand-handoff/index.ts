@@ -1,1 +1,1 @@
-export { useBrandHandoff } from "./brand-handoff"
+export { holdBrand, releaseBrand, useBrandHandoff } from "./brand-handoff"

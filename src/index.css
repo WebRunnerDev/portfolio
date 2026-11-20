@@ -747,10 +747,14 @@ html:active-view-transition-type(forward, back) {
  * it (`data-brand-handoff="header"`), the logo grows into its slot and the
  * name comes out from under it after. Showing is a transition; hiding is
  * instant, so two logos never show at once, nor does the lockup fade out on
- * the way into the home page. Without a script yet, the lockup waits. Under
- * reduced motion it swaps without moving. A keyboard focus shows the name at
- * once. */
-:root:has(.brand-handoff-from):not([data-brand-handoff="header"]) {
+ * the way into the home page. Without a script yet, the lockup waits. While
+ * the menu is open it holds the lockup shown (`data-brand-hold="on"`), so
+ * its tiles leave a logo; once it has closed the lockup shrinks back out
+ * (`off`) if the brand is in view. Under reduced motion it swaps without
+ * moving. A keyboard focus shows the name at once. */
+:root:has(.brand-handoff-from):not([data-brand-handoff="header"]):not(
+    [data-brand-hold="on"]
+  ) {
   .brand-handoff-to {
     opacity: 0;
     transform: scale(0.5);
@@ -759,10 +763,17 @@ html:active-view-transition-type(forward, back) {
     opacity: 0;
     transform: translateX(-100%);
   }
+  :focus-visible .brand-handoff-name {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  :root:has(.brand-handoff-from)[data-brand-handoff="header"] {
+  :root:has(.brand-handoff-from):is(
+      [data-brand-handoff="header"],
+      [data-brand-hold="on"]
+    ) {
     .brand-handoff-to,
     .brand-handoff-name {
       transition-property: transform, opacity;
@@ -773,11 +784,16 @@ html:active-view-transition-type(forward, back) {
       transition-delay: calc(var(--zsd-x-zsd-motion-duration-slow) / 2);
     }
   }
-}
-
-:root:has(.brand-handoff-from) :focus-visible .brand-handoff-name {
-  opacity: 1;
-  transform: none;
+  :root:has(.brand-handoff-from)[data-brand-hold="off"]:not(
+      [data-brand-handoff="header"]
+    ) {
+    .brand-handoff-to,
+    .brand-handoff-name {
+      transition-property: transform, opacity;
+      transition-duration: var(--zsd-x-zsd-motion-duration-slow);
+      transition-timing-function: var(--zsd-x-zsd-motion-easing-exit);
+    }
+  }
 }
 
 /* docs/design-brief.md › Арт-дирекция этапа 7 › База, п. 4: how far the page
