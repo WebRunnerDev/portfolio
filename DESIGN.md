@@ -433,9 +433,10 @@ The two project badges have the same size and padding.
 Use `tile` for rhombus decoration, the loader, the player button, and the menu animation. Use `tile-inactive` for inactive tiles.
 The logo uses `on-surface` through `currentColor`. Hide decorative tiles from assistive technology.
 
-The seven logo tiles move as one element between the hero, the header, and the menu.
-On the home page they fly from the hero into the header logo as the hero scrolls away, in every Motion Tier but `static`, where they stand in the header.
-The header's name waits until the logo lands and comes out from under it, so the logo never passes over the name. The menu's tiles leave from the logo where it shows, in flight or in the hero.
+The seven logo tiles move as one element between the header and the menu.
+On the home page the hero shows one logo, its effect's; the hero's brand is the word alone.
+The header's logo and name stay empty while the hero's brand shows below the header. Once the brand has gone under it, the logo grows into its slot and the name comes out from under it; they hide at once when the brand comes back, so two logos never show together. Under reduced motion they swap without moving.
+The menu's tiles leave from the header logo's slot and fold back into it.
 A small `outline` tile follows a fine pointer beside the native cursor and turns `primary` over a link or button. Do not show it with reduced motion or a coarse pointer.
 
 ### Item strip

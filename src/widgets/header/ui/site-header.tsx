@@ -56,14 +56,14 @@ export function SiteHeader({ menu }: { menu: ReactNode }) {
           aria-label={`WebRunner, ${t("nav.home")}`}
           className={`shrink-0 ${FOCUS_RING}`}
         >
-          {/* The slot the hero's tiles fly into on the home page; the logo
-              in it moves, and the name comes out from under it as it lands
-              (@/shared/lib/logo-flight). */}
+          {/* On the home page the lockup waits for the hero's brand to go
+              under the header: the logo shows in its slot, then the name
+              comes out from under it (@/shared/lib/brand-handoff). */}
           <BrandLockup
-            nameClassName="logo-flight-name"
+            nameClassName="brand-handoff-name"
             logo={
               <span className="size-6 shrink-0">
-                <Logo className="logo-flight-to size-full" />
+                <Logo className="brand-handoff-to size-full" />
               </span>
             }
           />

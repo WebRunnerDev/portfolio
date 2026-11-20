@@ -76,7 +76,7 @@ import {
 } from "./web"
 
 // The page tells the scene where things are through attributes, read once
-// a frame (a class or an attribute, not an import, as the logo flight): the
+// a frame (a class or an attribute, not an import, as the brand handoff): the
 // hero the web lies over, its logo square the blocks gather into, each
 // chapter's rail (in its section: the full stop of its figure) a block
 // comes to, the footer's logo

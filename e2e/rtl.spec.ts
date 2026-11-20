@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test"
 
-import { expectTakeOff, headerLogo, scrollPastHero } from "./logo-flight"
+import { headerLogo, scrollPastBrand } from "./brand-handoff"
 
 // ADR-0007: the header and menu mirror in RTL; the logo and code don't.
 // Below `lg`, where the menu is full screen with a bar of its own (the panel
@@ -69,34 +69,16 @@ test("/en/ keeps the LTR header", async ({ page }) => {
 
 // Issue #158: the tiles' place mirrors, their layout doesn't. They fly from
 // the brand's end on the left to the header's start on the right, unflipped.
-test("on /ar/ the logo flies from the left into the right", async ({
+test("on /ar/ the header logo fills in its slot on the right", async ({
   page,
 }) => {
   await page.goto("/ar")
-  const { tiles, logo } = await expectTakeOff(page)
-  const { menuBox } = await header(page)
-  expect(tiles.x + tiles.width).toBeLessThan(400)
-  // Scaled up, not flipped: matrix(a, 0, 0, d, …) with a = d > 1.
-  const transform = await headerLogo(page).evaluate(
-    (svg) =>
-      (
-        svg.ownerDocument.defaultView as unknown as {
-          getComputedStyle(el: unknown): { transform: string }
-        }
-      ).getComputedStyle(svg).transform
-  )
-  const [a, , , d] = transform.slice(7, -1).split(",").map(Number)
-  expect(a).toBeGreaterThan(1)
-  expect(d).toBe(a)
-
-  await scrollPastHero(page)
-  await expect(headerLogo(page)).toHaveCSS(
-    "transform",
-    "matrix(1, 0, 0, 1, 0, 0)"
-  )
-  const landed = (await headerLogo(page).boundingBox())!
-  expect(landed.x).toBeGreaterThan(logo.x)
-  expect(landed.x).toBeGreaterThan(menuBox.x)
+  await expect(headerLogo(page)).toHaveCSS("opacity", "0")
+  await scrollPastBrand(page)
+  await expect(headerLogo(page)).toHaveCSS("opacity", "1")
+  await expect(headerLogo(page)).toHaveCSS("transform", "none")
+  const { logoBox, menuBox } = await header(page)
+  expect(logoBox.x).toBeGreaterThan(menuBox.x)
 })
 
 test("code blocks stay LTR on /ar/", async ({ page }) => {
