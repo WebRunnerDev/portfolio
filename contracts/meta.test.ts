@@ -35,8 +35,11 @@ describe("pageMeta", () => {
       expect(meta).toEqual({
         title: path
           ? `${MESSAGES[lang][`nav.${key}` as "nav.cv"]} · WebRunner`
-          : "WebRunner",
-        description: MESSAGES[lang][`meta.${key}` as "meta.cv"],
+          : `WebRunner · ${MESSAGES[lang]["meta.home.title"]}`,
+        description:
+          MESSAGES[lang][
+            path ? (`meta.${key}` as "meta.cv") : "meta.home.description"
+          ],
       })
     }
   })
@@ -44,6 +47,9 @@ describe("pageMeta", () => {
   it("speaks the Lang", () => {
     expect(pageMeta("ru", "cv")?.title).toBe("Резюме · WebRunner")
     expect(pageMeta("de", "blog")?.title).toBe("Blog · WebRunner")
+    expect(pageMeta("ru", "")?.title).toBe(
+      "WebRunner · Жасулан Абдигалиев, фронтенд-разработчик"
+    )
   })
 
   it("keeps the design page out of search", () => {

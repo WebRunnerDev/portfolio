@@ -1,9 +1,13 @@
 # Search engines and AI search (OAI-SearchBot, ChatGPT-User, Claude-SearchBot,
 # Claude-User, PerplexityBot, Perplexity-User and the like) may read every
 # page. The owner's choice (docs/plan.md › SEO): AI search yes, AI training no.
+# /api/public/ stays open: the pages are rendered from it, and Google renders
+# them with robots.txt applied to every request. Without it the rendered home
+# page is empty and search has no snippet. The longest matching rule wins.
 User-agent: *
 Disallow: /admin
 Disallow: /api/
+Allow: /api/public/
 
 # Crawlers and tokens for training AI models: nothing.
 User-agent: GPTBot

@@ -86,8 +86,16 @@ function section(path: string, title: MessageKey, description: MessageKey) {
   return {
     path,
     meta: (lang: Lang): PageMeta => ({
-      title: path ? withBrand(t(lang, title)) : BRAND,
-      description: t(lang, description),
+      // The home page leads with the brand, then who is behind it: people
+      // search for "webrunner", and a bare brand gives search nothing to
+      // show. The owner's name is in the dictionaries, so this page's HTML
+      // still waits for no D1 read.
+      title: path
+        ? withBrand(t(lang, title))
+        : `${BRAND} · ${t(lang, "meta.home.title")}`,
+      // The home page's description for search is its own: `meta.home` is
+      // also the menu's short line under Home.
+      description: t(lang, path ? description : "meta.home.description"),
     }),
   }
 }
