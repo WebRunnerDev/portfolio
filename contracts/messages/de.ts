@@ -22,8 +22,11 @@ export const de: Messages = {
   "nav.projects": "Projekte",
   "nav.gallery": "Galerie",
   "nav.blog": "Blog",
+  "meta.home.title": "Zhasulan Abdigaliyev, Frontend-Entwickler",
   "meta.home":
     "Portfolio von WebRunner, Webentwickler: Projekte, Lebenslauf, Blog und Fotos.",
+  "meta.home.description":
+    "Zhasulan Abdigaliyev (WebRunner), Frontend-Entwickler in Astana: SaaS-Oberflächen mit React und TypeScript. Projekte, Lebenslauf, Blog und Fotos.",
   "meta.cv": "Erfahrung, Technologien, Ausbildung und Zertifikate.",
   "meta.projects": "Eigene Projekte mit Fallstudien: was gebaut wurde und wie.",
   "meta.gallery": "Fotoalben.",

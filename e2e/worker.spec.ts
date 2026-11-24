@@ -63,6 +63,10 @@ test("robots.txt points at the sitemap and keeps training crawlers out", async (
   expect(robots).toMatch(/User-agent: GPTBot[\s\S]*?Disallow: \/\n/)
   // AI search goes by `User-agent: *`.
   expect(robots).not.toMatch(/User-agent: (OAI-SearchBot|Claude-SearchBot)/)
+  // Google renders the pages from the Public API with robots.txt applied.
+  expect(robots).toMatch(
+    /User-agent: \*\nDisallow: \/admin\nDisallow: \/api\/\nAllow: \/api\/public\/\n/
+  )
 })
 
 test("the sitemap is XML from the Worker, not the SPA", async ({ request }) => {

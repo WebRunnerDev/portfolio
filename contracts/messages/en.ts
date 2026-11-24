@@ -21,8 +21,11 @@ export const en = {
   "nav.projects": "Projects",
   "nav.gallery": "Gallery",
   "nav.blog": "Blog",
+  "meta.home.title": "Zhasulan Abdigaliyev, frontend developer",
   "meta.home":
     "Portfolio of WebRunner, a web developer: projects, CV, blog and photos.",
+  "meta.home.description":
+    "Zhasulan Abdigaliyev (WebRunner), a frontend developer in Astana: SaaS interfaces with React and TypeScript. Projects, CV, blog and photos.",
   "meta.cv": "Experience, technologies, education and certifications.",
   "meta.projects": "Pet projects with case studies: what was built and how.",
   "meta.gallery": "Photo albums.",

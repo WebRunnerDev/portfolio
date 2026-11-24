@@ -22,8 +22,11 @@ export const es: Messages = {
   "nav.projects": "Proyectos",
   "nav.gallery": "Galería",
   "nav.blog": "Blog",
+  "meta.home.title": "Zhasulan Abdigaliyev, desarrollador frontend",
   "meta.home":
     "Portafolio de WebRunner, desarrollador web: proyectos, CV, blog y fotos.",
+  "meta.home.description":
+    "Zhasulan Abdigaliyev (WebRunner), desarrollador frontend en Astaná: interfaces SaaS con React y TypeScript. Proyectos, CV, blog y fotos.",
   "meta.cv": "Experiencia, tecnologías, formación y certificaciones.",
   "meta.projects":
     "Proyectos personales con casos de estudio: qué se hizo y cómo.",
